@@ -139,9 +139,11 @@ else
 libstdc___la_SOURCES =
 endif
 
+# reexport does not need it included as a link.
+#	$(top_builddir)/libsupc++/libsupc++.la 
+
 libstdc___la_LIBADD = \
 	$(GLIBCXX_LIBS) \
-	$(top_builddir)/libsupc++/libsupc++convenience.la \
 	$(top_builddir)/src/c++98/libc++98convenience.la \
 	$(top_builddir)/src/c++11/libc++11convenience.la \
 	$(top_builddir)/src/c++17/libc++17convenience.la \
@@ -150,6 +152,7 @@ libstdc___la_LIBADD = \
 libstdc___la_DEPENDENCIES = \
 	${version_dep} \
 	$(top_builddir)/libsupc++/libsupc++convenience.la \
+	$(top_builddir)/libsupc++/libsupc++.la \
 	$(top_builddir)/src/c++98/libc++98convenience.la \
 	$(top_builddir)/src/c++11/libc++11convenience.la \
 	$(top_builddir)/src/c++17/libc++17convenience.la \
@@ -161,7 +164,14 @@ libstdc___darwin_rpath += -Wl,-rpath,@loader_path
 endif
 
 libstdc___la_LDFLAGS = \
-	-version-info $(libtool_VERSION) ${version_arg} -lm $(libstdc___darwin_rpath)
+	-version-info $(libtool_VERSION) ${version_arg} $(libstdc___darwin_rpath)
+
+if ENABLE_SYMVERS_DARWIN
+libstdc___la_LDFLAGS += -Wl,-rpath,@loader_path/../lib \
+	-Wl,-reexport_library,$(top_builddir)/libsupc++/.libs/libsupc++.dylib
+else
+libstdc___la_LDFLAGS += -lm
+endif
 
 libstdc___la_LINK = $(CXXLINK) $(libstdc___la_LDFLAGS) $(lt_host_flags)
 
@@ -312,9 +322,9 @@ CXXLINK = \
 # Symbol versioning for shared libraries.
 # See configure.host and configure.ac for port_specific_symbol_files.
 if ENABLE_SYMVERS
-libstdc++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_FILE) \
+libstdc++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_LIB_FILE) \
 		$(port_specific_symbol_files)
-	cp ${glibcxx_srcdir}/$(SYMVER_FILE) $@.tmp
+	cp ${glibcxx_srcdir}/$(SYMVER_LIB_FILE) $@.tmp
 	chmod +w $@.tmp
 	if test "x$(port_specific_symbol_files)" != x; then \
 	  if grep '^# Appended to version file.' \

@@ -70,6 +70,9 @@
 #                          additional symbols to export from the shared
 #                          library, when symbol versioning is in use
 #
+#   port_specific_abi_symbol_files
+#                          As above, but for the ABI library
+#
 #   tmake_file		   A list of machine-description-specific
 #			   makefile fragments.
 #
@@ -95,6 +98,7 @@ abi_baseline_subdir_switch=--print-multi-directory
 abi_tweaks_dir="cpu/generic"
 error_constants_dir="os/generic"
 tmake_file=
+port_specific_abi_symbol_files=
 
 # HOST-SPECIFIC OVERRIDES
 # Set any CPU-dependent bits.

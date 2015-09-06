@@ -120,6 +120,12 @@ endif
 libsupc___la_SOURCES = $(sources) $(c_sources) $(vtv_sources)
 libsupc__convenience_la_SOURCES = $(sources) $(c_sources) $(vtv_sources)
 
+libsupc___la_LDFLAGS = \
+	-version-info $(libtool_VERSION) ${version_arg}
+libsupc___la_LINK = $(CXXLINK) $(libsupc___la_LDFLAGS)
+
+libsupc___la_DEPENDENCIES = ${version_dep}
+
 cp-demangle.c:
 	rm -f $@
 	$(LN_S) $(toplevel_srcdir)/libiberty/cp-demangle.c $@
@@ -163,7 +169,7 @@ C_COMPILE = \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(EXTRA_CFLAGS)
 
 # LTCOMPILE is copied from LTCXXCOMPILE below.
-LTCOMPILE = $(LIBTOOL) --tag CC --tag disable-shared $(LIBTOOLFLAGS) --mode=compile \
+LTCOMPILE = $(LIBTOOL) --tag CC $(LIBTOOLFLAGS) --mode=compile \
 	    $(CC) $(DEFS) $(C_INCLUDES) \
 	    $(glibcxx_lt_pic_flag) $(glibcxx_compiler_shared_flag) \
 	    $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(EXTRA_CFLAGS)
@@ -195,7 +201,7 @@ LTCOMPILE = $(LIBTOOL) --tag CC --tag disable-shared $(LIBTOOLFLAGS) --mode=comp
 # last. (That way, things like -O2 passed down from the toplevel can
 # be overridden by --enable-debug.)
 LTCXXCOMPILE = \
-	$(LIBTOOL) --tag CXX --tag disable-shared \
+	$(LIBTOOL) --tag CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=compile $(CXX) $(TOPLEVEL_INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(EXTRA_CXX_FLAGS)
@@ -209,10 +215,70 @@ LTLDFLAGS = $(shell $(SHELL) $(top_srcdir)/../libtool-ldflags $(LDFLAGS))
 # directory to configure libstdc++-v3 to use gcc as the C++
 # compilation driver.
 CXXLINK = \
-	$(LIBTOOL) --tag CXX --tag disable-shared \
+	$(LIBTOOL) --tag CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXX) \
 	$(OPT_LDFLAGS) $(SECTION_LDFLAGS) $(AM_CXXFLAGS) $(LTLDFLAGS) -o $@
+
+# Symbol versioning for shared libraries.
+# See configure.host and configure.ac for port_specific_symbol_files.
+if ENABLE_SYMVERS
+libsup++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_ABI_FILE)
+	cp ${glibcxx_srcdir}/$(SYMVER_ABI_FILE) $@.tmp
+	chmod +w $@.tmp
+	if test "x$(port_specific_abi_symbol_files)" != x; then \
+	  if grep '^# Appended to version file.' \
+	       $(port_specific_abi_symbol_files) > /dev/null 2>&1; then \
+	    cat $(port_specific_abi_symbol_files) >> $@.tmp; \
+	  else \
+	    sed -n '1,/DO NOT DELETE/p' $@.tmp > tmp.top; \
+	    sed -n '/DO NOT DELETE/,$$p' $@.tmp > tmp.bottom; \
+	    cat tmp.top $(port_specific_abi_symbol_files) tmp.bottom > $@.tmp; \
+	    rm tmp.top tmp.bottom; \
+	  fi; \
+	fi
+	$(EGREP) -v '^[ 	]*#(#| |$$)' $@.tmp | \
+	  $(CC) -E -P -include $(CONFIG_HEADER) - > $@ || (rm -f $@ ; exit 1)
+	rm -f $@.tmp
+
+CLEANFILES = libsup++-symbols.ver
+
+if ENABLE_SYMVERS_GNU
+version_arg = -Wl,--version-script=libsup++-symbols.ver
+version_dep = libsup++-symbols.ver
+endif
+if ENABLE_SYMVERS_GNU_NAMESPACE
+version_arg = -Wl,--version-script=libsup++-symbols.ver
+version_dep = libsup++-symbols.ver
+endif
+if ENABLE_SYMVERS_SUN
+version_arg = -Wl,-M,libsup++-symbols.ver-sun
+version_dep = libsup++-symbols.ver-sun
+libsup++-symbols.ver-sun : libsup++-symbols.ver \
+		$(toplevel_srcdir)/contrib/make_sunver.pl \
+		$(libsupc___la_OBJECTS)
+	CXXFILT="$(CXXFILT)"; export CXXFILT; \
+	perl $(toplevel_srcdir)/contrib/make_sunver.pl \
+	  libsup++-symbols.ver \
+	  $(libsupc___la_OBJECTS:%.lo=.libs/%.o) > $@ || (rm -f $@ ; exit 1)
+endif
+if ENABLE_SYMVERS_DARWIN
+version_arg = -Wl,-exported_symbols_list,libsup++-symbols.explist
+version_dep = libsup++-symbols.explist
+libsup++-symbols.explist : libsup++-symbols.ver \
+		${glibcxx_srcdir}/scripts/make_exports.pl \
+		$(libsupc___la_OBJECTS)
+	perl ${glibcxx_srcdir}/scripts/make_exports.pl \
+	  libsup++-symbols.ver \
+	  $(libsupc___la_OBJECTS:%.lo=.libs/%.o) > $@ || (rm -f $@ ; exit 1)
+endif
+
+CLEANFILES += $(version_dep)
+else
+version_arg =
+version_dep =
+CLEANFILES =
+endif
 
 # Install notes
 # We have to have rules modified from the default to counteract SUN make
@@ -256,5 +322,5 @@ uninstall-bitsHEADERS:
 
 
 # By adding these files here, automake will remove them for 'make clean'
-CLEANFILES = stamp-*
+CLEANFILES += stamp-*
 

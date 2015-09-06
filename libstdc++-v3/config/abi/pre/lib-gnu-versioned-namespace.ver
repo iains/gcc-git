@@ -1,0 +1,154 @@
+## Linker script for GNU namespace versioning.
+##
+## Copyright (C) 2002-2023 Free Software Foundation, Inc.
+##
+## This file is part of the libstdc++ version 3 distribution.
+##
+## This file is part of the GNU ISO C++ Library.  This library is free
+## software; you can redistribute it and/or modify it under the
+## terms of the GNU General Public License as published by the
+## Free Software Foundation; either version 3, or (at your option)
+## any later version.
+##
+## This library is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this library; see the file COPYING3.  If not see
+## <http://www.gnu.org/licenses/>.
+
+GLIBCXX_8.0 {
+
+  global:
+
+    # Names inside the 'extern' block are demangled names.
+    extern "C++"
+    {
+      std::*;
+      std::__8::*;
+    };
+
+    # operator new(size_t)
+    _Znw[jmy];
+    # operator new(size_t, std::nothrow_t const&)
+    _Znw[jmy]RKSt9nothrow_t;
+
+    # operator delete(void*)
+    _ZdlPv;
+    # operator delete(void*, std::nothrow_t const&)
+    _ZdlPvRKSt9nothrow_t;
+
+    # operator new[](size_t)
+    _Zna[jmy];
+    # operator new[](size_t, std::nothrow_t const&)
+    _Zna[jmy]RKSt9nothrow_t;
+
+    # operator delete[](void*)
+    _ZdaPv;
+    # operator delete[](void*, std::nothrow_t const&)
+    _ZdaPvRKSt9nothrow_t;
+
+    # function-scope static objects requires a guard variable.
+    _ZGVNSt*;
+
+    # VTT structure
+    _ZTTNSt*;
+
+    # vtable
+    _ZTVSt*;
+    _ZTVNSt*;
+    _ZTVN9__gnu_cxx3__818stdio_sync_filebufI[cw]NSt3__811char_traitsI[cw]EEEE;
+
+    # thunk
+    _ZTv0_n12_NS*;
+    _ZTv0_n24_NS*;
+
+    # typeinfo structure
+    _ZTISt*;
+    _ZTINSt*;
+
+    # typeinfo name
+    _ZTSSt*;
+    _ZTSNSt*;
+
+    # locale
+    _ZNSt3__89has_facetINS_*;
+
+    # thread/mutex/condition_variable/future
+    __once_proxy;
+
+    # std::__convert_to_v
+    _ZNSt3__814__convert_to_v*;
+
+    # std::__copy_streambufs
+    _ZNSt3__817__copy_streambufsI*;
+    _ZNSt3__821__copy_streambufs_eofI*;
+
+    # std::__istream_extract(wistream&, wchar_t*, streamsize)
+    _ZNSt3__817__istream_extractIwNS_11char_traitsIwEEEEvRNS_13basic_istreamIT_T0_EEPS4_[ilx];
+
+    # __gnu_cxx::__atomic_add
+    # __gnu_cxx::__exchange_and_add
+    _ZN9__gnu_cxx3__812__atomic_addEPV[il][il];
+    _ZN9__gnu_cxx3__818__exchange_and_addEPV[li][il];
+
+    # __gnu_cxx::__pool
+    _ZN9__gnu_cxx3__86__poolILb[01]EE13_M_initializeEv;
+    _ZN9__gnu_cxx3__86__poolILb[01]EE16_M_reserve_blockE[jmy][jmy];
+    _ZN9__gnu_cxx3__86__poolILb[01]EE16_M_reclaim_blockEPc[jmy];
+    _ZN9__gnu_cxx3__86__poolILb[01]EE10_M_destroyEv;
+    _ZN9__gnu_cxx3__86__poolILb1EE16_M_get_thread_idEv;
+
+    _ZN9__gnu_cxx3__817__pool_alloc_base9_M_refillE[jmy];
+    _ZN9__gnu_cxx3__817__pool_alloc_base16_M_get_free_listE[jmy];
+    _ZN9__gnu_cxx3__817__pool_alloc_base12_M_get_mutexEv;
+
+    _ZN9__gnu_cxx3__89free_list6_M_getE[jmy];
+    _ZN9__gnu_cxx3__89free_list8_M_clearEv;
+
+    # __gnu_cxx::stdio_sync_filebuf
+    _ZTVN9__gnu_cxx3__818stdio_sync_filebufI[cw]St3__811char_traitsI[cw]EEE;
+    _ZN9__gnu_cxx3__818stdio_sync_filebufI[cw]NSt3__811char_traitsI[cw]EEE[5-9]*;
+
+    # debug mode
+    _ZN11__gnu_debug19_Safe_sequence_base12_M_get_mutexEv;
+    _ZN11__gnu_debug19_Safe_sequence_base13_M_detach_allEv;
+    _ZN11__gnu_debug19_Safe_sequence_base18_M_detach_singularEv;
+    _ZN11__gnu_debug19_Safe_sequence_base22_M_revalidate_singularEv;
+    _ZN11__gnu_debug19_Safe_sequence_base7_M_swapERS0_;
+
+    _ZN11__gnu_debug19_Safe_iterator_base9_M_attach*;
+    _ZN11__gnu_debug19_Safe_iterator_base16_M_attach_single*;
+    _ZN11__gnu_debug19_Safe_iterator_base9_M_detachEv;
+    _ZN11__gnu_debug19_Safe_iterator_base16_M_detach_singleEv;
+    _ZN11__gnu_debug19_Safe_iterator_base12_M_get_mutexEv;
+    _ZNK11__gnu_debug19_Safe_iterator_base11_M_singularEv;
+    _ZNK11__gnu_debug19_Safe_iterator_base14_M_can_compareERKS0_;
+
+    _ZNK11__gnu_debug16_Error_formatter10_M_message*;
+    _ZNK11__gnu_debug16_Error_formatter8_M_error*;
+
+    # __gnu_debug::_Safe_unordered_container_base
+    # __gnu_debug::_Safe_local_iterator_base
+    _ZN11__gnu_debug30_Safe_unordered_container_base7_M_swapERS0_;
+    _ZN11__gnu_debug30_Safe_unordered_container_base13_M_detach_allEv;
+    _ZN11__gnu_debug25_Safe_local_iterator_base9_M_attachEPNS_19_Safe_sequence_baseEb;
+    _ZN11__gnu_debug25_Safe_local_iterator_base9_M_detachEv;
+    _ZN11__gnu_debug25_Safe_local_iterator_base16_M_attach_singleEPNS_19_Safe_sequence_baseEb;
+
+    # parallel mode
+    _ZN14__gnu_parallel9_Settings3getEv;
+    _ZN14__gnu_parallel9_Settings3setERS0_;
+
+    # to_chars/from_chars _Float128
+    _ZNSt3__88to_charsEPcS0_DF128_;
+    _ZNSt3__88to_charsEPcS0_DF128_NS_12chars_formatE;
+    _ZNSt3__88to_charsEPcS0_DF128_NS_12chars_formatEi;
+    _ZNSt3__810from_charsEPKcS1_RDF128_NS_12chars_formatE;
+
+  local:
+    *;
+};
+

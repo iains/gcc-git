@@ -4236,25 +4236,35 @@ libtool_VERSION=6:34:0
 case $enable_symvers in
   no)
     SYMVER_FILE=config/abi/pre/none.ver
+    SYMVER_LIB_FILE=config/abi/pre/none.ver
+    SYMVER_ABI_FILE=config/abi/pre/none.ver
     ;;
   gnu)
     SYMVER_FILE=config/abi/pre/gnu.ver
+    SYMVER_LIB_FILE=config/abi/pre/lib-gnu.ver
+    SYMVER_ABI_FILE=config/abi/pre/abi-gnu.ver
     AC_DEFINE(_GLIBCXX_SYMVER_GNU, 1,
 	      [Define to use GNU versioning in the shared library.])
     ;;
   gnu-versioned-namespace)
     libtool_VERSION=8:0:0
     SYMVER_FILE=config/abi/pre/gnu-versioned-namespace.ver
+    SYMVER_LIB_FILE=config/abi/pre/lib-gnu-versioned-namespace.ver
+    SYMVER_ABI_FILE=config/abi/pre/abi-gnu-versioned-namespace.ver
     AC_DEFINE(_GLIBCXX_SYMVER_GNU_NAMESPACE, 1,
 	      [Define to use GNU namespace versioning in the shared library.])
     ;;
   darwin)
     SYMVER_FILE=config/abi/pre/gnu.ver
+    SYMVER_LIB_FILE=config/abi/pre/lib-gnu.ver
+    SYMVER_ABI_FILE=config/abi/pre/abi-gnu.ver
     AC_DEFINE(_GLIBCXX_SYMVER_DARWIN, 1,
 	      [Define to use darwin versioning in the shared library.])
     ;;
   sun)
     SYMVER_FILE=config/abi/pre/gnu.ver
+    SYMVER_LIB_FILE=config/abi/pre/lib-gnu.ver
+    SYMVER_ABI_FILE=config/abi/pre/abi-gnu.ver
     AC_DEFINE(_GLIBCXX_SYMVER_SUN, 1,
 	      [Define to use Sun versioning in the shared library.])
     ;;
@@ -4276,7 +4286,10 @@ if test $glibcxx_cv_have_as_symver_directive = yes; then
 fi
 
 AC_SUBST(SYMVER_FILE)
+AC_SUBST(SYMVER_LIB_FILE)
+AC_SUBST(SYMVER_ABI_FILE)
 AC_SUBST(port_specific_symbol_files)
+AC_SUBST(port_specific_abi_symbol_files)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS, test $enable_symvers != no)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_GNU, test $enable_symvers = gnu)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_GNU_NAMESPACE, test $enable_symvers = gnu-versioned-namespace)

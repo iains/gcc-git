@@ -284,7 +284,9 @@ POSTSTAGE1_HOST_EXPORTS = \
 	  -I$$r/prev-$(TARGET_SUBDIR)/libphobos/libdruntime -I$$s/libphobos/libdruntime \
 	  -L$$r/prev-$(TARGET_SUBDIR)/libphobos/src/.libs \
 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
-	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs"; \
+	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs \
+	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs"; \
 	export GDC; \
 	GDC_FOR_BUILD="$$GDC"; export GDC_FOR_BUILD; \
 	GNATBIND="$$r/$(HOST_SUBDIR)/prev-gcc/gnatbind"; export GNATBIND; \

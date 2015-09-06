@@ -51,6 +51,10 @@ along with GCC; see the file COPYING3.  If not see
 #define LIBSTDCXX_STATIC NULL
 #endif
 
+#ifndef LIBSTDCXXABI
+#define LIBSTDCXXABI NULL
+#endif
+
 #ifndef LIBCXX
 #define LIBCXX "c++"
 #endif
@@ -405,9 +409,19 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
 	    }
 	}
       else
-	generate_option (OPT_l,
-			 saw_profile_flag ? LIBSTDCXX_PROFILE : LIBSTDCXX, 1,
-			 CL_DRIVER, &new_decoded_options[j]);
+	{
+	  generate_option (OPT_l,
+			   saw_profile_flag ? LIBSTDCXX_PROFILE : LIBSTDCXX, 1,
+			   CL_DRIVER, &new_decoded_options[j]);
+	  if (LIBSTDCXXABI != NULL)
+	    {
+	      j++;
+	      added_libraries++;
+	      generate_option (OPT_l,
+			       LIBSTDCXXABI, 1,
+			       CL_DRIVER, &new_decoded_options[j]);
+	    }
+	 }
       added_libraries++;
       j++;
       /* Add target-dependent static library, if necessary.  */

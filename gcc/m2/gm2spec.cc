@@ -78,6 +78,10 @@ along with GNU Modula-2; see the file COPYING3.  If not see
 #define LIBSTDCXX_STATIC NULL
 #endif
 
+#ifndef LIBSTDCXXABI
+#define LIBSTDCXXABI NULL
+#endif
+
 #ifndef LIBCXX
 #define LIBCXX "c++"
 #endif
@@ -885,6 +889,11 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
 	  append_option (OPT_l, saw_profile_flag ? LIBSTDCXX_PROFILE
 			 : LIBSTDCXX, 1);
 	  added_libraries++;
+	  if (LIBSTDCXXABI != NULL && library > 1)
+	    {
+	      append_option (OPT_l, LIBSTDCXXABI, 1);
+	      added_libraries++;
+	    }
 	}
       /* Add target-dependent static library, if necessary.  */
       if ((static_link || library > 1) && LIBSTDCXX_STATIC != NULL)

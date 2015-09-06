@@ -89,6 +89,10 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@ENABLE_SYMVERS_DARWIN_TRUE@am__append_1 = -Wl,-rpath,@loader_path/../lib \
+@ENABLE_SYMVERS_DARWIN_TRUE@	-Wl,-reexport_library,$(top_builddir)/libsupc++/.libs/libsupc++.dylib
+
+@ENABLE_SYMVERS_DARWIN_FALSE@am__append_2 = -lm
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/../config/acx.m4 \
@@ -360,7 +364,9 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+SYMVER_ABI_FILE = @SYMVER_ABI_FILE@
 SYMVER_FILE = @SYMVER_FILE@
+SYMVER_LIB_FILE = @SYMVER_LIB_FILE@
 TOPLEVEL_INCLUDES = @TOPLEVEL_INCLUDES@
 USE_NLS = @USE_NLS@
 VERSION = @VERSION@
@@ -435,6 +441,7 @@ mkdir_p = @mkdir_p@
 multi_basedir = @multi_basedir@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
+port_specific_abi_symbol_files = @port_specific_abi_symbol_files@
 port_specific_symbol_files = @port_specific_symbol_files@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -546,9 +553,11 @@ cxx11_sources = \
 # that change, any compatibility sources can be added here.
 @GLIBCXX_HOSTED_FALSE@libstdc___la_SOURCES = 
 @GLIBCXX_HOSTED_TRUE@libstdc___la_SOURCES = $(cxx98_sources) $(cxx11_sources)
+
+# reexport does not need it included as a link.
+#	$(top_builddir)/libsupc++/libsupc++.la 
 libstdc___la_LIBADD = \
 	$(GLIBCXX_LIBS) \
-	$(top_builddir)/libsupc++/libsupc++convenience.la \
 	$(top_builddir)/src/c++98/libc++98convenience.la \
 	$(top_builddir)/src/c++11/libc++11convenience.la \
 	$(top_builddir)/src/c++17/libc++17convenience.la \
@@ -557,6 +566,7 @@ libstdc___la_LIBADD = \
 libstdc___la_DEPENDENCIES = \
 	${version_dep} \
 	$(top_builddir)/libsupc++/libsupc++convenience.la \
+	$(top_builddir)/libsupc++/libsupc++.la \
 	$(top_builddir)/src/c++98/libc++98convenience.la \
 	$(top_builddir)/src/c++11/libc++11convenience.la \
 	$(top_builddir)/src/c++17/libc++17convenience.la \
@@ -565,9 +575,8 @@ libstdc___la_DEPENDENCIES = \
 @ENABLE_DARWIN_AT_RPATH_TRUE@libstdc___darwin_rpath =  \
 @ENABLE_DARWIN_AT_RPATH_TRUE@	-Wc,-nodefaultrpaths \
 @ENABLE_DARWIN_AT_RPATH_TRUE@	-Wl,-rpath,@loader_path
-libstdc___la_LDFLAGS = \
-	-version-info $(libtool_VERSION) ${version_arg} -lm $(libstdc___darwin_rpath)
-
+libstdc___la_LDFLAGS = -version-info $(libtool_VERSION) ${version_arg} \
+	$(libstdc___darwin_rpath) $(am__append_1) $(am__append_2)
 libstdc___la_LINK = $(CXXLINK) $(libstdc___la_LDFLAGS) $(lt_host_flags)
 @GLIBCXX_LDBL_ALT128_COMPAT_FALSE@@GLIBCXX_LDBL_COMPAT_TRUE@LTCXXCOMPILE64 = $(LTCXXCOMPILE)
 
@@ -1072,9 +1081,9 @@ compatibility-condvar.o: compatibility-condvar.cc
 
 # Symbol versioning for shared libraries.
 # See configure.host and configure.ac for port_specific_symbol_files.
-@ENABLE_SYMVERS_TRUE@libstdc++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_FILE) \
+@ENABLE_SYMVERS_TRUE@libstdc++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_LIB_FILE) \
 @ENABLE_SYMVERS_TRUE@		$(port_specific_symbol_files)
-@ENABLE_SYMVERS_TRUE@	cp ${glibcxx_srcdir}/$(SYMVER_FILE) $@.tmp
+@ENABLE_SYMVERS_TRUE@	cp ${glibcxx_srcdir}/$(SYMVER_LIB_FILE) $@.tmp
 @ENABLE_SYMVERS_TRUE@	chmod +w $@.tmp
 @ENABLE_SYMVERS_TRUE@	if test "x$(port_specific_symbol_files)" != x; then \
 @ENABLE_SYMVERS_TRUE@	  if grep '^# Appended to version file.' \

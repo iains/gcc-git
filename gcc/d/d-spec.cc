@@ -37,6 +37,10 @@ along with GCC; see the file COPYING3.  If not see
 #define LIBSTDCXX_PROFILE LIBSTDCXX
 #endif
 
+#ifndef LIBSTDCXXABI
+#define LIBSTDCXXABI NULL
+#endif
+
 #ifndef LIBPHOBOS
 #define LIBPHOBOS "gphobos"
 #endif
@@ -480,7 +484,16 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
 	}
 #endif
       if (saw_libcxx)
-	new_decoded_options[j++] = *saw_libcxx;
+	{
+	  new_decoded_options[j++] = *saw_libcxx;
+	  if (LIBSTDCXXABI != NULL && saw_static_libcxx)
+	    {
+	      generate_option (OPT_l,
+			       LIBSTDCXXABI, 1,
+			       CL_DRIVER, &new_decoded_options[j++]);
+	      added_libraries++;
+	    }
+	}
       else if (need_stdcxx)
 	{
 	  generate_option (OPT_l,
@@ -488,7 +501,14 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
 			    ? LIBSTDCXX_PROFILE
 			    : LIBSTDCXX),
 			   1, CL_DRIVER, &new_decoded_options[j++]);
-	  added_libraries++;
+	  if (LIBSTDCXXABI != NULL && saw_static_libcxx)
+	    {
+	      added_libraries++;
+	      generate_option (OPT_l,
+			       LIBSTDCXXABI, 1,
+			       CL_DRIVER, &new_decoded_options[j++]);
+	      added_libraries++;
+	    }
 	}
 #ifdef HAVE_LD_STATIC_DYNAMIC
       if (saw_static_libcxx && !static_link)
