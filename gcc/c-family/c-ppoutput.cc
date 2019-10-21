@@ -163,6 +163,7 @@ init_pp_output (FILE *out_stream)
   cb->has_attribute = c_common_has_attribute;
   cb->has_builtin = c_common_has_builtin;
   cb->has_feature = c_common_has_feature;
+  cb->has_extension = c_common_has_extension;
   cb->get_source_date_epoch = cb_get_source_date_epoch;
   cb->remap_filename = remap_macro_filename;
 

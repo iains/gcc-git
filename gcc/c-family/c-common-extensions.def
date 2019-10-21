@@ -1,0 +1,111 @@
+/* GCC has_extension definitions.
+
+ Copyright (C) 2019 Free Software Foundation, Inc.
+
+ This file is part of GCC.
+
+ GCC is free software; you can redistribute it and/or modify it under
+ the terms of the GNU General Public License as published by the Free
+ Software Foundation; either version 3, or (at your option) any later
+ version.
+
+ GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+ WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+
+#if ! defined(GCC_EXTENSION)
+#  error define GCC_EXTENSION before including this file.
+#  define GCC_EXTENSION(_Identifier, _Lang, _LangVersion, _Predicate, _Val)
+#endif
+
+/* The default response, if a extension is not found in this table, is 0
+   therefore, it is not necessary to enter unsupported extension except as
+   a mechanism for documenting that they are unsupported.  */ 
+
+/* Each possible extension has the following fields:
+ _Identifier :
+  The extension name - it is important that this matches the name used by
+  other compilers if it is to be used in conditional compilation.
+ 
+  _Lang:
+   The (c-family) languages to which this extension applies.  Convenience macros
+   are provided below.
+ 
+  _LangVersion:
+   The language version for _Lang to which this extension applies (unused so
+   far).
+ 
+  _Predicate:
+   A condition to be applied in addition to the language tests (e.g. that some
+   command line flag is set).
+ 
+  _Val:
+   The value that will be returned on a match for language, version and
+   predicate.  Zero will be returned in the case of no match, and should be
+   used to indicate that the extension is not available.
+*/
+
+#define HFE_LANG_C      (1 << (int) clk_c)
+#define HFE_LANG_OBJC   (1 << (int) clk_objc)
+#define HFE_LANG_CXX    (1 << (int) clk_cxx)
+#define HFE_LANG_OBJCXX (1 << (int) clk_objcxx)
+#define HFE_LANG_ALL    (HFE_LANG_C|HFE_LANG_OBJC|HFE_LANG_CXX|HFE_LANG_OBJCXX)
+#define HFE_LANG_NONE   0
+
+GCC_EXTENSION (test_extension, HFE_LANG_ALL, 0, true, 1)
+
+/* C11 features supported by other languages as extensions.  */
+
+GCC_EXTENSION (c_alignas, HFE_LANG_ALL, 0, true, 1)
+GCC_EXTENSION (c_alignof, HFE_LANG_ALL, 0, true, 1)
+GCC_EXTENSION (c_atomic, HFE_LANG_ALL, 0, false, 0)
+GCC_EXTENSION (c_generic_selections, HFE_LANG_OBJC, 0, true, 1)
+GCC_EXTENSION (c_static_assert, HFE_LANG_OBJC, 0, true, 1)
+GCC_EXTENSION (c_thread_local, HFE_LANG_ALL, 0, true, 1)
+
+/* C++11 features supported by other languages as extensions.
+   As a default, we expect Objective-C++ to support the same set as C++.  */
+GCC_EXTENSION (cxx_atomic, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_deleted_functions, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_explicit_conversions, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_fixed_enum, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_inline_namespaces, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_local_type_template_args, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_nonstatic_member_init, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_override_control, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_range_for, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_reference_qualified_functions, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_rvalue_references, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_strong_enums, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_variadic_templates, HFE_LANG_OBJCXX, 0, true, 1)
+
+/* C++14 features supported by other languages as extensions. */
+GCC_EXTENSION (cxx_binary_literals, HFE_LANG_ALL, 0, true, 1)
+GCC_EXTENSION (cxx_init_captures, HFE_LANG_OBJCXX, 0, true, 1)
+GCC_EXTENSION (cxx_variable_templates, HFE_LANG_OBJCXX, 0, true, 1)
+
+/* Objective-C-specific Extensions.  */
+
+GCC_EXTENSION (objc_c_static_assert, HFE_LANG_OBJC, 0, true, 1)
+
+/* Tests for attribute use as extensions.  */
+
+GCC_EXTENSION (deprecated, HFE_LANG_OBJC, 0, true, 1)
+GCC_EXTENSION (attribute_deprecated_with_message, HFE_LANG_OBJC, 0, true, 1)
+GCC_EXTENSION (attribute_ext_vector_type, HFE_LANG_OBJC, 0, true, 0)
+GCC_EXTENSION (attribute_overloadable, HFE_LANG_OBJC, 0, true, 0)
+
+/* Miscellaneous extensions.  */
+
+GCC_EXTENSION (gnu_asm, HFE_LANG_ALL, 0, true, 1)
+GCC_EXTENSION (overloadable_unmarked, HFE_LANG_ALL, 0, false, 0)
+GCC_EXTENSION (pragma_clang_attribute_namespaces, HFE_LANG_ALL, 0, false, 0)
+GCC_EXTENSION (pragma_clang_attribute_external_declaration,
+	       HFE_LANG_ALL, 0, false, 0)
+
+#undef GCC_EXTENSION

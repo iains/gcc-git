@@ -334,7 +334,8 @@ fun_like_macro (cpp_hashnode *node)
 	    || node->value.builtin == BT_HAS_BUILTIN
 	    || node->value.builtin == BT_HAS_INCLUDE
 	    || node->value.builtin == BT_HAS_INCLUDE_NEXT
-	    || node->value.builtin == BT_HAS_FEATURE);
+	    || node->value.builtin == BT_HAS_FEATURE
+	    || node->value.builtin == BT_HAS_EXTENSION);
   return node->value.macro->fun_like;
 }
 

@@ -83,7 +83,8 @@ init_c_lex (void)
   cb->read_pch = c_common_read_pch;
   cb->has_attribute = c_common_has_attribute;
   cb->has_builtin = c_common_has_builtin;
-  cb->has_builtin = c_common_has_feature;
+  cb->has_feature = c_common_has_feature;
+  cb->has_extension = c_common_has_extension;
   cb->get_source_date_epoch = cb_get_source_date_epoch;
   cb->get_suggestion = cb_get_suggestion;
   cb->remap_filename = remap_macro_filename;
@@ -575,6 +576,87 @@ c_common_has_feature (cpp_reader *pfile)
   return 0;
 }
 
+/* Callback and handlers for has_extension.  */
+
+#undef GCC_EXTENSION
+#define GCC_EXTENSION(_id, _lang, _version, _pred, _val)  HE##_id,
+typedef enum e_has_extension {
+#include "c-common-extensions.def"
+ HE__MAX
+} common_has_extension_e;
+
+typedef struct _has_extension_x {
+  const char *extension_name;
+  common_has_extension_e extension_e;
+} has_extension_s;
+
+#undef GCC_EXTENSION
+#define GCC_EXTENSION(_id, _lang, _version, _pred, _val) { #_id, HE##_id},
+static has_extension_s extensions[] =
+{
+#include "c-common-extensions.def"
+  {NULL, HE__MAX}
+};
+
+static hash_map<tree, common_has_extension_e> *extension_map = NULL;
+
+static void
+init_c_common_extensions ()
+{
+  extension_map = new hash_map<tree, common_has_extension_e>;
+  gcc_checking_assert (extension_map && extension_map->is_empty());
+  unsigned idx=0;
+  while (extensions[idx].extension_name != NULL)
+    {
+      tree tid = get_identifier (extensions[idx].extension_name);
+      bool dup = extension_map->put (tid, extensions[idx].extension_e);
+      /* A duplicate feature identifier would be ambiguous.  */
+      gcc_checking_assert (!dup);
+      idx++;
+    }
+}
+
+int
+c_common_has_extension (cpp_reader *pfile)
+{
+  const char *name = c_common_get_feature_test_name (pfile, "__has_extension");
+  if (!name)
+    return 0;
+
+  tree fid = get_identifier (name);
+
+  /* Create the lookup map lazily, on the first use.  */
+  if (!extension_map)
+    init_c_common_extensions ();
+
+  common_has_extension_e *fe = extension_map->get (fid);
+
+  unsigned hfe_lang = 1 << (int) c_language;
+
+  if (!fe)
+    {
+#ifdef TARGET_CPP_HAS_EXTENSION
+      int res = TARGET_CPP_HAS_EXTENSION (fid, hfe_lang, 0);
+      if (res)
+	return res;
+      else
+#endif
+	/* try something lang-specific.  */
+	return lang_has_extension (fid, hfe_lang, 0);
+    }
+
+#undef GCC_EXTENSION
+#define GCC_EXTENSION(_id, _lang, _version, _pred, _val)  \
+      case HE##_id:\
+	return ((hfe_lang & _lang) && (_pred)) ? _val : 0;
+  switch (*fe)
+    {
+#include "c-common-extensions.def"
+      default: break;
+    }
+
+  return 0;
+}
 
 
 /* Read a token and return its type.  Fill *VALUE with its value, if

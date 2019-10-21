@@ -681,6 +681,10 @@ _cpp_builtin_macro_text (cpp_reader *pfile, cpp_hashnode *node,
     case BT_HAS_FEATURE:
       number = pfile->cb.has_feature (pfile);
       break;
+
+    case BT_HAS_EXTENSION:
+      number = pfile->cb.has_extension (pfile);
+      break;
     }
 
   if (result == NULL)
