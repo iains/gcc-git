@@ -838,6 +838,7 @@ extern const char *c_addr_space_name (addr_space_t as);
 extern tree identifier_global_value (tree);
 extern tree identifier_global_tag (tree);
 extern bool names_builtin_p (const char *);
+extern int lang_has_feature (const tree, unsigned, unsigned);
 extern tree c_linkage_bindings (tree);
 extern void record_builtin_type (enum rid, const char *, tree);
 extern void start_fname_decls (void);
@@ -1121,6 +1122,7 @@ extern bool c_cpp_diagnostic (cpp_reader *, enum cpp_diagnostic_level,
      ATTRIBUTE_GCC_DIAG(5,0);
 extern int c_common_has_attribute (cpp_reader *, bool);
 extern int c_common_has_builtin (cpp_reader *);
+extern int c_common_has_feature (cpp_reader *);
 
 extern bool parse_optimize_options (tree, bool);
 

@@ -677,6 +677,10 @@ _cpp_builtin_macro_text (cpp_reader *pfile, cpp_hashnode *node,
       number = builtin_has_include (pfile, node,
 				    node->value.builtin == BT_HAS_INCLUDE_NEXT);
       break;
+
+    case BT_HAS_FEATURE:
+      number = pfile->cb.has_feature (pfile);
+      break;
     }
 
   if (result == NULL)

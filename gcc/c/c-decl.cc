@@ -11216,6 +11216,19 @@ names_builtin_p (const char *name)
   return false;
 }
 
+/* Returns a value if ID refers to a feature supported by the current LANG
+   which is version VERS, target and compilation options.  The value retured
+   should be 0 if the feature is not supported and non-zero (with potentially
+   meaningful values other than 1).  */
+
+int
+lang_has_feature (const tree id ATTRIBUTE_UNUSED,
+		  unsigned lang ATTRIBUTE_UNUSED,
+		  unsigned vers ATTRIBUTE_UNUSED)
+{
+  return 0;
+}
+
 /* In C, the only C-linkage public declaration is at file scope.  */
 
 tree

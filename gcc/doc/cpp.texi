@@ -3198,6 +3198,7 @@ directive}: @samp{#if}, @samp{#ifdef} or @samp{#ifndef}.
 * @code{__has_cpp_attribute}::
 * @code{__has_c_attribute}::
 * @code{__has_builtin}::
+* @code{__has_feature}::
 * @code{__has_include}::
 @end menu
 
@@ -3557,6 +3558,33 @@ the operator is as follows:
 #endif
 #ifndef builtin_object_size
 #  define builtin_object_size(ptr)   ((size_t)-1)
+#endif
+@end smallexample
+
+@node @code{__has_feature}
+@subsection @code{__has_feature}
+@cindex @code{__has_feature}
+
+The special operator @code{__has_feature (@var{operand})} may be used in
+constant integer contexts and in preprocessor @samp{#if} and @samp{#elif}
+expressions to test whether the symbol named by its @var{operand} is
+recognized as a feature supported by GCC for the current language,
+conformance mode, target and options.  It evaluates to a constant integer
+with a nonzero value if the argument represents a feature valid for these
+conditions, and to zero otherwise.
+The operator may also be used in preprocessor @samp{#if} and @samp{#elif}
+expressions.  The @code{__has_feature} operator by itself, without any
+@var{operand} or parentheses, acts as a predefined macro so that support
+for it can be tested in portable code.  Thus, the recommended use of
+the operator is as follows:
+
+@smallexample
+#if defined (__has_feature)
+#  if __has_feature (some_feature)
+... code using some_feature
+#  endif
+#else
+... code using an alternate scheme
 #endif
 @end smallexample
 

@@ -30,6 +30,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "flags.h"
 #include "file-prefix-map.h" /* remap_macro_filename()  */
 #include "langhooks.h"
+#include "hash-map.h"
 #include "attribs.h"
 
 /* We may keep statistics about how long which files took to compile.  */
@@ -82,6 +83,7 @@ init_c_lex (void)
   cb->read_pch = c_common_read_pch;
   cb->has_attribute = c_common_has_attribute;
   cb->has_builtin = c_common_has_builtin;
+  cb->has_builtin = c_common_has_feature;
   cb->get_source_date_epoch = cb_get_source_date_epoch;
   cb->get_suggestion = cb_get_suggestion;
   cb->remap_filename = remap_macro_filename;
@@ -429,17 +431,17 @@ c_common_has_attribute (cpp_reader *pfile, bool std_syntax)
   return result;
 }
 
-/* Callback for has_builtin.  */
+/* Shared parser for has_builtin, has_feature, has_extension.  */
 
-int
-c_common_has_builtin (cpp_reader *pfile)
+static const char *
+c_common_get_feature_test_name (cpp_reader *pfile, const char *feature_type)
 {
   const cpp_token *token = get_token_no_padding (pfile);
   if (token->type != CPP_OPEN_PAREN)
     {
       cpp_error (pfile, CPP_DL_ERROR,
-		 "missing '(' after \"__has_builtin\"");
-      return 0;
+		 "missing '(' after \"%s\"", feature_type);
+      return NULL;
     }
 
   const char *name = "";
@@ -458,9 +460,9 @@ c_common_has_builtin (cpp_reader *pfile)
   else
     {
       cpp_error (pfile, CPP_DL_ERROR,
-		 "macro \"__has_builtin\" requires an identifier");
+		 "macro \"%s\" requires an identifier", feature_type);
       if (token->type == CPP_CLOSE_PAREN)
-	return 0;
+	return NULL;
     }
 
   /* Consume tokens up to the closing parenthesis, including any nested
@@ -477,8 +479,102 @@ c_common_has_builtin (cpp_reader *pfile)
 	break;
     }
 
+  return name;
+}
+
+/* Callback for has_builtin.  */
+
+int
+c_common_has_builtin (cpp_reader *pfile)
+{
+  const char *name = c_common_get_feature_test_name (pfile, "__has_builtin");
+  if (!name)
+    return 0;
   return names_builtin_p (name);
 }
+
+/* Callback and handlers for has_feature.  */
+
+#undef GCC_FEATURE
+#define GCC_FEATURE(_id, _lang, _version, _pred, _val)  HF##_id,
+typedef enum e_has_feature {
+#include "c-common-features.def"
+ HF__MAX
+} common_has_feature_e;
+
+typedef struct _has_feature_x {
+  const char *feat_name;
+  common_has_feature_e feat_e;
+} _has_feature_s;
+
+#undef GCC_FEATURE
+#define GCC_FEATURE(_id, _lang, _version, _pred, _val) { #_id, HF##_id},
+static _has_feature_s features[] =
+{
+#include "c-common-features.def"
+  {NULL, HF__MAX}
+};
+
+static hash_map<tree, common_has_feature_e> *feature_map = NULL;
+
+static void
+init_c_common_features ()
+{
+  feature_map = new hash_map<tree, common_has_feature_e>;
+  gcc_checking_assert (feature_map && feature_map->is_empty());
+  unsigned idx=0;
+  while (features[idx].feat_name != NULL)
+    {
+      tree tid = get_identifier (features[idx].feat_name);
+      bool dup = feature_map->put (tid, features[idx].feat_e);
+      /* A duplicate feature identifier would be ambiguous.  */
+      gcc_checking_assert (!dup);
+      idx++;
+    }
+}
+
+int
+c_common_has_feature (cpp_reader *pfile)
+{
+  const char *name = c_common_get_feature_test_name (pfile, "__has_feature");
+  if (!name)
+    return 0;
+
+  tree fid = get_identifier (name);
+
+  /* Create the lookup map lazily, on the first use.  */
+  if (!feature_map)
+    init_c_common_features ();
+
+  common_has_feature_e *fe = feature_map->get (fid);
+
+  unsigned hfe_lang = 1 << (int) c_language;
+
+  if (!fe)
+    {
+#ifdef TARGET_CPP_HAS_FEATURE
+      int res = TARGET_CPP_HAS_FEATURE (fid, hfe_lang, 0);
+      if (res)
+	return res;
+      else
+#endif
+	/* try something lang-specific.  */
+	return lang_has_feature (fid, hfe_lang, 0);
+    }
+
+#undef GCC_FEATURE
+#define GCC_FEATURE(_id, _lang, _version, _pred, _val)  \
+      case HF##_id:\
+	return ((hfe_lang & _lang) && (_pred)) ? _val : 0;
+  switch (*fe)
+    {
+#include "c-common-features.def"
+      default: break;
+    }
+
+  return 0;
+}
+
 
 
 /* Read a token and return its type.  Fill *VALUE with its value, if

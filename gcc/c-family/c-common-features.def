@@ -1,0 +1,261 @@
+/* GCC has_feature definitions.
+
+   Copyright (C) 2019 Free Software Foundation, Inc.
+
+This file is part of GCC.
+
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 3, or (at your option) any later
+version.
+
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License
+along with GCC; see the file COPYING3.  If not see
+<http://www.gnu.org/licenses/>.  */
+
+#if ! defined(GCC_FEATURE)
+#  error define GCC_FEATURE before including this file.
+#  define GCC_FEATURE(_Identifier, _Lang, _LangVersion, _Predicate, _Val)
+#endif
+
+/* The default response, if a feature is not found in this table, is 0;
+   therefore, it is not necessary to enter unsupported features except as
+   a mechanism for documenting that they are unsupported.
+
+   Please keep features alphabetised within their relevant section (and
+   add a new sections where that clarifies purpose).  */ 
+
+/* Each possible feature has the following fields:
+ _Identifier :
+  The feature name - it is important that this matches the name used by
+  other compilers if it is to be used in conditional compilation.
+ 
+  _Lang:
+   The (c-family) languages to which this feature applies.  Convenience macros
+   are provided below.
+ 
+  _LangVersion:
+   The language version for _Lang to which this feature applies (unused so
+   far).
+ 
+  _Predicate:
+   A condition to be applied in addition to the language tests (e.g. that some
+   command line flag is set).
+ 
+  _Val:
+   The value that will be returned on a match for language, version and
+   predicate.  Zero will be returned in the case of no match, and should be
+   used to indicate that the extension is not available.
+*/
+
+#define HFE_LANG_C      (1 << (int) clk_c)
+#define HFE_LANG_OBJC   (1 << (int) clk_objc)
+#define HFE_LANG_CXX    (1 << (int) clk_cxx)
+#define HFE_LANG_OBJCXX (1 << (int) clk_objcxx)
+#define HFE_LANG_ALL    (HFE_LANG_C|HFE_LANG_OBJC|HFE_LANG_CXX|HFE_LANG_OBJCXX)
+#define HFE_LANG_NONE   0
+
+GCC_FEATURE (modules, HFE_LANG_ALL, 0, true, 0)
+GCC_FEATURE (test_feature, HFE_LANG_ALL, 0, true, 1)
+
+/* C Features.  */
+
+/* C11 features.  */
+GCC_FEATURE (c_alignas, (HFE_LANG_C|HFE_LANG_OBJC), 0, true, 1)
+GCC_FEATURE (c_alignof, (HFE_LANG_C|HFE_LANG_OBJC), 0, true, 1)
+/* Not implemented for Objective-C.  */
+GCC_FEATURE (c_atomic, HFE_LANG_C, 0, true, 1)
+GCC_FEATURE (c_generic_selections, (HFE_LANG_C|HFE_LANG_OBJC), 0, true, 1)
+GCC_FEATURE (c_static_assert, (HFE_LANG_C|HFE_LANG_OBJC), 0, true, 1)
+// ??? if the target supports it.
+GCC_FEATURE (c_thread_local, (HFE_LANG_C|HFE_LANG_OBJC), 0, true, 1)
+
+/* C++ Features.  */
+
+GCC_FEATURE (cxx_exceptions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0,
+	    flag_exceptions, 1)
+GCC_FEATURE (cxx_rtti,(HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, flag_rtti, 1)
+
+/* C++11 features.  */
+GCC_FEATURE (cxx_access_control_sfinae, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_alias_templates, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_alignas, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_alignof, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_atomic, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_attributes, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_auto_type, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_constexpr, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_constexpr_string_builtins, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_decltype, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_decltype_incomplete_return_types, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_default_function_template_args, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_defaulted_functions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_delegating_constructors, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_deleted_functions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_explicit_conversions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_generalized_initializers, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_implicit_moves, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_inheriting_constructors, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_inline_namespaces, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_lambdas, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_local_type_template_args, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_nonstatic_member_init, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_noexcept, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_nullptr, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_override_control, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_range_for, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_raw_string_literals, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_reference_qualified_functions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_rvalue_references, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_strong_enums, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_static_assert, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_thread_local, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_trailing_return, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_unicode_literals, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_unrestricted_unions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_user_literals, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_variadic_templates, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+
+/* C++14 features. */
+GCC_FEATURE (cxx_aggregate_nsdmi, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_binary_literals, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_contextual_conversions, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_decltype_auto, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_generic_lambdas, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_init_captures, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_relaxed_constexpr, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_return_type_deduction, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (cxx_variable_templates, (HFE_LANG_CXX|HFE_LANG_OBJCXX), 0, false, 0)
+
+/* Objective-C-specific Features/Attributes.  */
+
+GCC_FEATURE (arc_cf_code_audited,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+
+GCC_FEATURE (attribute_diagnose_if_objc,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (attribute_ns_consumed,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (attribute_ns_consumes_self,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (attribute_ns_returns_not_retained,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (attribute_ns_returns_retained,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+
+GCC_FEATURE (attribute_objc_ivar_unused,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (attribute_objc_method_family,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+
+GCC_FEATURE (objc_arr,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_array_literals,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_arc,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_arc_fields,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_arc_weak,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_bool,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, true, 1)
+GCC_FEATURE (objc_bridge_id,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_bridge_id_on_typedefs,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_boxed_expressions,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_boxed_nsvalue_expressions,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_class_property,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_default_synthesize_properties,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, true, 1)
+GCC_FEATURE (objc_dictionary_literals,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_fixed_enum,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_generics,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_generics_variance,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_instancetype,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, true, 1)
+GCC_FEATURE (objc_kindof,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_modules,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_nonfragile_abi, (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0,
+	     (flag_next_runtime && flag_objc_abi >= 2), 1)
+GCC_FEATURE (objc_property_explicit_atomic,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, true, 1)
+GCC_FEATURE (objc_protocol_qualifier_mangling,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_subscripting,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (objc_weak_class,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (ownership_holds,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (ownership_returns,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+GCC_FEATURE (ownership_takes,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+// C11
+GCC_FEATURE (objc_c_static_assert,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+// CXX11
+GCC_FEATURE (objc_cxx_static_assert,
+	     (HFE_LANG_OBJC|HFE_LANG_OBJCXX), 0, false, 0)
+
+/* Sanitizer Features.  */
+
+GCC_FEATURE (address_sanitizer, HFE_LANG_ALL, 0,
+	     (flag_sanitize & (SANITIZE_USER_ADDRESS|SANITIZE_KERNEL_ADDRESS)),
+	     1)
+GCC_FEATURE (dataflow_sanitizer, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (hwaddress_sanitizer, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (leak_sanitizer, HFE_LANG_ALL, 0,
+	     (flag_sanitize & SANITIZE_LEAK), 1)
+GCC_FEATURE (memory_sanitizer, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (memtag_sanitizer, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (thread_sanitizer, HFE_LANG_ALL, 0,
+	     (flag_sanitize & SANITIZE_THREAD), 1)
+GCC_FEATURE (undefined_behavior_sanitizer, HFE_LANG_ALL, 0,
+	     (flag_sanitize & SANITIZE_UNDEFINED), 1)
+
+/* Features that test for usability of attributes.  */
+
+GCC_FEATURE (c_thread_safety_attributes, HFE_LANG_ALL, 0, false, 0)
+
+GCC_FEATURE (attribute_analyzer_noreturn, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_deprecated_with_message, HFE_LANG_ALL, 0, true, 1)
+GCC_FEATURE (attribute_deprecated_with_replacement, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_ext_vector_type, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_overloadable, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_unavailable_with_message, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_unused_on_fields, HFE_LANG_ALL, 0, false, 0)
+
+/* CoreFoundation Attributes.  */
+GCC_FEATURE (attribute_cf_consumed, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_cf_returns_not_retained, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_cf_returns_on_parameters, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_cf_returns_retained, HFE_LANG_ALL, 0, false, 0)
+
+/* Features that are really Extensions.  */
+
+GCC_FEATURE (assume_nonnull, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (blocks, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (enumerator_attributes, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (nullability, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (nullability_on_arrays, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (scudo, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (xray_instrument, HFE_LANG_ALL, 0, false, 0)
+
+#undef GCC_FEATURE
