@@ -1,0 +1,87 @@
+/* Darwin-specific has_feature definitions.
+
+ Copyright (C) 2019 Free Software Foundation, Inc.
+
+ This file is part of GCC.
+
+ GCC is free software; you can redistribute it and/or modify it under
+ the terms of the GNU General Public License as published by the Free
+ Software Foundation; either version 3, or (at your option) any later
+ version.
+
+ GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+ WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with GCC; see the file COPYING3.  If not see
+ <http://www.gnu.org/licenses/>.  */
+
+#if ! defined(GCC_FEATURE)
+#  error define GCC_FEATURE before including this file.
+#  define GCC_FEATURE(_Identifier, _Lang, _LangVersion, _Predicate, _Val)
+#endif
+
+/* The default response, if a feature is not found in this table, is 0;
+   therefore, it is not necessary to enter unsupported features except as
+   a mechanism for documenting that they are unsupported.
+
+   Please keep features alphabetised within their relevant section (and
+   add a new sections where that clarifies purpose).  */ 
+
+/* Each possible feature has the following fields:
+ _Identifier :
+  The feature name - it is important that this matches the name used by
+  other compilers if it is to be used in conditional compilation.
+ 
+  _Lang:
+   The (c-family) languages to which this feature applies.  Convenience macros
+   are provided below.
+ 
+  _LangVersion:
+   The language version for _Lang to which this feature applies (unused so
+   far).
+ 
+  _Predicate:
+   A condition to be applied in addition to the language tests (e.g. that some
+   command line flag is set).
+ 
+  _Val:
+   The value that will be returned on a match for language, version and
+   predicate.  Zero will be returned in the case of no match, and should be
+   used to indicate that the extension is not available.
+*/
+
+#define HFE_LANG_C      (1 << (int) clk_c)
+#define HFE_LANG_OBJC   (1 << (int) clk_objc)
+#define HFE_LANG_CXX    (1 << (int) clk_cxx)
+#define HFE_LANG_OBJCXX (1 << (int) clk_objcxx)
+#define HFE_LANG_ALL    (HFE_LANG_C|HFE_LANG_OBJC|HFE_LANG_CXX|HFE_LANG_OBJCXX)
+#define HFE_LANG_NONE   0
+
+/* misc */
+GCC_FEATURE (ptrauth_calls, HFE_LANG_ALL, 0, false, 0)
+
+/* C Features.  */
+/* C++ Features.  */
+/* Objective-C-specific Features.  */
+
+GCC_FEATURE (arc_cf_code_audited, HFE_LANG_ALL, 0, false, 0)
+
+/* Sanitizer Features.  */
+/* Features that are really attributes.  */
+
+/* Availability group.  */
+GCC_FEATURE (attribute_availability, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_app_extension, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_in_templates, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_swift, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_tvos, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_watchos, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_with_message, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_with_replacement, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_with_strict, HFE_LANG_ALL, 0, false, 0)
+GCC_FEATURE (attribute_availability_with_version_underscores, HFE_LANG_ALL, 0, false, 0)
+
+#undef GCC_FEATURE

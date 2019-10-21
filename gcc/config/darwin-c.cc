@@ -32,6 +32,8 @@ along with GCC; see the file COPYING3.  If not see
 #include "c-family/c-format.h"
 #include "cppdefault.h"
 #include "prefix.h"
+#include "stringpool.h" /* for get_identifier() */
+#include "hash-map.h"
 #include "../../libcpp/internal.h"
 
 /* Pragmas.  */
@@ -865,6 +867,75 @@ darwin_objc_declare_class_definition (const char *name)
 
   snprintf (buf, len, "%s = 0", xname);
   symtab->finalize_toplevel_asm (build_string (strlen (buf), buf));
+}
+
+/* Callback and handlers for has_feature.  */
+
+#undef GCC_FEATURE
+#define GCC_FEATURE(_id, _lang, _version, _pred, _val)  HF##_id,
+typedef enum darwin_feature_e {
+#include "darwin-features.def"
+ HF__MAX
+} darwin_feature_e;
+
+typedef struct darwin_feature_x {
+  const char *feat_name;
+  darwin_feature_e feat_e;
+} darwin_feature_s;
+
+#undef GCC_FEATURE
+#define GCC_FEATURE(_id, _lang, _version, _pred, _val) { #_id, HF##_id},
+static darwin_feature_s features[] =
+{
+#include "darwin-features.def"
+  {NULL, HF__MAX}
+};
+
+static hash_map<tree, darwin_feature_e> *darwin_feat_map = NULL;
+
+static void
+darwin_init_features ()
+{
+  darwin_feat_map = new hash_map<tree, darwin_feature_e>;
+  unsigned idx=0;
+  while (features[idx].feat_name != NULL)
+    {
+      tree tid = get_identifier (features[idx].feat_name);
+      bool dup = darwin_feat_map->put (tid, features[idx].feat_e);
+      /* A duplicate feature identifier would be ambiguous.  */
+      gcc_checking_assert (!dup);
+      idx++;
+    }
+}
+
+/* Returns a value if ID refers to a feature supported by the current LANG
+   which is version VERS, target and compilation options.  The value retured
+   should be 0 if the feature is not supported and non-zero (with potentially
+   meaningful values other than 1).  */
+
+int
+darwin_has_feature (const tree fid, unsigned hfe_lang,
+		    unsigned vers ATTRIBUTE_UNUSED)
+{
+  /* Create the lookup map lazily, on the first use.  */
+  if (!darwin_feat_map)
+    darwin_init_features ();
+  gcc_checking_assert (darwin_feat_map);
+
+  enum darwin_feature_e *fe = darwin_feat_map->get (fid);
+
+  if (!fe)
+    return 0;
+
+#undef GCC_FEATURE
+#define GCC_FEATURE(_id, _lang, _version, _pred, _val)  \
+      case HF##_id:\
+	return ((hfe_lang & _lang) && (_pred)) ? _val : 0;
+  switch (*fe)
+    {
+#include "darwin-features.def"
+      default: return 0;
+    }
 }
 
 #undef  TARGET_HANDLE_C_OPTION

@@ -912,6 +912,9 @@ extern GTY(()) section * darwin_sections[NUM_DARWIN_SECTIONS];
   { "weak_import", 0, 0, true, false, false, false,			     \
     darwin_handle_weak_import_attribute, NULL }
 
+extern int darwin_has_feature (const tree, unsigned, unsigned);
+#define TARGET_CPP_HAS_FEATURE darwin_has_feature
+
 /* Make local constant labels linker-visible, so that if one follows a
    weak_global constant, ld64 will be able to separate the atoms.  */
 #undef ASM_GENERATE_INTERNAL_LABEL
