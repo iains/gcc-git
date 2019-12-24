@@ -6721,6 +6721,9 @@ grokdeclarator (const struct c_declarator *declarator,
 		bool size_int_const = (TREE_CODE (size) == INTEGER_CST
 				       && !TREE_OVERFLOW (size));
 		bool this_size_varies = false;
+		bool size_const_var = (TREE_CODE (size) == VAR_DECL
+				       && TREE_READONLY (size)
+				       && !TREE_THIS_VOLATILE (size));
 
 		/* Strip NON_LVALUE_EXPRs since we aren't using as an
 		   lvalue.  */
@@ -6751,6 +6754,13 @@ grokdeclarator (const struct c_declarator *declarator,
 		  }
 
 		size = c_fully_fold (size, false, &size_maybe_const);
+		if (size_const_var && size_maybe_const)
+		  {
+		    size = DECL_INITIAL (size);
+		    size = c_fully_fold (size, false, &size_maybe_const);
+		    size_int_const = (TREE_CODE (size) == INTEGER_CST
+				      && !TREE_OVERFLOW (size));
+		  }
 
 		if (pedantic && size_maybe_const && integer_zerop (size))
 		  {
@@ -6792,6 +6802,9 @@ grokdeclarator (const struct c_declarator *declarator,
 			  this_size_varies = size_varies = true;
 			warn_variable_length_array (name, size);
 		      }
+		    if (size_const_var)
+		      pedwarn (input_location, OPT_Wpedantic,
+			       "variably modified %qE at file scope", name);
 		  }
 		else if ((decl_context == NORMAL || decl_context == FIELD)
 			 && current_scope == file_scope)
