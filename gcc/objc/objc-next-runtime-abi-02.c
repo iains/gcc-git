@@ -1294,8 +1294,6 @@ build_v2_protocollist_ref_decl (tree protocol)
 	    IDENTIFIER_POINTER (protocol_ident));
   /* TODO: other compiler versions make these hidden & weak.  */
   decl = create_global_decl (objc_protocol_type, buf);
-  /* Let optimizer know that this decl is not removable.  */
-  DECL_PRESERVE_P (decl) = 1;
   OBJCMETA (decl, objc_meta, meta_proto_ref);
   return decl;
 }
@@ -2118,9 +2116,6 @@ build_v2_classrefs_table (void)
           expr = create_extern_decl (objc_v2_class_template, name);
 	  expr = convert (objc_class_type, build_fold_addr_expr (expr));
 	}
-      /* The runtime wants this, even if it appears unused, so we must force the
-	 output.
-      DECL_PRESERVE_P (decl) = 1; */
       finish_var_decl (decl, expr);
     }
 }
@@ -2398,7 +2393,6 @@ generate_v2_protocol_list (tree i_or_p, tree klass_ctxt)
 			      buf);
   /* ObjC2 puts all these in the base section.  */
   OBJCMETA (refs_decl, objc_meta, meta_base);
-  DECL_PRESERVE_P (refs_decl) = 1;
   finish_var_decl (refs_decl,
 		   objc_build_constructor (TREE_TYPE (refs_decl),initlist));
   return refs_decl;
@@ -2833,10 +2827,7 @@ generate_v2_protocols (void)
     {
       /* Make sure we get the Protocol class linked in - reference
 	 it...  */
-      p = objc_v2_get_class_reference (get_identifier (PROTOCOL_OBJECT_CLASS_NAME));
-      /* ... but since we don't specifically use the reference...  we
-         need to force it.  */
-      DECL_PRESERVE_P (p) = 1;
+      objc_v2_get_class_reference (get_identifier (PROTOCOL_OBJECT_CLASS_NAME));
     }
 }
 
@@ -2920,7 +2911,7 @@ static void
 generate_v2_category (struct imp_entry *impent)
 {
   tree initlist, cat_name_expr, class_name_expr;
-  tree protocol_decl, category, props, t;
+  tree protocol_decl, category, props;
   tree inst_methods = NULL_TREE, class_methods = NULL_TREE;
   tree cat = impent->imp_context;
   tree cat_decl = impent->class_decl;
@@ -2928,13 +2919,6 @@ generate_v2_category (struct imp_entry *impent)
   char buf[BUFSIZE];
 
   loc = DECL_SOURCE_LOCATION (cat_decl);
-
-  /* ??? not sure this is really necessary, the following references should
-     force appropriate linkage linkage...
-     -- but ... ensure a reference to the class...  */
-  t = objc_v2_get_class_reference (CLASS_NAME (cat));
-  /* ... which we ignore so force it out.. */
-  DECL_PRESERVE_P (t) = 1;
 
   snprintf (buf, BUFSIZE, "OBJC_CLASS_$_%s", IDENTIFIER_POINTER (CLASS_NAME (cat)));
   class_name_expr = create_extern_decl (objc_v2_class_template, buf);
