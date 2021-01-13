@@ -33,6 +33,116 @@ along with GCC; see the file COPYING3.  If not see
 #include "gcc-rich-location.h"
 #include "hash-map.h"
 
+/* ================= Debug. ================= */
+
+#include "cxx-pretty-print.h"
+
+extern void debug_tree (tree);
+
+void
+coro_dump_frame (tree fr)
+{
+  gcc_checking_assert (TREE_CODE (fr) == RECORD_TYPE);
+  if (DECL_NAME (TYPE_NAME (fr)))
+    fprintf (stderr, "%s {\n", IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (fr))));
+  else
+    fprintf (stderr, "huh {\n");
+
+  tree tmp = TYPE_FIELDS (fr);
+  while (tmp)
+    {
+      /* Avoid to print recursively the structure.  */
+      /* FIXME : Not implemented correctly...,
+	 what about the case when we have a cycle in the contain graph? ...
+	 Maybe this could be solved by looking at the scope in which the
+	 structure was declared.  */
+      if (TREE_TYPE (tmp) != fr
+	  && (TREE_CODE (TREE_TYPE (tmp)) != POINTER_TYPE
+	     || TREE_TYPE (TREE_TYPE (tmp)) != fr))
+	{
+	  const char *ty;
+	  if (TYPE_NAME (TREE_TYPE (tmp)))
+	    ty = IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (TREE_TYPE (tmp))));
+	  else
+	    ty = "<unnamed>";
+	  fprintf (stderr, "%s %s\n", ty,
+		   IDENTIFIER_POINTER (DECL_NAME (tmp)));
+	}
+      tmp = DECL_CHAIN (tmp);
+    }
+  fprintf (stderr, "}\n");
+}
+
+void
+coro_pretty_p_statements (tree stmts, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.buffer->stream = stderr;
+  if (stmts)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.statement (stmts);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+void
+coro_pretty_p_expression (tree expr, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.buffer->stream = stderr;
+  if (expr)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.expression (expr);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+void
+coro_pretty_p_decl (tree decl, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.buffer->stream = stderr;
+  if (decl)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.declarator (decl);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+void
+coro_pretty_p_type (tree type, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.buffer->stream = stderr;
+  if (type)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.type_id (type);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+/* ================= END Debug. ================= */
+
 static bool coro_promise_type_found_p (tree, location_t);
 
 /* GCC C++ coroutines implementation.
@@ -938,6 +1048,7 @@ build_co_await (location_t loc, tree a, suspend_point_kind suspend_kind)
     }
   else
     o = a; /* This is most likely about to fail anyway.  */
+//coro_pretty_p_expression (o, "o = ");
 
   tree o_type = TREE_TYPE (o);
   if (o_type && !VOID_TYPE_P (o_type))
@@ -1106,6 +1217,9 @@ build_co_await (location_t loc, tree a, suspend_point_kind suspend_kind)
       awrs_call = TREE_OPERAND (awrs_call, 1);
     }
   TREE_VEC_ELT (awaiter_calls, 2) = awrs_call; /* await_resume().  */
+//coro_pretty_p_expression (awrd_call, "awrd_call = ");
+//coro_pretty_p_expression (awsp_call, "awsp_call = ");
+//coro_pretty_p_expression (awrs_call, "awrs_call = ");
 
   tree await_expr = build5_loc (loc, CO_AWAIT_EXPR,
 				TREE_TYPE (TREE_TYPE (awrs_func)),
@@ -1151,6 +1265,8 @@ finish_co_await_expr (location_t kw, tree expr)
      the promise type, and obtain its return type.  */
   if (!coro_promise_type_found_p (current_function_decl, kw))
     return error_mark_node;
+//coro_pretty_p_decl (current_function_decl, "current-fn = ");
+//coro_pretty_p_expression (expr, "expr = ");
 
   /* [expr.await] 3.2
      The incoming cast expression might be transformed by a promise
@@ -1180,6 +1296,7 @@ finish_co_await_expr (location_t kw, tree expr)
       if (a == error_mark_node)
 	return error_mark_node;
     }
+//coro_pretty_p_expression (expr, "a = ");
 
   /* Now we want to build co_await a.  */
   tree op = build_co_await (kw, a, CO_AWAIT_SUSPEND_POINT);
@@ -4333,6 +4450,8 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
 
   /* Initial processing of the function-body.
      If we have no expressions or just an error then punt.  */
+//coro_pretty_p_decl (orig, "orig = ");
+//coro_pretty_p_statements (fnbody, "body = ");
   tree body_start = expr_first (fnbody);
   if (body_start == NULL_TREE || body_start == error_mark_node)
     {

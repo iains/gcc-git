@@ -6434,7 +6434,7 @@ build_x_unary_op (location_t loc, enum tree_code code, cp_expr xarg,
       exp = build_min_non_dep (code, exp, orig_expr,
 			       /*For {PRE,POST}{INC,DEC}REMENT_EXPR*/NULL_TREE);
     }
-  if (TREE_CODE (exp) == ADDR_EXPR)
+  if (exp && TREE_CODE (exp) == ADDR_EXPR)
     PTRMEM_OK_P (exp) = ptrmem;
   return exp;
 }

@@ -57,6 +57,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "omp-general.h"
 #include "omp-offload.h"  /* For offload_vars.  */
 
+#include "cxx-pretty-print.h"
+#include "tree-pretty-print.h"
+
 /* Possible cases of bad specifiers type used by bad_specifiers. */
 enum bad_spec_place {
   BSP_VAR,    /* variable */
@@ -17350,12 +17353,95 @@ emit_coro_helper (tree helper)
   expand_or_defer_fn (helper);
 }
 
+int coro_dump_id;
+extern void debug_tree (tree);
+
+static void
+dump_record_type (cxx_pretty_printer *pp, tree typ)
+{
+#if 1
+  //debug_tree (typ);
+  bool indent = true;
+  pp->type_id (typ);
+  pp_newline_and_indent (pp, 2);
+  pp_string (pp, " {");
+#else
+  if (DECL_NAME (TYPE_NAME (ty)))
+    fprintf (stderr, "%s {\n", IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (typ))));
+  else
+    fprintf (stderr, "huh {\n");
+#endif
+  tree tmp = TYPE_FIELDS (typ);
+  while (tmp)
+    {
+      /* Avoid to print recursively the structure.  */
+      /* FIXME : Not implemented correctly...,
+	 what about the case when we have a cycle in the contain graph? ...
+	 Maybe this could be solved by looking at the scope in which the
+	 structure was declared.  */
+      if (TREE_TYPE (tmp) != typ)
+	{
+#if 1
+	  if (indent)
+	    {
+	      pp_newline_and_indent (pp, 2);
+	      indent = false;
+	    }
+	  else
+	    pp_newline_and_indent (pp, 0);
+
+	  switch (TREE_CODE (tmp))
+	    {
+	    case USING_DECL:
+	      pp->statement (tmp); // print using stmt.
+	      break;
+	    case VAR_DECL:
+	    case CONST_DECL:
+	    case TYPE_DECL:
+	      pp->declaration (tmp);
+	      break;
+	    case FIELD_DECL:
+	      if (TREE_TYPE (tmp))
+		pp->type_id (TREE_TYPE (tmp));
+	      else
+		pp_string (pp, "??? ");
+	      pp->direct_declarator (tmp);
+	      break;
+	    case TEMPLATE_DECL:
+	      pp->declaration (tmp);
+	      break;
+	    case FUNCTION_DECL:
+	      pp->declarator (tmp);
+	      break;
+	    default:
+	      debug_tree (tmp);
+	      break;
+	    }
+#else
+	  const char *ty;
+	  if (TYPE_NAME (TREE_TYPE (tmp)))
+	    ty = IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (TREE_TYPE (tmp))));
+	  else
+	    ty = "<unnamed>";
+	  fprintf (stderr, "%s %s\n", ty,
+		   IDENTIFIER_POINTER (DECL_NAME (tmp)));
+#endif
+	}
+      tmp = DECL_CHAIN (tmp);
+    }
+  pp_newline_and_indent (pp, -2);
+  pp_string (pp, "}");
+  pp_newline_and_indent (pp, -2);
+}
+
 /* Finish up a function declaration and compile that function
    all the way to assembler language output.  The free the storage
    for the function definition. INLINE_P is TRUE if we just
    finished processing the body of an in-class inline function
    definition.  (This processing will have taken place after the
    class definition is complete.)  */
+
+FILE *dmp_str = NULL;
 
 tree
 finish_function (bool inline_p)
@@ -17367,6 +17453,9 @@ finish_function (bool inline_p)
 		&& !processing_template_decl
 		&& DECL_COROUTINE_P (fndecl);
   bool coro_emit_helpers = false;
+
+  if (dmp_str == NULL)
+    dmp_str = dump_begin (coro_dump_id, NULL);
 
   /* When we get some parse errors, we can end up without a
      current_function_decl, so cope.  */
@@ -17392,6 +17481,59 @@ finish_function (bool inline_p)
      be set, and unless there's a multiple definition, it should be
      error_mark_node.  */
   gcc_assert (DECL_INITIAL (fndecl) == error_mark_node);
+  if (coro_p && dmp_str/*flag_coroutines && !processing_template_decl*/) {
+//debug_tree(fndecl);
+    bool lambda_p = LAMBDA_TYPE_P (DECL_CONTEXT (fndecl));
+    fprintf (dmp_str, "%s %s before :",
+	     (lambda_p ? "Lambda" : "Function"),
+	       lang_hooks.decl_printable_name (fndecl, 2));
+
+    cxx_pretty_printer pp;
+    pp.buffer->stream = dmp_str;
+
+    //if (DECL_ARGUMENTS (fndecl))
+    //  pp_newline_and_indent (&pp, 0);
+
+    if (0 && lambda_p)
+      {
+	tree first_arg_ty = TREE_TYPE (DECL_ARGUMENTS (fndecl));
+	debug_tree (first_arg_ty);
+	if (POINTER_TYPE_P (first_arg_ty))
+	  first_arg_ty = TREE_TYPE (first_arg_ty);
+	//pp.primary_expression (ty);
+	//pp.direct_declarator (DECL_ARGUMENTS (fndecl));
+	pp.expression (DECL_ARGUMENTS (fndecl));
+	pp_newline_and_indent (&pp, 0);
+	dump_record_type (&pp, first_arg_ty);
+	pp_newline_and_indent (&pp, 0);
+      }
+
+    bool do_comma = false;
+    for (tree arg = DECL_ARGUMENTS (fndecl);
+	 arg != NULL; do_comma = true, arg = DECL_CHAIN (arg))
+      {
+	if (do_comma)
+	  pp_comma (&pp);
+	pp_newline_and_indent (&pp, 0);
+	pp.expression (arg);
+	tree ty = TREE_TYPE (arg);
+	while (POINTER_TYPE_P (ty))
+	  {
+	    if (TREE_CODE (ty) == POINTER_TYPE)
+	      pp_star (&pp);
+	    if (TREE_CODE (ty) == REFERENCE_TYPE)
+	      pp_ampersand (&pp);
+	    ty = TREE_TYPE (ty);
+	  }
+
+	if (TREE_CODE (ty) == RECORD_TYPE)
+	  dump_record_type (&pp, ty);
+      }
+    pp_newline_and_flush (&pp);
+
+    pp.declaration (fndecl);
+    pp_newline_and_flush (&pp);
+  }
 
   if (coro_p)
     {
@@ -17423,6 +17565,44 @@ finish_function (bool inline_p)
 			      (TREE_TYPE (current_function_decl)),
 			      current_eh_spec_block);
     }
+
+  if (coro_p && dmp_str) {
+
+    cxx_pretty_printer pp;
+
+    pp.buffer->stream = dmp_str;
+
+    pp_string (&pp, "RAMP after");
+    pp_newline_and_indent (&pp, 0);
+    pp.declaration (fndecl);
+    pp_newline_and_flush (&pp);
+
+    if (!resumer || resumer == error_mark_node) {
+    pp_string (&pp, "Transform failed");
+    pp_newline_and_flush (&pp);
+    } else {
+    tree frame_type = TREE_TYPE (DECL_ARGUMENTS (resumer));
+    if (POINTER_TYPE_P (frame_type))
+      frame_type = TREE_TYPE (frame_type);
+    pp_string (&pp, "FRAME type decl");
+    pp_newline_and_indent (&pp, 0);
+    dump_record_type (&pp, frame_type);
+    //pp.type_id (frame_type);
+    //pp.simple_type_specifier (frame_type);
+    //pp_newline_and_indent (&pp, 0);
+    pp_newline_and_flush (&pp);
+
+    pp_string (&pp, "ACTOR after");
+    pp_newline_and_indent (&pp, 0);
+    pp.declaration (resumer);
+    pp_newline_and_flush (&pp);
+
+    pp_string (&pp, "DESTROYER after");
+    pp_newline_and_indent (&pp, 0);
+    pp.declaration (destroyer);
+    pp_newline_and_flush (&pp);
+    }
+  }
 
   /* If we're saving up tree structure, tie off the function now.  */
   DECL_SAVED_TREE (fndecl) = pop_stmt_list (DECL_SAVED_TREE (fndecl));

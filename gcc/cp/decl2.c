@@ -49,9 +49,11 @@ along with GCC; see the file COPYING3.  If not see
 #include "c-family/c-ada-spec.h"
 #include "asan.h"
 #include "optabs-query.h"
+#include "cxx-pretty-print.h"
 
 /* Id for dumping the raw trees.  */
 int raw_dump_id;
+int tu_dump_id;
  
 extern cpp_reader *parse_in;
 
@@ -4850,6 +4852,17 @@ dump_tu (void)
     {
       dump_node (global_namespace, flags & ~TDF_SLIM, stream);
       dump_end (raw_dump_id, stream);
+    }
+
+  if (FILE *stream = dump_begin (tu_dump_id, &flags))
+    {
+      cxx_pretty_printer pp;
+
+      pp_needs_newline (&pp) = true;
+      pp.buffer->stream = stream;
+      pp.p_namespace (global_namespace);
+      pp_newline_and_flush (&pp);
+      dump_end (tu_dump_id, stream);
     }
 }
 

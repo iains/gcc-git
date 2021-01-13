@@ -46,6 +46,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "selftest.h"
 #include "target.h"
 
+extern void debug_tree(tree);
+#include "cxx-pretty-print.h"
+
 /* The type of functions taking a tree, and some additional data, and
    returning an int.  */
 typedef int (*tree_fn_t) (tree, void*);
@@ -17234,6 +17237,17 @@ tsubst_copy (tree t, tree args, tsubst_flags_t complain, tree in_decl)
       return t;
 
     case CO_AWAIT_EXPR:
+#if 0
+      fprintf(stderr, "tsubst_copy :");
+      //debug_tree (TREE_OPERAND (t, 0));
+      {
+        cxx_pretty_printer pp;
+        pp.buffer->stream = stderr;
+        pp_newline_and_indent (&pp, 0);
+        pp.expression (t);
+        //pp_newline_and_flush (&pp);
+      }
+#endif
       return tsubst_expr (t, args, complain, in_decl,
 			  /*integral_constant_expression_p=*/false);
       break;
@@ -18144,8 +18158,29 @@ tsubst_expr (tree t, tree args, tsubst_flags_t complain, tree in_decl,
       break;
 
     case CO_AWAIT_EXPR:
-      stmt = finish_co_await_expr (input_location,
-				   RECUR (TREE_OPERAND (t, 0)));
+#if 0
+      fprintf(stderr, "tsubst_expr : %s ", IDENTIFIER_POINTER (DECL_NAME (current_function_decl)));
+      //debug_tree (TREE_OPERAND (t, 0));
+      {
+        cxx_pretty_printer pp;
+        pp.buffer->stream = stderr;
+        pp_newline_and_indent (&pp, 0);
+        pp.expression (t);
+        //pp_newline_and_flush (&pp);
+      }
+#endif
+      stmt = RECUR (TREE_OPERAND (t, 0));
+#if 0
+      {
+        cxx_pretty_printer pp;
+        pp.buffer->stream = stderr;
+        pp_newline_and_indent (&pp, 0);
+        pp.expression (stmt);
+        pp_newline_and_flush (&pp);
+      }
+      //debug_tree(stmt);
+#endif
+      stmt = finish_co_await_expr (input_location, stmt);
       RETURN (stmt);
       break;
 
