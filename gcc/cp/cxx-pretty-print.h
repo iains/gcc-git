@@ -55,6 +55,7 @@ public:
   void direct_declarator (tree);
   void abstract_declarator (tree);
   void direct_abstract_declarator (tree);
+  void p_namespace (tree);
 
   /* This is the enclosing scope of the entity being pretty-printed.  */
   tree enclosing_scope;

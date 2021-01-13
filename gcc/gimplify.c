@@ -15349,6 +15349,7 @@ gimplify_expr (tree *expr_p, gimple_seq *pre_p, gimple_seq *post_p,
 	      goto dont_recalculate;
 
 	    default:
+	      debug_tree (*expr_p);
 	      gcc_unreachable ();
 	    }
 

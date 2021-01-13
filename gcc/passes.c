@@ -1794,7 +1794,7 @@ execute_function_dump (function *fn, void *data)
       push_cfun (fn);
 
       if (fn->curr_properties & PROP_gimple)
-        dump_function_to_file (fn->decl, dump_file, dump_flags);
+        dump_function_to_file (fn->decl, dump_file, dump_flags/* | TDF_LINENO | TDF_BLOCKS*/);
       else
 	print_rtl_with_bb (dump_file, get_insns (), dump_flags);
 

@@ -459,9 +459,13 @@ pp_c_specifier_qualifier_list (c_pretty_printer *pp, tree t)
 	if (TREE_CODE (pointee) == ARRAY_TYPE
 	    || TREE_CODE (pointee) == FUNCTION_TYPE)
 	  {
+	    /* Produce <pointee type> (*|&  - it's up to the caller to
+	       finish this.  */
 	    pp_c_whitespace (pp);
 	    pp_c_left_paren (pp);
 	    pp_c_attributes_display (pp, TYPE_ATTRIBUTES (pointee));
+	    pp_ptr_operator (pp, t);
+	    break;
 	  }
 	else if (!c_dialect_cxx ())
 	  pp_c_whitespace (pp);

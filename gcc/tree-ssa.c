@@ -927,6 +927,8 @@ verify_use (basic_block bb, basic_block def_bb, use_operand_p use_p,
       if (listvar != ssa_name)
         {
 	  error ("wrong immediate use list");
+      fprintf (stderr, " in list for : ");
+      print_generic_expr (stderr, listvar, TDF_VOPS);
 	  err = true;
 	}
     }

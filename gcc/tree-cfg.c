@@ -5299,6 +5299,8 @@ verify_location (hash_set<tree> *blocks, location_t loc)
       && !blocks->contains (block))
     {
       error ("location references block not in block tree");
+expanded_location xl = expand_location (loc);
+fprintf(stderr, "loc (%lx) : %s %d:%d block: %p\n", (unsigned long) loc, xl.file, xl.line, xl.column, block);
       return true;
     }
   if (block != NULL_TREE)
@@ -5511,6 +5513,13 @@ verify_gimple_in_cfg (struct function *fn, bool verify_nothrow)
 
 	  err2 |= verify_gimple_stmt (stmt);
 	  err2 |= verify_location (&blocks, gimple_location (stmt));
+	  if (err2)
+	    {
+	      debug_gimple_stmt (stmt);
+	      debug_tree (gimple_block (stmt));
+	      fprintf(stderr, "in: ");
+	      debug_gimple_seq (*bb_seq_addr (bb));
+	    }
 
 	  memset (&wi, 0, sizeof (wi));
 	  wi.info = (void *) &visited;
