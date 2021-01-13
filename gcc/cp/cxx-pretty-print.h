@@ -55,6 +55,7 @@ public:
   void direct_declarator (tree) final override;
   void abstract_declarator (tree) final override;
   void direct_abstract_declarator (tree) final override;
+  void p_namespace (tree);
 
   /* This is the enclosing scope of the entity being pretty-printed.  */
   tree enclosing_scope;
