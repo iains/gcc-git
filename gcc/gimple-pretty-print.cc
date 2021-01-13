@@ -83,7 +83,7 @@ newline_and_indent (pretty_printer *pp, int spc)
 DEBUG_FUNCTION void
 debug_gimple_stmt (gimple *gs)
 {
-  print_gimple_stmt (stderr, gs, 0, TDF_VOPS|TDF_MEMSYMS);
+  print_gimple_stmt (stderr, gs, 0, TDF_VOPS|TDF_MEMSYMS/*|TDF_LINENO|TDF_BLOCKS*/);
 }
 
 
@@ -233,7 +233,7 @@ print_gimple_seq (FILE *file, gimple_seq seq, int spc, dump_flags_t flags)
 DEBUG_FUNCTION void
 debug_gimple_seq (gimple_seq seq)
 {
-  print_gimple_seq (stderr, seq, 0, TDF_VOPS|TDF_MEMSYMS);
+  print_gimple_seq (stderr, seq, 0, TDF_VOPS|TDF_MEMSYMS/*|TDF_LINENO|TDF_BLOCKS*/);
 }
 
 
@@ -2667,7 +2667,11 @@ pp_gimple_stmt_1 (pretty_printer *pp, const gimple *gs, int spc,
     pp_printf (pp, "<&%p> ", (const void *) gs);
 
   if ((flags & TDF_LINENO) && gimple_has_location (gs))
-    dump_location (pp, gimple_location (gs));
+    {
+      dump_location (pp, gimple_location (gs));
+      if (flags & TDF_BLOCKS)
+	pp_printf (pp, "[BLOCK %p] ", (void *) gimple_block (gs));
+    }
 
   if (flags & TDF_EH)
     {

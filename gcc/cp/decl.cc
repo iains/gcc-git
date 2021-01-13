@@ -61,6 +61,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "opts.h"
 #include "langhooks-def.h"  /* For lhd_simulate_record_decl  */
 
+#include "cxx-pretty-print.h"
+#include "tree-pretty-print.h"
+
 /* Possible cases of bad specifiers type used by bad_specifiers. */
 enum bad_spec_place {
   BSP_VAR,    /* variable */

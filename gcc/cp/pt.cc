@@ -49,6 +49,9 @@ along with GCC; see the file COPYING3.  If not see
 #include "builtins.h"
 #include "omp-general.h"
 
+extern void debug_tree(tree);
+#include "cxx-pretty-print.h"
+
 /* The type of functions taking a tree, and some additional data, and
    returning an int.  */
 typedef int (*tree_fn_t) (tree, void*);

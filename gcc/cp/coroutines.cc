@@ -33,6 +33,274 @@ along with GCC; see the file COPYING3.  If not see
 #include "gcc-rich-location.h"
 #include "hash-map.h"
 
+/* ================= Debug. ================= */
+
+#include "langhooks.h"
+#include "langhooks-def.h"  /* For decl_printable_name  */
+#include "cxx-pretty-print.h"
+
+extern void debug_tree (tree);
+
+DEBUG_FUNCTION void
+coro_dump_frame (tree fr)
+{
+  gcc_checking_assert (TREE_CODE (fr) == RECORD_TYPE);
+  if (DECL_NAME (TYPE_NAME (fr)))
+    fprintf (stderr, "%s {\n", IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (fr))));
+  else
+    fprintf (stderr, "huh {\n");
+
+  tree tmp = TYPE_FIELDS (fr);
+  while (tmp)
+    {
+      /* Avoid to print recursively the structure.  */
+      /* FIXME : Not implemented correctly...,
+	 what about the case when we have a cycle in the contain graph? ...
+	 Maybe this could be solved by looking at the scope in which the
+	 structure was declared.  */
+      if (TREE_TYPE (tmp) != fr
+	  && (TREE_CODE (TREE_TYPE (tmp)) != POINTER_TYPE
+	     || TREE_TYPE (TREE_TYPE (tmp)) != fr))
+	{
+	  const char *ty;
+	  if (TYPE_NAME (TREE_TYPE (tmp)))
+	    ty = IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (TREE_TYPE (tmp))));
+	  else
+	    ty = "<unnamed>";
+	  fprintf (stderr, "%s %s\n", ty,
+		   IDENTIFIER_POINTER (DECL_NAME (tmp)));
+	}
+      tmp = DECL_CHAIN (tmp);
+    }
+  fprintf (stderr, "}\n");
+}
+
+DEBUG_FUNCTION void
+coro_pretty_p_statements (tree stmts, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.set_output_stream (stderr);
+  if (stmts)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.statement (stmts);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+DEBUG_FUNCTION void
+coro_pretty_p_expression (tree expr, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.set_output_stream (stderr);
+  if (expr)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.expression (expr);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+DEBUG_FUNCTION void
+coro_pretty_p_decl (tree decl, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.set_output_stream (stderr);
+  if (decl)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.declarator (decl);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+DEBUG_FUNCTION void
+coro_pretty_p_type (tree type, const char *msg = NULL)
+{
+  if (msg)
+    fprintf (stderr, "%s", msg);
+  cxx_pretty_printer pp;
+  pp.set_output_stream (stderr);
+  if (type)
+    {
+      pp_newline_and_indent (&pp, 0);
+      pp.type_id (type);
+    }
+  else
+    pp_string (&pp, "<null>");
+  pp_newline_and_flush (&pp);
+}
+
+
+static void
+dump_record_type (cxx_pretty_printer *pp, tree typ)
+{
+  //debug_tree (typ);
+  bool indent = true;
+  pp->type_id (typ);
+  pp_newline_and_indent (pp, 2);
+  pp_string (pp, " {");
+
+  for (tree tmp = TYPE_FIELDS (typ); tmp; tmp = DECL_CHAIN (tmp))
+    {
+      /* Avoid to print recursively the structure.  */
+      /* FIXME : Not implemented correctly...,
+	 what about the case when we have a cycle in the contain graph? ...
+	 Maybe this could be solved by looking at the scope in which the
+	 structure was declared.  */
+      if (TREE_TYPE (tmp) != typ)
+	{
+	  if (indent)
+	    {
+	      pp_newline_and_indent (pp, 2);
+	      indent = false;
+	    }
+	  else
+	    pp_newline_and_indent (pp, 0);
+
+	  switch (TREE_CODE (tmp))
+	    {
+	    case USING_DECL:
+	      pp->statement (tmp); // print using stmt.
+	      break;
+	    case VAR_DECL:
+	    case CONST_DECL:
+	    case TYPE_DECL:
+	      pp->declaration (tmp);
+	      break;
+	    case FIELD_DECL:
+	      if (TREE_TYPE (tmp))
+		pp->type_id (TREE_TYPE (tmp));
+	      else
+		pp_string (pp, "??? ");
+	      pp->direct_declarator (tmp);
+	      break;
+	    case TEMPLATE_DECL:
+	      pp->declaration (tmp);
+	      break;
+	    case FUNCTION_DECL:
+	      pp->declarator (tmp);
+	      break;
+	    default:
+	      debug_tree (tmp);
+	      break;
+	    }
+	}
+    }
+  pp_newline_and_indent (pp, -2);
+  pp_string (pp, "}");
+  pp_newline_and_indent (pp, -2);
+}
+
+static FILE *dmp_str = NULL;
+int coro_dump_id;
+
+static void
+coro_maybe_dump_initial_function (tree fndecl)
+{
+  if (!dmp_str)
+    return;
+
+  bool lambda_p = LAMBDA_TYPE_P (DECL_CONTEXT (fndecl));
+  fprintf (dmp_str, "%s %s original :",
+	   (lambda_p ? "Lambda" : "Function"),
+	    lang_hooks.decl_printable_name (fndecl, 2));
+
+  cxx_pretty_printer pp;
+  pp.set_output_stream (dmp_str);
+
+  bool do_comma = false;
+  for (tree arg = DECL_ARGUMENTS (fndecl); arg != NULL; arg = DECL_CHAIN (arg))
+    {
+      if (do_comma)
+	pp_comma (&pp);
+      else
+	do_comma = true;
+      pp_newline_and_indent (&pp, 0);
+      pp.expression (arg);
+      tree ty = TREE_TYPE (arg);
+      while (POINTER_TYPE_P (ty))
+	{
+	  if (TREE_CODE (ty) == POINTER_TYPE)
+	    pp_star (&pp);
+	  if (TREE_CODE (ty) == REFERENCE_TYPE)
+	    pp_ampersand (&pp);
+	  ty = TREE_TYPE (ty);
+	}
+
+      if (TREE_CODE (ty) == RECORD_TYPE)
+	dump_record_type (&pp, ty);
+    }
+  pp_newline_and_flush (&pp);
+
+  pp.declaration (fndecl);
+  pp_newline_and_flush (&pp);
+}
+
+static void
+coro_maybe_dump_ramp (tree ramp)
+{
+  if (!dmp_str)
+    return;
+
+  cxx_pretty_printer pp;
+  pp.set_output_stream (dmp_str);
+
+  pp_string (&pp, "RAMP");
+  pp_newline_and_indent (&pp, 0);
+  pp.declaration (ramp);
+  pp_newline_and_flush (&pp);
+}
+
+static void
+coro_maybe_dump_transformed_functions (tree actor, tree destroy)
+{
+  if (!dmp_str)
+    return;
+
+  cxx_pretty_printer pp;
+  pp.set_output_stream (dmp_str);
+
+  if (!actor || actor == error_mark_node)
+    {
+      pp_string (&pp, "Transform failed");
+      pp_newline_and_flush (&pp);
+      return;
+    }
+
+  tree frame_type = TREE_TYPE (DECL_ARGUMENTS (actor));
+  if (POINTER_TYPE_P (frame_type))
+      frame_type = TREE_TYPE (frame_type);
+  pp_string (&pp, "FRAME type decl");
+  pp_newline_and_indent (&pp, 0);
+  dump_record_type (&pp, frame_type);
+  pp_newline_and_flush (&pp);
+
+  pp_string (&pp, "ACTOR/RESUMER:");
+  pp_newline_and_indent (&pp, 0);
+  pp.declaration (actor);
+  pp_newline_and_flush (&pp);
+
+  pp_string (&pp, "DESTROYER:");
+  pp_newline_and_indent (&pp, 0);
+  pp.declaration (destroy);
+  pp_newline_and_flush (&pp);
+}
+
+/* ================= END Debug. ================= */
+
 static bool coro_promise_type_found_p (tree, location_t);
 
 /* GCC C++ coroutines implementation.
@@ -1117,6 +1385,7 @@ build_co_await (location_t loc, tree a, suspend_point_kind suspend_kind,
     }
   else
     o = a; /* This is most likely about to fail anyway.  */
+//coro_pretty_p_expression (o, "o = ");
 
   tree o_type = TREE_TYPE (o);
   if (o_type && !VOID_TYPE_P (o_type))
@@ -1287,6 +1556,9 @@ build_co_await (location_t loc, tree a, suspend_point_kind suspend_kind,
       awrs_call = TREE_OPERAND (awrs_call, 1);
     }
   TREE_VEC_ELT (awaiter_calls, 2) = awrs_call; /* await_resume().  */
+//coro_pretty_p_expression (awrd_call, "awrd_call = ");
+//coro_pretty_p_expression (awsp_call, "awsp_call = ");
+//coro_pretty_p_expression (awrs_call, "awrs_call = ");
 
   if (REFERENCE_REF_P (e_proxy))
     e_proxy = TREE_OPERAND (e_proxy, 0);
@@ -1367,6 +1639,8 @@ finish_co_await_expr (location_t kw, tree expr)
      the promise type, and obtain its return type.  */
   if (!coro_promise_type_found_p (current_function_decl, kw))
     return error_mark_node;
+//coro_pretty_p_decl (current_function_decl, "current-fn = ");
+//coro_pretty_p_expression (expr, "expr = ");
 
   /* [expr.await] 3.2
      The incoming cast expression might be transformed by a promise
@@ -1396,6 +1670,7 @@ finish_co_await_expr (location_t kw, tree expr)
       if (a == error_mark_node)
 	return error_mark_node;
     }
+//coro_pretty_p_expression (expr, "a = ");
 
   /* Now we want to build co_await a.  */
   return build_co_await (kw, a, CO_AWAIT_SUSPEND_POINT, expr);
@@ -4619,6 +4894,11 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
 {
   gcc_checking_assert (orig && TREE_CODE (orig) == FUNCTION_DECL);
 
+  if (dmp_str == NULL)
+    dmp_str = dump_begin (coro_dump_id, NULL);
+
+  coro_maybe_dump_initial_function (orig);
+
   *resumer = error_mark_node;
   *destroyer = error_mark_node;
   if (!coro_function_valid_p (orig))
@@ -5380,6 +5660,8 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
   BIND_EXPR_BODY (ramp_bind) = pop_stmt_list (ramp_body);
   TREE_SIDE_EFFECTS (ramp_bind) = true;
 
+  coro_maybe_dump_ramp (orig);
+
   /* Start to build the final functions.
 
      We push_deferring_access_checks to avoid these routines being seen as
@@ -5404,6 +5686,8 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
 
   *resumer = actor;
   *destroyer = destroy;
+
+  coro_maybe_dump_transformed_functions (actor, destroy);
 
   return true;
 }
