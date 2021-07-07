@@ -513,12 +513,12 @@ coro_promise_type_found_p (tree fndecl, location_t loc)
       /* Build a proxy for a handle to "self" as the param to
 	 await_suspend() calls.  */
       coro_info->self_h_proxy
-	= build_lang_decl (VAR_DECL, get_identifier ("self_h.proxy"),
+	= build_lang_decl (VAR_DECL, get_identifier ("_Coro_self_handle"),
 			   coro_info->handle_type);
 
       /* Build a proxy for the promise so that we can perform lookups.  */
       coro_info->promise_proxy
-	= build_lang_decl (VAR_DECL, get_identifier ("promise.proxy"),
+	= build_lang_decl (VAR_DECL, get_identifier ("_Coro_promise"),
 			   coro_info->promise_type);
 
       /* Note where we first saw a coroutine keyword.  */
@@ -2198,7 +2198,7 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
     = {actor, actor_frame, coro_frame_type, loc, local_var_uses};
   cp_walk_tree (&fnbody, transform_local_var_uses, &xform_vars_data, NULL);
 
-  tree resume_idx_name = get_identifier ("__resume_at");
+  tree resume_idx_name = get_identifier ("_Coro_resume_index");
   tree rat_field = lookup_member (coro_frame_type, resume_idx_name, 1, 0,
 				  tf_warning_or_error);
   tree rat = build3 (COMPONENT_REF, short_unsigned_type_node, actor_frame,
@@ -2303,13 +2303,13 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
   add_stmt (r);
 
   /* actor's version of the promise.  */
-  tree ap_m = lookup_member (coro_frame_type, get_identifier ("__p"), 1, 0,
+  tree ap_m = lookup_member (coro_frame_type, get_identifier ("_Coro_promise"), 1, 0,
 			     tf_warning_or_error);
   tree ap = build_class_member_access_expr (actor_frame, ap_m, NULL_TREE, false,
 					    tf_warning_or_error);
 
   /* actor's coroutine 'self handle'.  */
-  tree ash_m = lookup_member (coro_frame_type, get_identifier ("__self_h"), 1,
+  tree ash_m = lookup_member (coro_frame_type, get_identifier ("_Coro_self_handle"), 1,
 			      0, tf_warning_or_error);
   tree ash = build_class_member_access_expr (actor_frame, ash_m, NULL_TREE,
 					     false, tf_warning_or_error);
@@ -2343,12 +2343,12 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
   p_data.to = ap;
   cp_walk_tree (&fnbody, replace_proxy, &p_data, NULL);
 
-  /* The rewrite of the function adds code to set the __resume field to
+  /* The rewrite of the function adds code to set the resume_fn field to
      nullptr when the coroutine is done and also the index to zero when
      calling an unhandled exception.  These are represented by two proxies
      in the function, so rewrite them to the proper frame access.  */
   tree resume_m
-    = lookup_member (coro_frame_type, get_identifier ("__resume"),
+    = lookup_member (coro_frame_type, get_identifier ("_Coro_resume_fn"),
 		     /*protect=*/1, /*want_type=*/0, tf_warning_or_error);
   tree res_x = build_class_member_access_expr (actor_frame, resume_m, NULL_TREE,
 					       false, tf_warning_or_error);
@@ -2381,7 +2381,7 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
   /* Here deallocate the frame (if we allocated it), which we will have at
      present.  */
   tree fnf_m
-    = lookup_member (coro_frame_type, get_identifier ("__frame_needs_free"), 1,
+    = lookup_member (coro_frame_type, get_identifier ("_Coro_frame_needs_free"), 1,
 		     0, tf_warning_or_error);
   tree fnf2_x = build_class_member_access_expr (actor_frame, fnf_m, NULL_TREE,
 						false, tf_warning_or_error);
@@ -2504,7 +2504,7 @@ build_destroy_fn (location_t loc, tree coro_frame_type, tree destroy,
 
   tree destr_frame = build1 (INDIRECT_REF, coro_frame_type, destr_fp);
 
-  tree resume_idx_name = get_identifier ("__resume_at");
+  tree resume_idx_name = get_identifier ("_Coro_resume_index");
   tree rat_field = lookup_member (coro_frame_type, resume_idx_name, 1, 0,
 				  tf_warning_or_error);
   tree rat = build3 (COMPONENT_REF, short_unsigned_type_node, destr_frame,
@@ -3927,6 +3927,7 @@ register_local_var_uses (tree *stmt, int *do_subtree, void *d)
 	     identify them in the coroutine frame.  */
 	  tree lvname = DECL_NAME (lvar);
 	  char *buf;
+
 	  /* The outermost bind scope contains the artificial variables that
 	     we inject to implement the coro state machine.  We want to be able
 	     to inspect these in debugging.  */
@@ -3936,7 +3937,7 @@ register_local_var_uses (tree *stmt, int *do_subtree, void *d)
 	    buf = xasprintf ("%s_%u_%u", IDENTIFIER_POINTER (lvname),
 			     lvd->nest_depth, lvd->bind_indx);
 	  else
-	    buf = xasprintf ("_D%u.%u.%u", DECL_UID (lvar), lvd->nest_depth,
+	    buf = xasprintf ("_D%u_%u_%u", DECL_UID (lvar), lvd->nest_depth,
 			     lvd->bind_indx);
 	  /* TODO: Figure out if we should build a local type that has any
 	     excess alignment or size from the original decl.  */
@@ -4214,15 +4215,15 @@ coro_rewrite_function_body (location_t fn_start, tree fnbody, tree orig,
  declare a dummy coro frame.
  struct _R_frame {
   using handle_type = coro::coroutine_handle<coro1::promise_type>;
-  void (*__resume)(_R_frame *);
-  void (*__destroy)(_R_frame *);
-  coro1::promise_type __p;
-  bool frame_needs_free; free the coro frame mem if set.
-  bool i_a_r_c; [dcl.fct.def.coroutine] / 5.3
-  short __resume_at;
-  handle_type self_handle;
-  (maybe) parameter copies.
-  (maybe) local variables saved (including awaitables)
+  void (*_Coro_resume_fn)(_R_frame *);
+  void (*_Coro_destroy_fn)(_R_frame *);
+  coro1::promise_type _Coro_promise;
+  bool _Coro_frame_needs_free; free the coro frame mem if set.
+  bool _Coro_i_a_r_c; [dcl.fct.def.coroutine] / 5.3
+  short _Coro_resume_index;
+  handle_type _Coro_self_handle;
+  parameter copies (were required).
+  local variables saved (including awaitables)
   (maybe) trailing space.
  };  */
 
@@ -4314,7 +4315,7 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
 
   /* 2. Types we need to define or look up.  */
 
-  tree fr_name = get_fn_local_identifier (orig, "frame");
+  tree fr_name = get_fn_local_identifier (orig, "Frame");
   tree coro_frame_type = xref_tag (record_type, fr_name);
   DECL_CONTEXT (TYPE_NAME (coro_frame_type)) = current_scope ();
   tree coro_frame_ptr = build_pointer_type (coro_frame_type);
@@ -4342,22 +4343,22 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
 
   tree field_list = NULL_TREE;
   tree resume_name
-    = coro_make_frame_entry (&field_list, "__resume",
+    = coro_make_frame_entry (&field_list, "_Coro_resume_fn",
 			     act_des_fn_ptr, fn_start);
   tree destroy_name
-    = coro_make_frame_entry (&field_list, "__destroy",
+    = coro_make_frame_entry (&field_list, "_Coro_destroy_fn",
 			     act_des_fn_ptr, fn_start);
   tree promise_name
-    = coro_make_frame_entry (&field_list, "__p", promise_type, fn_start);
-  tree fnf_name = coro_make_frame_entry (&field_list, "__frame_needs_free",
+    = coro_make_frame_entry (&field_list, "_Coro_promise", promise_type, fn_start);
+  tree fnf_name = coro_make_frame_entry (&field_list, "_Coro_frame_needs_free",
 					 boolean_type_node, fn_start);
   tree resume_idx_name
-    = coro_make_frame_entry (&field_list, "__resume_at",
+    = coro_make_frame_entry (&field_list, "_Coro_resume_index",
 			     short_unsigned_type_node, fn_start);
 
   /* We need a handle to this coroutine, which is passed to every
      await_suspend().  There's no point in creating it over and over.  */
-  (void) coro_make_frame_entry (&field_list, "__self_h", handle_type, fn_start);
+  (void) coro_make_frame_entry (&field_list, "_Coro_self_handle", handle_type, fn_start);
 
   /* Now add in fields for function params (if there are any).
      We do not attempt elision of copies at this stage, we do analyze the
@@ -4415,14 +4416,14 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
 	  if (DECL_NAME (arg))
 	    {
 	      tree pname = DECL_NAME (arg);
-	      buf = xasprintf ("__parm.%s", IDENTIFIER_POINTER (pname));
+	      buf = xasprintf ("_P_%s", IDENTIFIER_POINTER (pname));
 	    }
 	  else
-	    buf = xasprintf ("__unnamed_parm.%d", no_name_parm++);
+	    buf = xasprintf ("_P_unnamed_%d", no_name_parm++);
 
 	  if (TYPE_HAS_NONTRIVIAL_DESTRUCTOR (parm.frame_type))
 	    {
-	      char *gbuf = xasprintf ("%s.live", buf);
+	      char *gbuf = xasprintf ("%s_live", buf);
 	      parm.guard_var
 		= build_lang_decl (VAR_DECL, get_identifier (gbuf),
 				   boolean_type_node);
