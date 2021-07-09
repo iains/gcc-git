@@ -215,7 +215,17 @@ static GTY(()) tree coro_await_ready_identifier;
 static GTY(()) tree coro_await_suspend_identifier;
 static GTY(()) tree coro_await_resume_identifier;
 
-/* Create the identifiers used by the coroutines library interfaces.  */
+/* Accessors for the coroutine frame state used by the implementation.  */
+
+static GTY(()) tree coro_resume_fn_field;
+static GTY(()) tree coro_destroy_fn_field;
+static GTY(()) tree coro_promise_field;
+static GTY(()) tree coro_frame_needs_free_field;
+static GTY(()) tree coro_resume_index_field;
+static GTY(()) tree coro_self_handle_field;
+
+/* Create the identifiers used by the coroutines library interfaces and
+   the implementation frame state.  */
 
 static void
 coro_init_identifiers ()
@@ -241,6 +251,14 @@ coro_init_identifiers ()
   coro_await_ready_identifier = get_identifier ("await_ready");
   coro_await_suspend_identifier = get_identifier ("await_suspend");
   coro_await_resume_identifier = get_identifier ("await_resume");
+
+  /* Coroutine state frame field accessors.  */
+  coro_resume_fn_field = get_identifier ("_Coro_resume_fn");
+  coro_destroy_fn_field = get_identifier ("_Coro_destroy_fn");
+  coro_promise_field = get_identifier ("_Coro_promise");
+  coro_frame_needs_free_field = get_identifier ("_Coro_frame_needs_free");
+  coro_resume_index_field = get_identifier ("_Coro_resume_index");
+  coro_self_handle_field = get_identifier ("_Coro_self_handle");
 }
 
 /* Trees we only need to set up once.  */
@@ -513,12 +531,12 @@ coro_promise_type_found_p (tree fndecl, location_t loc)
       /* Build a proxy for a handle to "self" as the param to
 	 await_suspend() calls.  */
       coro_info->self_h_proxy
-	= build_lang_decl (VAR_DECL, get_identifier ("_Coro_self_handle"),
+	= build_lang_decl (VAR_DECL, coro_self_handle_field,
 			   coro_info->handle_type);
 
       /* Build a proxy for the promise so that we can perform lookups.  */
       coro_info->promise_proxy
-	= build_lang_decl (VAR_DECL, get_identifier ("_Coro_promise"),
+	= build_lang_decl (VAR_DECL, coro_promise_field,
 			   coro_info->promise_type);
 
       /* Note where we first saw a coroutine keyword.  */
@@ -2198,8 +2216,7 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
     = {actor, actor_frame, coro_frame_type, loc, local_var_uses};
   cp_walk_tree (&fnbody, transform_local_var_uses, &xform_vars_data, NULL);
 
-  tree resume_idx_name = get_identifier ("_Coro_resume_index");
-  tree rat_field = lookup_member (coro_frame_type, resume_idx_name, 1, 0,
+  tree rat_field = lookup_member (coro_frame_type, coro_resume_index_field, 1, 0,
 				  tf_warning_or_error);
   tree rat = build3 (COMPONENT_REF, short_unsigned_type_node, actor_frame,
 		     rat_field, NULL_TREE);
@@ -2462,7 +2479,7 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
 
   /* We will need to know which resume point number should be encoded.  */
   tree res_idx_m
-    = lookup_member (coro_frame_type, resume_idx_name,
+    = lookup_member (coro_frame_type, coro_resume_index_field,
 		     /*protect=*/1, /*want_type=*/0, tf_warning_or_error);
   tree resume_pt_number
     = build_class_member_access_expr (actor_frame, res_idx_m, NULL_TREE, false,
@@ -2504,8 +2521,7 @@ build_destroy_fn (location_t loc, tree coro_frame_type, tree destroy,
 
   tree destr_frame = build1 (INDIRECT_REF, coro_frame_type, destr_fp);
 
-  tree resume_idx_name = get_identifier ("_Coro_resume_index");
-  tree rat_field = lookup_member (coro_frame_type, resume_idx_name, 1, 0,
+  tree rat_field = lookup_member (coro_frame_type, coro_resume_index_field, 1, 0,
 				  tf_warning_or_error);
   tree rat = build3 (COMPONENT_REF, short_unsigned_type_node, destr_frame,
 		     rat_field, NULL_TREE);
