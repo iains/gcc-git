@@ -2148,6 +2148,7 @@ build_actor_fn (location_t loc, tree coro_frame_type, tree actor, tree fnbody,
 						 NULL_TREE);
   
   BIND_EXPR_VARS (actor_bind) = continuation;
+  BLOCK_VARS (top_block) = BIND_EXPR_VARS (actor_bind) ;
 
   /* Link in the block associated with the outer scope of the re-written
      function body.  */
