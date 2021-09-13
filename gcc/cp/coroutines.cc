@@ -76,15 +76,12 @@ coro_dump_frame (tree fr)
 void
 coro_pretty_p_statements (tree stmts, const char *msg = NULL)
 {
-  if (msg)
-    fprintf (stderr, "%s", msg);
   cxx_pretty_printer pp;
   pp.buffer->stream = stderr;
+  if (msg && msg[0] != 0)
+    pp_string (&pp, msg);
   if (stmts)
-    {
-      pp_newline_and_indent (&pp, 0);
-      pp.statement (stmts);
-    }
+    pp.statement (stmts);
   else
     pp_string (&pp, "<null>");
   pp_newline_and_flush (&pp);
@@ -93,15 +90,12 @@ coro_pretty_p_statements (tree stmts, const char *msg = NULL)
 void
 coro_pretty_p_expression (tree expr, const char *msg = NULL)
 {
-  if (msg)
-    fprintf (stderr, "%s", msg);
   cxx_pretty_printer pp;
   pp.buffer->stream = stderr;
+  if (msg && msg[0] != 0)
+    pp_string (&pp, msg);
   if (expr)
-    {
-      pp_newline_and_indent (&pp, 0);
-      pp.expression (expr);
-    }
+    pp.expression (expr);
   else
     pp_string (&pp, "<null>");
   pp_newline_and_flush (&pp);
@@ -110,15 +104,12 @@ coro_pretty_p_expression (tree expr, const char *msg = NULL)
 void
 coro_pretty_p_decl (tree decl, const char *msg = NULL)
 {
-  if (msg)
-    fprintf (stderr, "%s", msg);
   cxx_pretty_printer pp;
   pp.buffer->stream = stderr;
+  if (msg && msg[0] != 0)
+    pp_string (&pp, msg);
   if (decl)
-    {
-      pp_newline_and_indent (&pp, 0);
-      pp.declarator (decl);
-    }
+    pp.declarator (decl);
   else
     pp_string (&pp, "<null>");
   pp_newline_and_flush (&pp);
@@ -127,15 +118,12 @@ coro_pretty_p_decl (tree decl, const char *msg = NULL)
 void
 coro_pretty_p_type (tree type, const char *msg = NULL)
 {
-  if (msg)
-    fprintf (stderr, "%s", msg);
   cxx_pretty_printer pp;
   pp.buffer->stream = stderr;
+  if (msg && msg[0] != 0)
+    pp_string (&pp, msg);
   if (type)
-    {
-      pp_newline_and_indent (&pp, 0);
-      pp.type_id (type);
-    }
+    pp.type_id (type);
   else
     pp_string (&pp, "<null>");
   pp_newline_and_flush (&pp);
@@ -3179,6 +3167,7 @@ coro_flattened_statement::build_flattened_statement ()
   tree var = bind_vars;
   while (var)
     {
+      //coro_pretty_p_decl (var, "");
       add_decl_expr (var);
       var = DECL_CHAIN (var);
     }
@@ -3198,8 +3187,10 @@ coro_flattened_statement::build_flattened_statement ()
       tree var = dtor_list[x];
       tree_pair *t = vars_set.get (var);
       if (!t)
-	continue;
-
+	{
+	  coro_pretty_p_decl (var, "surprised to see no guard/cleanup: ");
+	  continue;
+	}
       tree guard_var = t->guard;
       tree cleanup = t->cleanup;
 
@@ -3224,6 +3215,7 @@ coro_flattened_statement::build_flattened_statement ()
     }
   else
     revised_statements = pop_stmt_list (try_);
+  //coro_pretty_p_statements (revised_statements, "revised: ");
 }
 
 tree
@@ -3257,7 +3249,13 @@ coro_flattened_statement::expression_for_node (var_nest_node *t)
   tree var = t->var;
   if (var)
     STRIP_NOPS (var);
-
+//  if (var)
+//    coro_pretty_p_decl (var, "saw: ");
+  if (var &&  t->cleanup && (!t->synthesized_var_p || !sets_var_p (var, t->init)))
+    {
+      coro_pretty_p_decl (var, "saw: ");
+      coro_pretty_p_expression (t->cleanup, "with cleanup : ");
+    }
   if (var
       && t->synthesized_var_p
       && sets_var_p (var, t->init))
@@ -3294,12 +3292,18 @@ coro_flattened_statement::maybe_set_guard_for_var (tree var, tree cleanup)
   bool existed;
 
   tree_pair &gvc = vars_set.get_or_insert (var, &existed);
+//  coro_pretty_p_decl (var, "checking: ");
   if (existed)
+    {
+    if (!gvc.cleanup && cleanup)
+      coro_pretty_p_decl (var, "cleanup now, but not when we first saw it: ");
     return gvc.guard; /* NULL_TREE if we do not need a guard.  */
+    }
 
   gvc.guard = NULL_TREE; /* Default to not needing a guard.  */
   gvc.cleanup = NULL_TREE;
   vars.safe_push (var);
+//  coro_pretty_p_decl (var, "added ");
 
   tree var_type = TREE_TYPE (var);
   if (cleanup || TYPE_HAS_NONTRIVIAL_DESTRUCTOR (var_type))
@@ -3349,6 +3353,7 @@ coro_flattened_statement::sets_var_p (tree v, tree expr)
       case AGGR_INIT_EXPR:
 	return AGGR_INIT_EXPR_SLOT (expr) == v;
       case CONSTRUCTOR:
+	coro_pretty_p_expression (expr, "sets_var_p: ");
 	break;
     }
   return false;
@@ -3458,6 +3463,7 @@ static unsigned temp_number = 0; // quick hack, fixme
       var_nest_node *ins = new var_nest_node (var, init, t->prev, t);
       ins->synthesized_var_p = true;
       ins->cleanup = cleanup;
+      //coro_pretty_p_expression (ins->cleanup, "cleanup: "); debug_tree(ins->cleanup);
       if (replace)
 	* replace = var;
       else
@@ -3482,7 +3488,13 @@ coro_flattened_statement::promote_node (var_nest_node *t)
 {
   tree expr = t->init;
   if (!expr)
+    {
+    if (t->var)
+      coro_pretty_p_decl (t->var, "surprised to see no init for ..");
+    else
+      fprintf (stderr, "node with no var or init?");
     return;
+    }
 
   /* Any address-taken expression with an un-promoted temp will be given
      a variable.  */
@@ -3603,6 +3615,7 @@ static unsigned temp_number = 0;
 	  var_nest_node *ins = new var_nest_node (var, init, t->prev, t);
 	  ins->synthesized_var_p = true;
 	  ins->cleanup = cleanup;
+      //coro_pretty_p_expression (ins->cleanup, "cleanup: "); debug_tree(ins->cleanup);
 	  *expr_p = var;
 	  /* Recurse into the replaced expr.  */
 	  hash_set<tree> visited;
@@ -3618,7 +3631,13 @@ coro_flattened_statement::promote_node_temporaries (var_nest_node *t)
 {
   tree expr = t->init;
   if (!expr)
+    {
+    if (t->var)
+      coro_pretty_p_decl (t->var, "surprised to see no init for ..");
+    else
+      fprintf (stderr, "node with no var or init?");
     return;
+    }
 
   /* Any address-taken expression with an un-promoted temp will be given
      a variable.  */
@@ -3753,8 +3772,9 @@ coro_flattened_statement::flatten_await_inner (var_nest_node *t, tree aw_expr)
       tree init_type = TREE_TYPE (init);
       if (TREE_CODE (init) == CONSTRUCTOR)
 	{
-	  if (!VOID_TYPE_P (init_type))
-	    init = build2_loc (loc, INIT_EXPR, TREE_TYPE (var), var, init);
+	coro_pretty_p_expression (init, "flatten_await: ");
+	if (!VOID_TYPE_P (init_type))
+	  init = build2_loc (loc, INIT_EXPR, TREE_TYPE (var), var, init);
 	}
       else if (TREE_CODE (init) == TARGET_EXPR)
 	{
@@ -4109,10 +4129,17 @@ coro_flattened_statement::flatten_constructor (var_nest_node *t, tree expr,
   hash_set<tree> visited;
   FOR_EACH_CONSTRUCTOR_ELT (CONSTRUCTOR_ELTS (expr), scratch_idx, index, val)
     {
+      if (TREE_CODE (index) != FIELD_DECL
+	  && cp_walk_tree (&index, find_any_await, &await_ptr, &visited))
+	{
+      coro_pretty_p_expression (val, "index = ");
+	}
+
       visited.empty ();
       if (!cp_walk_tree (&val, find_any_await, &await_ptr, &visited))
 	continue;
       flatten_await_inner (t, *await_ptr);
+      //coro_pretty_p_expression (val, "val = ");
     }
 
   /* Reassemble the original.  */
@@ -4221,6 +4248,7 @@ coro_flattened_statement::flatten_target (var_nest_node *t, tree expr,
 	flatten_await_inner (t, init);
 	break;
       default:
+	coro_pretty_p_expression (init, "flatten_target: ");
 	break;
     }
 
@@ -4547,6 +4575,7 @@ coro_flattened_statement::flatten_expression (var_nest_node *t)
 	}
       if (!discarded)
 	expr = build2_loc (loc, expr_code, TREE_TYPE (t->var), t->var, expr);
+      coro_pretty_p_expression (expr, "flatten_expression: ");
       t->init = expr;
       break;
     }
@@ -4573,6 +4602,8 @@ process_statement_with_awaits (tree *stmt, susp_frame_data *awpts)
   STRIP_NOPS (expr);
   if (TREE_CODE (expr) == EXPR_STMT)
     expr = EXPR_STMT_EXPR (expr);
+  else
+    coro_pretty_p_statements (*stmt, "was expecting an expression but got: ");
 
   /* lose any (void) cast.  */
   if (CONVERT_EXPR_P (expr) && VOID_TYPE_P (TREE_TYPE (expr)))
@@ -5696,6 +5727,8 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
   body_aw_points.bind_stack = make_tree_vector ();
   body_aw_points.to_replace = make_tree_vector ();
   cp_walk_tree (&fnbody, await_statement_walker, &body_aw_points, NULL);
+//
+//coro_pretty_p_statements (fnbody, "after await walker: ");
 
   /* 4. Now make space for local vars, this is conservative again, and we
      would expect to delete unused entries later.  */
