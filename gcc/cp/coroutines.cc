@@ -32,7 +32,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "tree.h"
 #include "gcc-rich-location.h"
 #include "hash-map.h"
-
+void debug_tree(tree);
 static bool coro_promise_type_found_p (tree, location_t);
 
 /* GCC C++ coroutines implementation.
@@ -832,6 +832,26 @@ coro_function_valid_p (tree fndecl)
   return true;
 }
 
+struct proxy_replace
+{
+  tree from, to;
+};
+
+static tree
+replace_proxy (tree *here, int *do_subtree, void *d)
+{
+  proxy_replace *data = (proxy_replace *) d;
+
+  if (*here == data->from)
+    {
+      *here = data->to;
+      *do_subtree = 0;
+    }
+  else
+    *do_subtree = 1;
+  return NULL_TREE;
+}
+
 enum suspend_point_kind {
   CO_AWAIT_SUSPEND_POINT = 0,
   CO_YIELD_SUSPEND_POINT,
@@ -899,6 +919,55 @@ coro_diagnose_throwing_final_aw_expr (tree expr)
     }
   fn = TREE_OPERAND (fn, 0);
   return coro_diagnose_throwing_fn (fn);
+}
+
+/* EXPR could describe an entity which is a sub-component (e.g. a component
+   ref or an array ref) of some other object.  Find such objects.  */
+static tree
+get_underlying_var (tree expr)
+{
+  STRIP_NOPS (expr);
+  if (INDIRECT_REF_P (expr))
+    expr = TREE_OPERAND (expr, 0);
+  switch (TREE_CODE (expr))
+    {
+    default:
+    case VAR_DECL:
+    case PARM_DECL:
+    case TARGET_EXPR:
+      return expr;
+      break;
+    case COMPONENT_REF:
+    case ARRAY_REF:
+      return get_underlying_var (TREE_OPERAND (expr, 0));
+      break;
+    case CALL_EXPR:
+      {
+	tree op = TREE_OPERAND (CALL_EXPR_FN (expr), 0);
+	if (!DECL_OVERLOADED_OPERATOR_P (op))
+	  return expr;
+	if (DECL_OVERLOADED_OPERATOR_IS (op, COMPONENT_REF)
+	    || DECL_OVERLOADED_OPERATOR_IS (op, ARRAY_REF))
+	  {
+	    expr = CALL_EXPR_ARG (expr, 0);
+	    STRIP_NOPS (expr);
+	    gcc_checking_assert (TREE_CODE (expr) == ADDR_EXPR);
+	    return get_underlying_var (TREE_OPERAND (expr, 0));
+	  }
+#if 1
+	else if (DECL_OVERLOADED_OPERATOR_IS (op, CO_AWAIT_EXPR))
+	  {
+	    expr = CALL_EXPR_ARG (expr, 0);
+	    debug_tree (expr);
+	    STRIP_NOPS (expr);
+	    gcc_checking_assert (TREE_CODE (expr) == ADDR_EXPR);
+	    return get_underlying_var (TREE_OPERAND (expr, 0));
+	  }
+#endif
+	  return expr;
+      }
+      break;
+    }
 }
 
 /*  This performs [expr.await] bullet 3.3 and validates the interface obtained.
@@ -991,39 +1060,31 @@ build_co_await (location_t loc, tree a, suspend_point_kind suspend_kind)
 
      If o is a variable, find the underlying var.  */
   tree e_proxy = STRIP_NOPS (o);
-  if (INDIRECT_REF_P (e_proxy))
-    e_proxy = TREE_OPERAND (e_proxy, 0);
-  while (TREE_CODE (e_proxy) == COMPONENT_REF)
-    {
-      e_proxy = TREE_OPERAND (e_proxy, 0);
-      if (INDIRECT_REF_P (e_proxy))
-	e_proxy = TREE_OPERAND (e_proxy, 0);
-      if (TREE_CODE (e_proxy) == CALL_EXPR)
-	{
-	  /* We could have operator-> here too.  */
-	  tree op = TREE_OPERAND (CALL_EXPR_FN (e_proxy), 0);
-	  if (DECL_OVERLOADED_OPERATOR_P (op)
-	      && DECL_OVERLOADED_OPERATOR_IS (op, COMPONENT_REF))
-	    {
-	      e_proxy = CALL_EXPR_ARG (e_proxy, 0);
-	      STRIP_NOPS (e_proxy);
-	      gcc_checking_assert (TREE_CODE (e_proxy) == ADDR_EXPR);
-	      e_proxy = TREE_OPERAND (e_proxy, 0);
-	    }
-	}
-      STRIP_NOPS (e_proxy);
-    }
+  tree var = get_underlying_var (e_proxy);
 
   /* Only build a temporary if we need it.  */
-  STRIP_NOPS (e_proxy);
-  if (TREE_CODE (e_proxy) == PARM_DECL
-      || (VAR_P (e_proxy) && !is_local_temp (e_proxy)))
+  STRIP_NOPS (var);
+  tree replace_target_expr = NULL_TREE;
+  if (TREE_CODE (var) == PARM_DECL || VAR_P (var))
     {
+//      coro_pretty_p_expression (o, "existing var : ");
       e_proxy = o;
       o = NULL_TREE; /* The var is already present.  */
     }
+  else if (TREE_CODE (var) == TARGET_EXPR)
+    {
+      replace_target_expr = var;
+      tree tv = TARGET_EXPR_SLOT (var);
+      proxy_replace rep = {var, tv};
+      cp_walk_tree (&o, replace_proxy, &rep, NULL);
+//      coro_pretty_p_expression (o, "replaced TE : ");
+      e_proxy = o;
+      o = NULL_TREE; /* We now split the expression so now based on a var.  */
+    }
   else
     {
+      // We just need to create a non-temp variable.
+//      coro_pretty_p_expression (o, "init, final or awaiter : ");
       e_proxy = get_awaitable_var (suspend_kind, o_type);
       o = cp_build_modify_expr (loc, e_proxy, INIT_EXPR, o,
 				tf_warning_or_error);
@@ -1133,6 +1194,10 @@ build_co_await (location_t loc, tree a, suspend_point_kind suspend_kind)
       await_expr = te;
     }
   SET_EXPR_LOCATION (await_expr, loc);
+  if (replace_target_expr)
+    return cp_build_compound_expr
+     (replace_target_expr, convert_from_reference (await_expr),
+      tf_warning_or_error);
   return convert_from_reference (await_expr);
 }
 
@@ -1555,26 +1620,6 @@ create_named_label_with_ctx (location_t loc, const char *name, tree ctx)
   DECL_ARTIFICIAL (lab) = true;
   TREE_USED (lab) = true;
   return lab;
-}
-
-struct proxy_replace
-{
-  tree from, to;
-};
-
-static tree
-replace_proxy (tree *here, int *do_subtree, void *d)
-{
-  proxy_replace *data = (proxy_replace *) d;
-
-  if (*here == data->from)
-    {
-      *here = data->to;
-      *do_subtree = 0;
-    }
-  else
-    *do_subtree = 1;
-  return NULL_TREE;
 }
 
 /* Support for expansion of co_await statements.  */
@@ -3217,8 +3262,15 @@ analyze_expression_awaits (tree *stmt, int *do_subtree, void *d)
 	/* FALLTHROUGH */
       case CO_AWAIT_EXPR:
 	awpts->saw_awaits++;
+	if (TREE_CODE (*stmt) == COMPOUND_EXPR)
+	  {
+	    /* co_yield replaced by co_await, but that is wrapped in a
+	       compound expr.  */
+	    if (TREE_OPERAND (TREE_OPERAND (*stmt, 1), 2))
+	      awpts->has_awaiter_init = true;
+	  }
 	/* A non-null initializer for the awaiter means we need to expand.  */
-	if (TREE_OPERAND (*stmt, 2))
+	else if (TREE_OPERAND (*stmt, 2))
 	  awpts->has_awaiter_init = true;
 	break;
       case TRUTH_ANDIF_EXPR:
@@ -4237,6 +4289,14 @@ coro_rewrite_function_body (location_t fn_start, tree fnbody, tree orig,
 	     In the case that the user decides to make the initial await
 	     await_resume() return a value, we need to discard it and, it is
 	     a reference type, look past the indirection.  */
+	  tree orig_init_await = nullptr;
+	  if (TREE_CODE (initial_await) == COMPOUND_EXPR)
+	    {
+	      /* We already have the await expr wrapped in a compound so fish
+		out the part we want to amend.  */
+	      orig_init_await = initial_await;
+	      initial_await = TREE_OPERAND (initial_await, 1);
+	    }
 	  if (INDIRECT_REF_P (initial_await))
 	    initial_await = TREE_OPERAND (initial_await, 0);
 	  tree vec = TREE_OPERAND (initial_await, 3);
@@ -4246,6 +4306,8 @@ coro_rewrite_function_body (location_t fn_start, tree fnbody, tree orig,
 				boolean_true_node);
 	  aw_r = cp_build_compound_expr (update, aw_r, tf_warning_or_error);
 	  TREE_VEC_ELT (vec, 2) = aw_r;
+	  if (orig_init_await)
+	    initial_await = orig_init_await;
 	}
       /* Add the initial await to the start of the user-authored function.  */
       finish_expr_stmt (initial_await);
