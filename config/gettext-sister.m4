@@ -12,17 +12,34 @@
 AC_DEFUN([ZW_GNU_GETTEXT_SISTER_DIR],
 [# If we haven't got the data from the intl directory,
 # assume NLS is disabled.
-USE_NLS=no	AC_SUBST(USE_NLS)
-LIBINTL=	AC_SUBST(LIBINTL)
-LIBINTL_DEP=	AC_SUBST(LIBINTL_DEP)
-INCINTL=	AC_SUBST(INCINTL)
-XGETTEXT=	AC_SUBST(XGETTEXT)
-GMSGFMT=	AC_SUBST(GMSGFMT)
-POSUB=		AC_SUBST(POSUB)
+USE_NLS=no
+LIBINTL=
+LIBINTL_DEP=
+INCINTL=
+XGETTEXT=
+GMSGFMT=
+POSUB=
 
-if test -f  ifelse([$1],,[../intl],[$1])/config.intl; then
+if test -f  ifelse([$1],,[../gettext-runtime],[$1])/Makefile; then
+  BUILD_INCLUDED_LIBINTL=`grep BUILD_INCLUDED_LIBINTL ../gettext-runtime/Makefile|sed s/BUILD_INCLUDED_LIBINTL\ =\ //`
+  USE_NLS=`grep USE_NLS ../gettext-runtime/Makefile|sed s/USE_NLS\ =\ //`
+  LIBICONV=`grep ^LIBICONV ../gettext-runtime/Makefile|sed s/LIBICONV\ =\ //`
+  INTL_MACOSX_LIBS=`grep ^INTL_MACOSX_LIBS ../gettext-runtime/Makefile|sed s/INTL_MACOSX_LIBS\ =\ //`
+  XGETTEXT=`grep XGETTEXT ../gettext-runtime/Makefile|sed s/XGETTEXT\ =\ //`
+  GMSGFMT=`grep GMSGFMT ../gettext-runtime/Makefile|sed s/GMSGFMT\ =\ //`
+  POSUB=`grep POSUB ../gettext-runtime/Makefile|sed s/POSUB\ =\ //`
+  LIBINTL="\${top_builddir}/../gettext-runtime/intl/.libs/libintl.a $LIBICONV $INTL_MACOSX_LIBS"
+  INCINTL="-I\${top_builddir}/../gettext-runtime/intl"
+elif test -f  ifelse([$1],,[../intl],[$1])/config.intl; then
   .  ifelse([$1],,[../intl],[$1])/config.intl
 fi
+AC_SUBST(USE_NLS)
+AC_SUBST(LIBINTL)
+AC_SUBST(LIBINTL_DEP)
+AC_SUBST(INCINTL)
+AC_SUBST(XGETTEXT)
+AC_SUBST(GMSGFMT)
+AC_SUBST(POSUB)
 AC_MSG_CHECKING([whether NLS is requested])
 if test x"$USE_NLS" != xyes; then
   AC_MSG_RESULT(no)

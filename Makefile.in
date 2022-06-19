@@ -757,7 +757,7 @@ TARGET_LIB_PATH_libatomic = $$r/$(TARGET_SUBDIR)/libatomic/.libs:
 
 # This is the list of directories that may be needed in RPATH_ENVVAR
 # so that programs built for the host machine work.
-HOST_LIB_PATH = $(HOST_LIB_PATH_gmp)$(HOST_LIB_PATH_mpfr)$(HOST_LIB_PATH_mpc)$(HOST_LIB_PATH_isl)
+HOST_LIB_PATH = $(HOST_LIB_PATH_gmp)$(HOST_LIB_PATH_mpfr)$(HOST_LIB_PATH_mpc)$(HOST_LIB_PATH_isl)$(HOST_LIB_PATH_gettext-runtime)
 
 # Define HOST_LIB_PATH_gcc here, for the sake of TARGET_LIB_PATH, ouch
 @if gcc
@@ -784,6 +784,11 @@ HOST_LIB_PATH_mpc = \
 HOST_LIB_PATH_isl = \
   $$r/$(HOST_SUBDIR)/isl/.libs:$$r/$(HOST_SUBDIR)/prev-isl/.libs:
 @endif isl
+
+@if gettext-runtime
+HOST_LIB_PATH_gettext-runtime = \
+  $$r/$(HOST_SUBDIR)/gettext-runtime/intl/.libs:$$r/$(HOST_SUBDIR)/prev-gettext-runtime/intl/.libs:
+@endif gettext-runtime
 
 
 CXX_FOR_TARGET_FLAG_TO_PASS = \
@@ -1084,6 +1089,7 @@ configure-host:  \
     maybe-configure-mpfr \
     maybe-configure-mpc \
     maybe-configure-isl \
+    maybe-configure-gettext-runtime \
     maybe-configure-gold \
     maybe-configure-gprof \
     maybe-configure-intl \
@@ -1235,6 +1241,9 @@ all-host: maybe-all-mpc
 @if isl-no-bootstrap
 all-host: maybe-all-isl
 @endif isl-no-bootstrap
+@if gettext-runtime-no-bootstrap
+all-host: maybe-all-gettext-runtime
+@endif gettext-runtime-no-bootstrap
 @if gold-no-bootstrap
 all-host: maybe-all-gold
 @endif gold-no-bootstrap
@@ -1376,6 +1385,7 @@ info-host: maybe-info-gmp
 info-host: maybe-info-mpfr
 info-host: maybe-info-mpc
 info-host: maybe-info-isl
+info-host: maybe-info-gettext-runtime
 info-host: maybe-info-gold
 info-host: maybe-info-gprof
 info-host: maybe-info-intl
@@ -1466,6 +1476,7 @@ dvi-host: maybe-dvi-gmp
 dvi-host: maybe-dvi-mpfr
 dvi-host: maybe-dvi-mpc
 dvi-host: maybe-dvi-isl
+dvi-host: maybe-dvi-gettext-runtime
 dvi-host: maybe-dvi-gold
 dvi-host: maybe-dvi-gprof
 dvi-host: maybe-dvi-intl
@@ -1556,6 +1567,7 @@ pdf-host: maybe-pdf-gmp
 pdf-host: maybe-pdf-mpfr
 pdf-host: maybe-pdf-mpc
 pdf-host: maybe-pdf-isl
+pdf-host: maybe-pdf-gettext-runtime
 pdf-host: maybe-pdf-gold
 pdf-host: maybe-pdf-gprof
 pdf-host: maybe-pdf-intl
@@ -1646,6 +1658,7 @@ html-host: maybe-html-gmp
 html-host: maybe-html-mpfr
 html-host: maybe-html-mpc
 html-host: maybe-html-isl
+html-host: maybe-html-gettext-runtime
 html-host: maybe-html-gold
 html-host: maybe-html-gprof
 html-host: maybe-html-intl
@@ -1736,6 +1749,7 @@ TAGS-host: maybe-TAGS-gmp
 TAGS-host: maybe-TAGS-mpfr
 TAGS-host: maybe-TAGS-mpc
 TAGS-host: maybe-TAGS-isl
+TAGS-host: maybe-TAGS-gettext-runtime
 TAGS-host: maybe-TAGS-gold
 TAGS-host: maybe-TAGS-gprof
 TAGS-host: maybe-TAGS-intl
@@ -1826,6 +1840,7 @@ install-info-host: maybe-install-info-gmp
 install-info-host: maybe-install-info-mpfr
 install-info-host: maybe-install-info-mpc
 install-info-host: maybe-install-info-isl
+install-info-host: maybe-install-info-gettext-runtime
 install-info-host: maybe-install-info-gold
 install-info-host: maybe-install-info-gprof
 install-info-host: maybe-install-info-intl
@@ -1916,6 +1931,7 @@ install-dvi-host: maybe-install-dvi-gmp
 install-dvi-host: maybe-install-dvi-mpfr
 install-dvi-host: maybe-install-dvi-mpc
 install-dvi-host: maybe-install-dvi-isl
+install-dvi-host: maybe-install-dvi-gettext-runtime
 install-dvi-host: maybe-install-dvi-gold
 install-dvi-host: maybe-install-dvi-gprof
 install-dvi-host: maybe-install-dvi-intl
@@ -2006,6 +2022,7 @@ install-pdf-host: maybe-install-pdf-gmp
 install-pdf-host: maybe-install-pdf-mpfr
 install-pdf-host: maybe-install-pdf-mpc
 install-pdf-host: maybe-install-pdf-isl
+install-pdf-host: maybe-install-pdf-gettext-runtime
 install-pdf-host: maybe-install-pdf-gold
 install-pdf-host: maybe-install-pdf-gprof
 install-pdf-host: maybe-install-pdf-intl
@@ -2096,6 +2113,7 @@ install-html-host: maybe-install-html-gmp
 install-html-host: maybe-install-html-mpfr
 install-html-host: maybe-install-html-mpc
 install-html-host: maybe-install-html-isl
+install-html-host: maybe-install-html-gettext-runtime
 install-html-host: maybe-install-html-gold
 install-html-host: maybe-install-html-gprof
 install-html-host: maybe-install-html-intl
@@ -2186,6 +2204,7 @@ installcheck-host: maybe-installcheck-gmp
 installcheck-host: maybe-installcheck-mpfr
 installcheck-host: maybe-installcheck-mpc
 installcheck-host: maybe-installcheck-isl
+installcheck-host: maybe-installcheck-gettext-runtime
 installcheck-host: maybe-installcheck-gold
 installcheck-host: maybe-installcheck-gprof
 installcheck-host: maybe-installcheck-intl
@@ -2276,6 +2295,7 @@ mostlyclean-host: maybe-mostlyclean-gmp
 mostlyclean-host: maybe-mostlyclean-mpfr
 mostlyclean-host: maybe-mostlyclean-mpc
 mostlyclean-host: maybe-mostlyclean-isl
+mostlyclean-host: maybe-mostlyclean-gettext-runtime
 mostlyclean-host: maybe-mostlyclean-gold
 mostlyclean-host: maybe-mostlyclean-gprof
 mostlyclean-host: maybe-mostlyclean-intl
@@ -2366,6 +2386,7 @@ clean-host: maybe-clean-gmp
 clean-host: maybe-clean-mpfr
 clean-host: maybe-clean-mpc
 clean-host: maybe-clean-isl
+clean-host: maybe-clean-gettext-runtime
 clean-host: maybe-clean-gold
 clean-host: maybe-clean-gprof
 clean-host: maybe-clean-intl
@@ -2456,6 +2477,7 @@ distclean-host: maybe-distclean-gmp
 distclean-host: maybe-distclean-mpfr
 distclean-host: maybe-distclean-mpc
 distclean-host: maybe-distclean-isl
+distclean-host: maybe-distclean-gettext-runtime
 distclean-host: maybe-distclean-gold
 distclean-host: maybe-distclean-gprof
 distclean-host: maybe-distclean-intl
@@ -2546,6 +2568,7 @@ maintainer-clean-host: maybe-maintainer-clean-gmp
 maintainer-clean-host: maybe-maintainer-clean-mpfr
 maintainer-clean-host: maybe-maintainer-clean-mpc
 maintainer-clean-host: maybe-maintainer-clean-isl
+maintainer-clean-host: maybe-maintainer-clean-gettext-runtime
 maintainer-clean-host: maybe-maintainer-clean-gold
 maintainer-clean-host: maybe-maintainer-clean-gprof
 maintainer-clean-host: maybe-maintainer-clean-intl
@@ -2694,6 +2717,7 @@ check-host:  \
     maybe-check-mpfr \
     maybe-check-mpc \
     maybe-check-isl \
+    maybe-check-gettext-runtime \
     maybe-check-gold \
     maybe-check-gprof \
     maybe-check-intl \
@@ -2831,6 +2855,7 @@ install-host-nogcc:  \
     maybe-install-mpfr \
     maybe-install-mpc \
     maybe-install-isl \
+    maybe-install-gettext-runtime \
     maybe-install-gold \
     maybe-install-gprof \
     maybe-install-intl \
@@ -2886,6 +2911,7 @@ install-host:  \
     maybe-install-mpfr \
     maybe-install-mpc \
     maybe-install-isl \
+    maybe-install-gettext-runtime \
     maybe-install-gold \
     maybe-install-gprof \
     maybe-install-intl \
@@ -2996,6 +3022,7 @@ install-strip-host:  \
     maybe-install-strip-mpfr \
     maybe-install-strip-mpc \
     maybe-install-strip-isl \
+    maybe-install-strip-gettext-runtime \
     maybe-install-strip-gold \
     maybe-install-strip-gprof \
     maybe-install-strip-intl \
@@ -17678,6 +17705,1143 @@ maintainer-clean-isl:
 	  || exit 1
 
 @endif isl
+
+
+
+.PHONY: configure-gettext-runtime maybe-configure-gettext-runtime
+maybe-configure-gettext-runtime:
+@if gcc-bootstrap
+configure-gettext-runtime: stage_current
+@endif gcc-bootstrap
+@if gettext-runtime
+maybe-configure-gettext-runtime: configure-gettext-runtime
+configure-gettext-runtime: 
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	$(HOST_EXPORTS)  \
+	echo Configuring in $(HOST_SUBDIR)/gettext-runtime; \
+	cd "$(HOST_SUBDIR)/gettext-runtime" || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) \
+	  $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} --disable-shared --disable-java --disable-csharp \
+	  || exit 1
+@endif gettext-runtime
+
+
+
+.PHONY: configure-stage1-gettext-runtime maybe-configure-stage1-gettext-runtime
+maybe-configure-stage1-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stage1-gettext-runtime: configure-stage1-gettext-runtime
+configure-stage1-gettext-runtime:
+	@[ $(current_stage) = stage1 ] || $(MAKE) stage1-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE1_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	CFLAGS="$(STAGE1_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGE1_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(LIBCFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage 1 in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	   \
+	  $(STAGE1_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stage2-gettext-runtime maybe-configure-stage2-gettext-runtime
+maybe-configure-stage2-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stage2-gettext-runtime: configure-stage2-gettext-runtime
+configure-stage2-gettext-runtime:
+	@[ $(current_stage) = stage2 ] || $(MAKE) stage2-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE2_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGE2_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGE2_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGE2_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage 2 in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGE2_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stage3-gettext-runtime maybe-configure-stage3-gettext-runtime
+maybe-configure-stage3-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stage3-gettext-runtime: configure-stage3-gettext-runtime
+configure-stage3-gettext-runtime:
+	@[ $(current_stage) = stage3 ] || $(MAKE) stage3-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE3_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGE3_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGE3_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGE3_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage 3 in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGE3_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stage4-gettext-runtime maybe-configure-stage4-gettext-runtime
+maybe-configure-stage4-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stage4-gettext-runtime: configure-stage4-gettext-runtime
+configure-stage4-gettext-runtime:
+	@[ $(current_stage) = stage4 ] || $(MAKE) stage4-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE4_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGE4_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGE4_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGE4_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage 4 in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGE4_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stageprofile-gettext-runtime maybe-configure-stageprofile-gettext-runtime
+maybe-configure-stageprofile-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stageprofile-gettext-runtime: configure-stageprofile-gettext-runtime
+configure-stageprofile-gettext-runtime:
+	@[ $(current_stage) = stageprofile ] || $(MAKE) stageprofile-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEprofile_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGEprofile_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGEprofile_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGEprofile_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage profile in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEprofile_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stagetrain-gettext-runtime maybe-configure-stagetrain-gettext-runtime
+maybe-configure-stagetrain-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stagetrain-gettext-runtime: configure-stagetrain-gettext-runtime
+configure-stagetrain-gettext-runtime:
+	@[ $(current_stage) = stagetrain ] || $(MAKE) stagetrain-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEtrain_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGEtrain_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGEtrain_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGEtrain_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage train in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEtrain_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stagefeedback-gettext-runtime maybe-configure-stagefeedback-gettext-runtime
+maybe-configure-stagefeedback-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stagefeedback-gettext-runtime: configure-stagefeedback-gettext-runtime
+configure-stagefeedback-gettext-runtime:
+	@[ $(current_stage) = stagefeedback ] || $(MAKE) stagefeedback-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEfeedback_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGEfeedback_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGEfeedback_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGEfeedback_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage feedback in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEfeedback_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stageautoprofile-gettext-runtime maybe-configure-stageautoprofile-gettext-runtime
+maybe-configure-stageautoprofile-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stageautoprofile-gettext-runtime: configure-stageautoprofile-gettext-runtime
+configure-stageautoprofile-gettext-runtime:
+	@[ $(current_stage) = stageautoprofile ] || $(MAKE) stageautoprofile-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEautoprofile_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGEautoprofile_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGEautoprofile_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGEautoprofile_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage autoprofile in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEautoprofile_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+.PHONY: configure-stageautofeedback-gettext-runtime maybe-configure-stageautofeedback-gettext-runtime
+maybe-configure-stageautofeedback-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-configure-stageautofeedback-gettext-runtime: configure-stageautofeedback-gettext-runtime
+configure-stageautofeedback-gettext-runtime:
+	@[ $(current_stage) = stageautofeedback ] || $(MAKE) stageautofeedback-start
+	@$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEautofeedback_TFLAGS)"; \
+	test ! -f $(HOST_SUBDIR)/gettext-runtime/Makefile || exit 0; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS) \
+	CFLAGS="$(STAGEautofeedback_CFLAGS)"; export CFLAGS; \
+	CXXFLAGS="$(STAGEautofeedback_CXXFLAGS)"; export CXXFLAGS; \
+	LIBCFLAGS="$(STAGEautofeedback_CFLAGS)"; export LIBCFLAGS;  \
+	echo Configuring stage autofeedback in $(HOST_SUBDIR)/gettext-runtime; \
+	$(SHELL) $(srcdir)/mkinstalldirs $(HOST_SUBDIR)/gettext-runtime; \
+	cd $(HOST_SUBDIR)/gettext-runtime || exit 1; \
+	case $(srcdir) in \
+	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+	  *) topdir=`echo $(HOST_SUBDIR)/gettext-runtime/ | \
+		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+	esac; \
+	module_srcdir=gettext-runtime; \
+	$(SHELL) $$s/$$module_srcdir/configure \
+	  --srcdir=$${topdir}/$$module_srcdir \
+	  $(HOST_CONFIGARGS) --build=${build_alias} --host=${host_alias} \
+	  --target=${target_alias} \
+	  --with-build-libsubdir=$(HOST_SUBDIR) \
+	  $(STAGEautofeedback_CONFIGURE_FLAGS) \
+	  --disable-shared --disable-java --disable-csharp
+@endif gettext-runtime-bootstrap
+
+
+
+
+
+.PHONY: all-gettext-runtime maybe-all-gettext-runtime
+maybe-all-gettext-runtime:
+@if gcc-bootstrap
+all-gettext-runtime: stage_current
+@endif gcc-bootstrap
+@if gettext-runtime
+TARGET-gettext-runtime=all
+maybe-all-gettext-runtime: all-gettext-runtime
+all-gettext-runtime: configure-gettext-runtime
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS)  \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) $(EXTRA_HOST_FLAGS) $(STAGE1_FLAGS_TO_PASS)  \
+		$(TARGET-gettext-runtime))
+@endif gettext-runtime
+
+
+
+.PHONY: all-stage1-gettext-runtime maybe-all-stage1-gettext-runtime
+.PHONY: clean-stage1-gettext-runtime maybe-clean-stage1-gettext-runtime
+maybe-all-stage1-gettext-runtime:
+maybe-clean-stage1-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stage1-gettext-runtime: all-stage1-gettext-runtime
+all-stage1: all-stage1-gettext-runtime
+TARGET-stage1-gettext-runtime = $(TARGET-gettext-runtime)
+all-stage1-gettext-runtime: configure-stage1-gettext-runtime
+	@[ $(current_stage) = stage1 ] || $(MAKE) stage1-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE1_TFLAGS)"; \
+	$(HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGE1_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGE1_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGE1_CXXFLAGS)" \
+		LIBCFLAGS="$(LIBCFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS)  \
+		$(STAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGE1_TFLAGS)"  \
+		$(TARGET-stage1-gettext-runtime)
+
+maybe-clean-stage1-gettext-runtime: clean-stage1-gettext-runtime
+clean-stage1: clean-stage1-gettext-runtime
+clean-stage1-gettext-runtime:
+	@if [ $(current_stage) = stage1 ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stage1-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stage1-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS)  \
+	$(STAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stage2-gettext-runtime maybe-all-stage2-gettext-runtime
+.PHONY: clean-stage2-gettext-runtime maybe-clean-stage2-gettext-runtime
+maybe-all-stage2-gettext-runtime:
+maybe-clean-stage2-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stage2-gettext-runtime: all-stage2-gettext-runtime
+all-stage2: all-stage2-gettext-runtime
+TARGET-stage2-gettext-runtime = $(TARGET-gettext-runtime)
+all-stage2-gettext-runtime: configure-stage2-gettext-runtime
+	@[ $(current_stage) = stage2 ] || $(MAKE) stage2-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE2_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGE2_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGE2_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGE2_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGE2_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGE2_TFLAGS)"  \
+		$(TARGET-stage2-gettext-runtime)
+
+maybe-clean-stage2-gettext-runtime: clean-stage2-gettext-runtime
+clean-stage2: clean-stage2-gettext-runtime
+clean-stage2-gettext-runtime:
+	@if [ $(current_stage) = stage2 ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stage2-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stage2-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stage3-gettext-runtime maybe-all-stage3-gettext-runtime
+.PHONY: clean-stage3-gettext-runtime maybe-clean-stage3-gettext-runtime
+maybe-all-stage3-gettext-runtime:
+maybe-clean-stage3-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stage3-gettext-runtime: all-stage3-gettext-runtime
+all-stage3: all-stage3-gettext-runtime
+TARGET-stage3-gettext-runtime = $(TARGET-gettext-runtime)
+all-stage3-gettext-runtime: configure-stage3-gettext-runtime
+	@[ $(current_stage) = stage3 ] || $(MAKE) stage3-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE3_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGE3_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGE3_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGE3_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGE3_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGE3_TFLAGS)"  \
+		$(TARGET-stage3-gettext-runtime)
+
+maybe-clean-stage3-gettext-runtime: clean-stage3-gettext-runtime
+clean-stage3: clean-stage3-gettext-runtime
+clean-stage3-gettext-runtime:
+	@if [ $(current_stage) = stage3 ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stage3-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stage3-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stage4-gettext-runtime maybe-all-stage4-gettext-runtime
+.PHONY: clean-stage4-gettext-runtime maybe-clean-stage4-gettext-runtime
+maybe-all-stage4-gettext-runtime:
+maybe-clean-stage4-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stage4-gettext-runtime: all-stage4-gettext-runtime
+all-stage4: all-stage4-gettext-runtime
+TARGET-stage4-gettext-runtime = $(TARGET-gettext-runtime)
+all-stage4-gettext-runtime: configure-stage4-gettext-runtime
+	@[ $(current_stage) = stage4 ] || $(MAKE) stage4-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGE4_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGE4_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGE4_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGE4_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGE4_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGE4_TFLAGS)"  \
+		$(TARGET-stage4-gettext-runtime)
+
+maybe-clean-stage4-gettext-runtime: clean-stage4-gettext-runtime
+clean-stage4: clean-stage4-gettext-runtime
+clean-stage4-gettext-runtime:
+	@if [ $(current_stage) = stage4 ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stage4-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stage4-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stageprofile-gettext-runtime maybe-all-stageprofile-gettext-runtime
+.PHONY: clean-stageprofile-gettext-runtime maybe-clean-stageprofile-gettext-runtime
+maybe-all-stageprofile-gettext-runtime:
+maybe-clean-stageprofile-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stageprofile-gettext-runtime: all-stageprofile-gettext-runtime
+all-stageprofile: all-stageprofile-gettext-runtime
+TARGET-stageprofile-gettext-runtime = $(TARGET-gettext-runtime)
+all-stageprofile-gettext-runtime: configure-stageprofile-gettext-runtime
+	@[ $(current_stage) = stageprofile ] || $(MAKE) stageprofile-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEprofile_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGEprofile_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGEprofile_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGEprofile_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGEprofile_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGEprofile_TFLAGS)"  \
+		$(TARGET-stageprofile-gettext-runtime)
+
+maybe-clean-stageprofile-gettext-runtime: clean-stageprofile-gettext-runtime
+clean-stageprofile: clean-stageprofile-gettext-runtime
+clean-stageprofile-gettext-runtime:
+	@if [ $(current_stage) = stageprofile ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stageprofile-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stageprofile-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stagetrain-gettext-runtime maybe-all-stagetrain-gettext-runtime
+.PHONY: clean-stagetrain-gettext-runtime maybe-clean-stagetrain-gettext-runtime
+maybe-all-stagetrain-gettext-runtime:
+maybe-clean-stagetrain-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stagetrain-gettext-runtime: all-stagetrain-gettext-runtime
+all-stagetrain: all-stagetrain-gettext-runtime
+TARGET-stagetrain-gettext-runtime = $(TARGET-gettext-runtime)
+all-stagetrain-gettext-runtime: configure-stagetrain-gettext-runtime
+	@[ $(current_stage) = stagetrain ] || $(MAKE) stagetrain-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEtrain_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGEtrain_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGEtrain_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGEtrain_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGEtrain_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGEtrain_TFLAGS)"  \
+		$(TARGET-stagetrain-gettext-runtime)
+
+maybe-clean-stagetrain-gettext-runtime: clean-stagetrain-gettext-runtime
+clean-stagetrain: clean-stagetrain-gettext-runtime
+clean-stagetrain-gettext-runtime:
+	@if [ $(current_stage) = stagetrain ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stagetrain-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stagetrain-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stagefeedback-gettext-runtime maybe-all-stagefeedback-gettext-runtime
+.PHONY: clean-stagefeedback-gettext-runtime maybe-clean-stagefeedback-gettext-runtime
+maybe-all-stagefeedback-gettext-runtime:
+maybe-clean-stagefeedback-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stagefeedback-gettext-runtime: all-stagefeedback-gettext-runtime
+all-stagefeedback: all-stagefeedback-gettext-runtime
+TARGET-stagefeedback-gettext-runtime = $(TARGET-gettext-runtime)
+all-stagefeedback-gettext-runtime: configure-stagefeedback-gettext-runtime
+	@[ $(current_stage) = stagefeedback ] || $(MAKE) stagefeedback-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEfeedback_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGEfeedback_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGEfeedback_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGEfeedback_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGEfeedback_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGEfeedback_TFLAGS)"  \
+		$(TARGET-stagefeedback-gettext-runtime)
+
+maybe-clean-stagefeedback-gettext-runtime: clean-stagefeedback-gettext-runtime
+clean-stagefeedback: clean-stagefeedback-gettext-runtime
+clean-stagefeedback-gettext-runtime:
+	@if [ $(current_stage) = stagefeedback ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stagefeedback-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stagefeedback-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stageautoprofile-gettext-runtime maybe-all-stageautoprofile-gettext-runtime
+.PHONY: clean-stageautoprofile-gettext-runtime maybe-clean-stageautoprofile-gettext-runtime
+maybe-all-stageautoprofile-gettext-runtime:
+maybe-clean-stageautoprofile-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stageautoprofile-gettext-runtime: all-stageautoprofile-gettext-runtime
+all-stageautoprofile: all-stageautoprofile-gettext-runtime
+TARGET-stageautoprofile-gettext-runtime = $(TARGET-gettext-runtime)
+all-stageautoprofile-gettext-runtime: configure-stageautoprofile-gettext-runtime
+	@[ $(current_stage) = stageautoprofile ] || $(MAKE) stageautoprofile-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEautoprofile_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$$s/gcc/config/i386/$(AUTO_PROFILE) \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGEautoprofile_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGEautoprofile_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGEautoprofile_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGEautoprofile_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGEautoprofile_TFLAGS)"  \
+		$(TARGET-stageautoprofile-gettext-runtime)
+
+maybe-clean-stageautoprofile-gettext-runtime: clean-stageautoprofile-gettext-runtime
+clean-stageautoprofile: clean-stageautoprofile-gettext-runtime
+clean-stageautoprofile-gettext-runtime:
+	@if [ $(current_stage) = stageautoprofile ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stageautoprofile-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stageautoprofile-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+.PHONY: all-stageautofeedback-gettext-runtime maybe-all-stageautofeedback-gettext-runtime
+.PHONY: clean-stageautofeedback-gettext-runtime maybe-clean-stageautofeedback-gettext-runtime
+maybe-all-stageautofeedback-gettext-runtime:
+maybe-clean-stageautofeedback-gettext-runtime:
+@if gettext-runtime-bootstrap
+maybe-all-stageautofeedback-gettext-runtime: all-stageautofeedback-gettext-runtime
+all-stageautofeedback: all-stageautofeedback-gettext-runtime
+TARGET-stageautofeedback-gettext-runtime = $(TARGET-gettext-runtime)
+all-stageautofeedback-gettext-runtime: configure-stageautofeedback-gettext-runtime
+	@[ $(current_stage) = stageautofeedback ] || $(MAKE) stageautofeedback-start
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	TFLAGS="$(STAGEautofeedback_TFLAGS)"; \
+	$(HOST_EXPORTS) \
+	$(POSTSTAGE1_HOST_EXPORTS)  \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	 \
+	$(MAKE) $(BASE_FLAGS_TO_PASS) \
+		CFLAGS="$(STAGEautofeedback_CFLAGS)" \
+		GENERATOR_CFLAGS="$(STAGEautofeedback_GENERATOR_CFLAGS)" \
+		CXXFLAGS="$(STAGEautofeedback_CXXFLAGS)" \
+		LIBCFLAGS="$(STAGEautofeedback_CFLAGS)" \
+		CFLAGS_FOR_TARGET="$(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="$(CXXFLAGS_FOR_TARGET)" \
+		LIBCFLAGS_FOR_TARGET="$(LIBCFLAGS_FOR_TARGET)" \
+		$(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  \
+		TFLAGS="$(STAGEautofeedback_TFLAGS)" PERF_DATA=perf.data \
+		$(TARGET-stageautofeedback-gettext-runtime)
+
+maybe-clean-stageautofeedback-gettext-runtime: clean-stageautofeedback-gettext-runtime
+clean-stageautofeedback: clean-stageautofeedback-gettext-runtime
+clean-stageautofeedback-gettext-runtime:
+	@if [ $(current_stage) = stageautofeedback ]; then \
+	  [ -f $(HOST_SUBDIR)/gettext-runtime/Makefile ] || exit 0; \
+	else \
+	  [ -f $(HOST_SUBDIR)/stageautofeedback-gettext-runtime/Makefile ] || exit 0; \
+	  $(MAKE) stageautofeedback-start; \
+	fi; \
+	cd $(HOST_SUBDIR)/gettext-runtime && \
+	$(MAKE) $(EXTRA_HOST_FLAGS) $(POSTSTAGE1_FLAGS_TO_PASS)  clean
+@endif gettext-runtime-bootstrap
+
+
+
+
+
+.PHONY: check-gettext-runtime maybe-check-gettext-runtime
+maybe-check-gettext-runtime:
+@if gettext-runtime
+maybe-check-gettext-runtime: check-gettext-runtime
+
+check-gettext-runtime:
+	@: $(MAKE); $(unstage)
+	@r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) $(EXTRA_HOST_EXPORTS) \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(FLAGS_TO_PASS)  $(EXTRA_BOOTSTRAP_FLAGS) check)
+
+@endif gettext-runtime
+
+.PHONY: install-gettext-runtime maybe-install-gettext-runtime
+maybe-install-gettext-runtime:
+@if gettext-runtime
+maybe-install-gettext-runtime: install-gettext-runtime
+
+install-gettext-runtime:
+
+@endif gettext-runtime
+
+.PHONY: install-strip-gettext-runtime maybe-install-strip-gettext-runtime
+maybe-install-strip-gettext-runtime:
+@if gettext-runtime
+maybe-install-strip-gettext-runtime: install-strip-gettext-runtime
+
+install-strip-gettext-runtime:
+
+@endif gettext-runtime
+
+# Other targets (info, dvi, pdf, etc.)
+
+.PHONY: maybe-info-gettext-runtime info-gettext-runtime
+maybe-info-gettext-runtime:
+@if gettext-runtime
+maybe-info-gettext-runtime: info-gettext-runtime
+
+info-gettext-runtime: \
+    configure-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing info in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          info) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-dvi-gettext-runtime dvi-gettext-runtime
+maybe-dvi-gettext-runtime:
+@if gettext-runtime
+maybe-dvi-gettext-runtime: dvi-gettext-runtime
+
+dvi-gettext-runtime: \
+    configure-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing dvi in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          dvi) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-pdf-gettext-runtime pdf-gettext-runtime
+maybe-pdf-gettext-runtime:
+@if gettext-runtime
+maybe-pdf-gettext-runtime: pdf-gettext-runtime
+
+pdf-gettext-runtime: \
+    configure-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing pdf in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          pdf) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-html-gettext-runtime html-gettext-runtime
+maybe-html-gettext-runtime:
+@if gettext-runtime
+maybe-html-gettext-runtime: html-gettext-runtime
+
+html-gettext-runtime: \
+    configure-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing html in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          html) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-TAGS-gettext-runtime TAGS-gettext-runtime
+maybe-TAGS-gettext-runtime:
+@if gettext-runtime
+maybe-TAGS-gettext-runtime: TAGS-gettext-runtime
+
+TAGS-gettext-runtime: \
+    configure-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing TAGS in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          TAGS) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-install-info-gettext-runtime install-info-gettext-runtime
+maybe-install-info-gettext-runtime:
+@if gettext-runtime
+maybe-install-info-gettext-runtime: install-info-gettext-runtime
+
+install-info-gettext-runtime: \
+    configure-gettext-runtime \
+    info-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing install-info in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          install-info) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-install-dvi-gettext-runtime install-dvi-gettext-runtime
+maybe-install-dvi-gettext-runtime:
+@if gettext-runtime
+maybe-install-dvi-gettext-runtime: install-dvi-gettext-runtime
+
+install-dvi-gettext-runtime: \
+    configure-gettext-runtime \
+    dvi-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing install-dvi in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          install-dvi) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-install-pdf-gettext-runtime install-pdf-gettext-runtime
+maybe-install-pdf-gettext-runtime:
+@if gettext-runtime
+maybe-install-pdf-gettext-runtime: install-pdf-gettext-runtime
+
+install-pdf-gettext-runtime: \
+    configure-gettext-runtime \
+    pdf-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing install-pdf in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          install-pdf) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-install-html-gettext-runtime install-html-gettext-runtime
+maybe-install-html-gettext-runtime:
+@if gettext-runtime
+maybe-install-html-gettext-runtime: install-html-gettext-runtime
+
+install-html-gettext-runtime: \
+    configure-gettext-runtime \
+    html-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing install-html in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          install-html) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-installcheck-gettext-runtime installcheck-gettext-runtime
+maybe-installcheck-gettext-runtime:
+@if gettext-runtime
+maybe-installcheck-gettext-runtime: installcheck-gettext-runtime
+
+installcheck-gettext-runtime: \
+    configure-gettext-runtime 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing installcheck in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          installcheck) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-mostlyclean-gettext-runtime mostlyclean-gettext-runtime
+maybe-mostlyclean-gettext-runtime:
+@if gettext-runtime
+maybe-mostlyclean-gettext-runtime: mostlyclean-gettext-runtime
+
+mostlyclean-gettext-runtime: 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing mostlyclean in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          mostlyclean) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-clean-gettext-runtime clean-gettext-runtime
+maybe-clean-gettext-runtime:
+@if gettext-runtime
+maybe-clean-gettext-runtime: clean-gettext-runtime
+
+clean-gettext-runtime: 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing clean in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          clean) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-distclean-gettext-runtime distclean-gettext-runtime
+maybe-distclean-gettext-runtime:
+@if gettext-runtime
+maybe-distclean-gettext-runtime: distclean-gettext-runtime
+
+distclean-gettext-runtime: 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing distclean in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          distclean) \
+	  || exit 1
+
+@endif gettext-runtime
+
+.PHONY: maybe-maintainer-clean-gettext-runtime maintainer-clean-gettext-runtime
+maybe-maintainer-clean-gettext-runtime:
+@if gettext-runtime
+maybe-maintainer-clean-gettext-runtime: maintainer-clean-gettext-runtime
+
+maintainer-clean-gettext-runtime: 
+	@[ -f ./gettext-runtime/Makefile ] || exit 0; \
+	r=`${PWD_COMMAND}`; export r; \
+	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+	$(HOST_EXPORTS) \
+	for flag in $(EXTRA_HOST_FLAGS) ; do \
+	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+	done; \
+	echo "Doing maintainer-clean in gettext-runtime"; \
+	(cd $(HOST_SUBDIR)/gettext-runtime && \
+	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+	          "RANLIB=$${RANLIB}" \
+	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+	          maintainer-clean) \
+	  || exit 1
+
+@endif gettext-runtime
 
 
 
@@ -61900,6 +63064,11 @@ stage1-start::
 	  mkdir stage1-isl; \
 	mv stage1-isl isl
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stage1-gettext-runtime ] || \
+	  mkdir stage1-gettext-runtime; \
+	mv stage1-gettext-runtime gettext-runtime
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stage1-gold ] || \
 	  mkdir stage1-gold; \
@@ -62025,6 +63194,11 @@ stage1-end::
 	  cd $(HOST_SUBDIR); mv isl stage1-isl; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stage1-gettext-runtime; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stage1-gold; \
@@ -62203,6 +63377,12 @@ stage2-start::
 	mv stage2-isl isl; \
 	mv stage1-isl prev-isl || test -f stage1-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stage2-gettext-runtime ] || \
+	  mkdir stage2-gettext-runtime; \
+	mv stage2-gettext-runtime gettext-runtime; \
+	mv stage1-gettext-runtime prev-gettext-runtime || test -f stage1-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stage2-gold ] || \
 	  mkdir stage2-gold; \
@@ -62353,6 +63533,12 @@ stage2-end::
 	  mv prev-isl stage1-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stage2-gettext-runtime; \
+	  mv prev-gettext-runtime stage1-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stage2-gold; \
@@ -62569,6 +63755,12 @@ stage3-start::
 	mv stage3-isl isl; \
 	mv stage2-isl prev-isl || test -f stage2-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stage3-gettext-runtime ] || \
+	  mkdir stage3-gettext-runtime; \
+	mv stage3-gettext-runtime gettext-runtime; \
+	mv stage2-gettext-runtime prev-gettext-runtime || test -f stage2-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stage3-gold ] || \
 	  mkdir stage3-gold; \
@@ -62719,6 +63911,12 @@ stage3-end::
 	  mv prev-isl stage2-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stage3-gettext-runtime; \
+	  mv prev-gettext-runtime stage2-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stage3-gold; \
@@ -62991,6 +64189,12 @@ stage4-start::
 	mv stage4-isl isl; \
 	mv stage3-isl prev-isl || test -f stage3-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stage4-gettext-runtime ] || \
+	  mkdir stage4-gettext-runtime; \
+	mv stage4-gettext-runtime gettext-runtime; \
+	mv stage3-gettext-runtime prev-gettext-runtime || test -f stage3-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stage4-gold ] || \
 	  mkdir stage4-gold; \
@@ -63141,6 +64345,12 @@ stage4-end::
 	  mv prev-isl stage3-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stage4-gettext-runtime; \
+	  mv prev-gettext-runtime stage3-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stage4-gold; \
@@ -63401,6 +64611,12 @@ stageprofile-start::
 	mv stageprofile-isl isl; \
 	mv stage1-isl prev-isl || test -f stage1-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stageprofile-gettext-runtime ] || \
+	  mkdir stageprofile-gettext-runtime; \
+	mv stageprofile-gettext-runtime gettext-runtime; \
+	mv stage1-gettext-runtime prev-gettext-runtime || test -f stage1-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stageprofile-gold ] || \
 	  mkdir stageprofile-gold; \
@@ -63551,6 +64767,12 @@ stageprofile-end::
 	  mv prev-isl stage1-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stageprofile-gettext-runtime; \
+	  mv prev-gettext-runtime stage1-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stageprofile-gold; \
@@ -63744,6 +64966,12 @@ stagetrain-start::
 	mv stagetrain-isl isl; \
 	mv stageprofile-isl prev-isl || test -f stageprofile-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stagetrain-gettext-runtime ] || \
+	  mkdir stagetrain-gettext-runtime; \
+	mv stagetrain-gettext-runtime gettext-runtime; \
+	mv stageprofile-gettext-runtime prev-gettext-runtime || test -f stageprofile-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stagetrain-gold ] || \
 	  mkdir stagetrain-gold; \
@@ -63894,6 +65122,12 @@ stagetrain-end::
 	  mv prev-isl stageprofile-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stagetrain-gettext-runtime; \
+	  mv prev-gettext-runtime stageprofile-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stagetrain-gold; \
@@ -64087,6 +65321,12 @@ stagefeedback-start::
 	mv stagefeedback-isl isl; \
 	mv stagetrain-isl prev-isl || test -f stagetrain-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stagefeedback-gettext-runtime ] || \
+	  mkdir stagefeedback-gettext-runtime; \
+	mv stagefeedback-gettext-runtime gettext-runtime; \
+	mv stagetrain-gettext-runtime prev-gettext-runtime || test -f stagetrain-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stagefeedback-gold ] || \
 	  mkdir stagefeedback-gold; \
@@ -64237,6 +65477,12 @@ stagefeedback-end::
 	  mv prev-isl stagetrain-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stagefeedback-gettext-runtime; \
+	  mv prev-gettext-runtime stagetrain-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stagefeedback-gold; \
@@ -64453,6 +65699,12 @@ stageautoprofile-start::
 	mv stageautoprofile-isl isl; \
 	mv stage1-isl prev-isl || test -f stage1-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stageautoprofile-gettext-runtime ] || \
+	  mkdir stageautoprofile-gettext-runtime; \
+	mv stageautoprofile-gettext-runtime gettext-runtime; \
+	mv stage1-gettext-runtime prev-gettext-runtime || test -f stage1-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stageautoprofile-gold ] || \
 	  mkdir stageautoprofile-gold; \
@@ -64603,6 +65855,12 @@ stageautoprofile-end::
 	  mv prev-isl stage1-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stageautoprofile-gettext-runtime; \
+	  mv prev-gettext-runtime stage1-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stageautoprofile-gold; \
@@ -64796,6 +66054,12 @@ stageautofeedback-start::
 	mv stageautofeedback-isl isl; \
 	mv stageautoprofile-isl prev-isl || test -f stageautoprofile-lean 
 @endif isl
+@if gettext-runtime
+	@cd $(HOST_SUBDIR); [ -d stageautofeedback-gettext-runtime ] || \
+	  mkdir stageautofeedback-gettext-runtime; \
+	mv stageautofeedback-gettext-runtime gettext-runtime; \
+	mv stageautoprofile-gettext-runtime prev-gettext-runtime || test -f stageautoprofile-lean 
+@endif gettext-runtime
 @if gold
 	@cd $(HOST_SUBDIR); [ -d stageautofeedback-gold ] || \
 	  mkdir stageautofeedback-gold; \
@@ -64946,6 +66210,12 @@ stageautofeedback-end::
 	  mv prev-isl stageautoprofile-isl; : ; \
 	fi
 @endif isl
+@if gettext-runtime
+	@if test -d $(HOST_SUBDIR)/gettext-runtime; then \
+	  cd $(HOST_SUBDIR); mv gettext-runtime stageautofeedback-gettext-runtime; \
+	  mv prev-gettext-runtime stageautoprofile-gettext-runtime; : ; \
+	fi
+@endif gettext-runtime
 @if gold
 	@if test -d $(HOST_SUBDIR)/gold; then \
 	  cd $(HOST_SUBDIR); mv gold stageautofeedback-gold; \
@@ -65286,16 +66556,16 @@ all-build-libiberty: maybe-all-build-texinfo
 all-build-m4: maybe-all-build-texinfo
 all-build-fixincludes: maybe-all-build-libiberty
 all-build-libcpp: maybe-all-build-libiberty
-configure-gcc: maybe-configure-intl
-configure-stage1-gcc: maybe-configure-stage1-intl
-configure-stage2-gcc: maybe-configure-stage2-intl
-configure-stage3-gcc: maybe-configure-stage3-intl
-configure-stage4-gcc: maybe-configure-stage4-intl
-configure-stageprofile-gcc: maybe-configure-stageprofile-intl
-configure-stagetrain-gcc: maybe-configure-stagetrain-intl
-configure-stagefeedback-gcc: maybe-configure-stagefeedback-intl
-configure-stageautoprofile-gcc: maybe-configure-stageautoprofile-intl
-configure-stageautofeedback-gcc: maybe-configure-stageautofeedback-intl
+configure-gcc: maybe-configure-gettext-runtime
+configure-stage1-gcc: maybe-configure-stage1-gettext-runtime
+configure-stage2-gcc: maybe-configure-stage2-gettext-runtime
+configure-stage3-gcc: maybe-configure-stage3-gettext-runtime
+configure-stage4-gcc: maybe-configure-stage4-gettext-runtime
+configure-stageprofile-gcc: maybe-configure-stageprofile-gettext-runtime
+configure-stagetrain-gcc: maybe-configure-stagetrain-gettext-runtime
+configure-stagefeedback-gcc: maybe-configure-stagefeedback-gettext-runtime
+configure-stageautoprofile-gcc: maybe-configure-stageautoprofile-gettext-runtime
+configure-stageautofeedback-gcc: maybe-configure-stageautofeedback-gettext-runtime
 configure-gcc: maybe-all-gmp
 configure-stage1-gcc: maybe-all-stage1-gmp
 configure-stage2-gcc: maybe-all-stage2-gmp
@@ -65416,6 +66686,16 @@ all-stagetrain-gcc: maybe-all-stagetrain-intl
 all-stagefeedback-gcc: maybe-all-stagefeedback-intl
 all-stageautoprofile-gcc: maybe-all-stageautoprofile-intl
 all-stageautofeedback-gcc: maybe-all-stageautofeedback-intl
+all-gcc: maybe-all-gettext-runtime
+all-stage1-gcc: maybe-all-stage1-gettext-runtime
+all-stage2-gcc: maybe-all-stage2-gettext-runtime
+all-stage3-gcc: maybe-all-stage3-gettext-runtime
+all-stage4-gcc: maybe-all-stage4-gettext-runtime
+all-stageprofile-gcc: maybe-all-stageprofile-gettext-runtime
+all-stagetrain-gcc: maybe-all-stagetrain-gettext-runtime
+all-stagefeedback-gcc: maybe-all-stagefeedback-gettext-runtime
+all-stageautoprofile-gcc: maybe-all-stageautoprofile-gettext-runtime
+all-stageautofeedback-gcc: maybe-all-stageautofeedback-gettext-runtime
 all-gcc: maybe-all-mpfr
 all-stage1-gcc: maybe-all-stage1-mpfr
 all-stage2-gcc: maybe-all-stage2-mpfr
@@ -65650,16 +66930,16 @@ configure-stagetrain-libcpp: configure-stagetrain-libiberty
 configure-stagefeedback-libcpp: configure-stagefeedback-libiberty
 configure-stageautoprofile-libcpp: configure-stageautoprofile-libiberty
 configure-stageautofeedback-libcpp: configure-stageautofeedback-libiberty
-configure-libcpp: maybe-configure-intl
-configure-stage1-libcpp: maybe-configure-stage1-intl
-configure-stage2-libcpp: maybe-configure-stage2-intl
-configure-stage3-libcpp: maybe-configure-stage3-intl
-configure-stage4-libcpp: maybe-configure-stage4-intl
-configure-stageprofile-libcpp: maybe-configure-stageprofile-intl
-configure-stagetrain-libcpp: maybe-configure-stagetrain-intl
-configure-stagefeedback-libcpp: maybe-configure-stagefeedback-intl
-configure-stageautoprofile-libcpp: maybe-configure-stageautoprofile-intl
-configure-stageautofeedback-libcpp: maybe-configure-stageautofeedback-intl
+configure-libcpp: maybe-configure-gettext-runtime
+configure-stage1-libcpp: maybe-configure-stage1-gettext-runtime
+configure-stage2-libcpp: maybe-configure-stage2-gettext-runtime
+configure-stage3-libcpp: maybe-configure-stage3-gettext-runtime
+configure-stage4-libcpp: maybe-configure-stage4-gettext-runtime
+configure-stageprofile-libcpp: maybe-configure-stageprofile-gettext-runtime
+configure-stagetrain-libcpp: maybe-configure-stagetrain-gettext-runtime
+configure-stagefeedback-libcpp: maybe-configure-stagefeedback-gettext-runtime
+configure-stageautoprofile-libcpp: maybe-configure-stageautoprofile-gettext-runtime
+configure-stageautofeedback-libcpp: maybe-configure-stageautofeedback-gettext-runtime
 configure-libcpp: maybe-all-libiconv
 configure-stage1-libcpp: maybe-all-stage1-libiconv
 configure-stage2-libcpp: maybe-all-stage2-libiconv
@@ -65680,16 +66960,16 @@ all-stagetrain-libcpp: all-stagetrain-libiberty
 all-stagefeedback-libcpp: all-stagefeedback-libiberty
 all-stageautoprofile-libcpp: all-stageautoprofile-libiberty
 all-stageautofeedback-libcpp: all-stageautofeedback-libiberty
-all-libcpp: maybe-all-intl
-all-stage1-libcpp: maybe-all-stage1-intl
-all-stage2-libcpp: maybe-all-stage2-intl
-all-stage3-libcpp: maybe-all-stage3-intl
-all-stage4-libcpp: maybe-all-stage4-intl
-all-stageprofile-libcpp: maybe-all-stageprofile-intl
-all-stagetrain-libcpp: maybe-all-stagetrain-intl
-all-stagefeedback-libcpp: maybe-all-stagefeedback-intl
-all-stageautoprofile-libcpp: maybe-all-stageautoprofile-intl
-all-stageautofeedback-libcpp: maybe-all-stageautofeedback-intl
+all-libcpp: maybe-all-gettext-runtime
+all-stage1-libcpp: maybe-all-stage1-gettext-runtime
+all-stage2-libcpp: maybe-all-stage2-gettext-runtime
+all-stage3-libcpp: maybe-all-stage3-gettext-runtime
+all-stage4-libcpp: maybe-all-stage4-gettext-runtime
+all-stageprofile-libcpp: maybe-all-stageprofile-gettext-runtime
+all-stagetrain-libcpp: maybe-all-stagetrain-gettext-runtime
+all-stagefeedback-libcpp: maybe-all-stagefeedback-gettext-runtime
+all-stageautoprofile-libcpp: maybe-all-stageautoprofile-gettext-runtime
+all-stageautofeedback-libcpp: maybe-all-stageautofeedback-gettext-runtime
 all-libcpp: maybe-all-libiconv
 all-stage1-libcpp: maybe-all-stage1-libiconv
 all-stage2-libcpp: maybe-all-stage2-libiconv
@@ -65742,6 +67022,16 @@ configure-stagetrain-intl: maybe-all-stagetrain-libiconv
 configure-stagefeedback-intl: maybe-all-stagefeedback-libiconv
 configure-stageautoprofile-intl: maybe-all-stageautoprofile-libiconv
 configure-stageautofeedback-intl: maybe-all-stageautofeedback-libiconv
+configure-gettext-runtime: maybe-all-libiconv
+configure-stage1-gettext-runtime: maybe-all-stage1-libiconv
+configure-stage2-gettext-runtime: maybe-all-stage2-libiconv
+configure-stage3-gettext-runtime: maybe-all-stage3-libiconv
+configure-stage4-gettext-runtime: maybe-all-stage4-libiconv
+configure-stageprofile-gettext-runtime: maybe-all-stageprofile-libiconv
+configure-stagetrain-gettext-runtime: maybe-all-stagetrain-libiconv
+configure-stagefeedback-gettext-runtime: maybe-all-stagefeedback-libiconv
+configure-stageautoprofile-gettext-runtime: maybe-all-stageautoprofile-libiconv
+configure-stageautofeedback-gettext-runtime: maybe-all-stageautofeedback-libiconv
 configure-mpfr: maybe-all-gmp
 configure-stage1-mpfr: maybe-all-stage1-gmp
 configure-stage2-mpfr: maybe-all-stage2-gmp
@@ -65782,6 +67072,16 @@ all-stagetrain-intl: maybe-all-stagetrain-libiconv
 all-stagefeedback-intl: maybe-all-stagefeedback-libiconv
 all-stageautoprofile-intl: maybe-all-stageautoprofile-libiconv
 all-stageautofeedback-intl: maybe-all-stageautofeedback-libiconv
+all-gettext-runtime: maybe-all-libiconv
+all-stage1-gettext-runtime: maybe-all-stage1-libiconv
+all-stage2-gettext-runtime: maybe-all-stage2-libiconv
+all-stage3-gettext-runtime: maybe-all-stage3-libiconv
+all-stage4-gettext-runtime: maybe-all-stage4-libiconv
+all-stageprofile-gettext-runtime: maybe-all-stageprofile-libiconv
+all-stagetrain-gettext-runtime: maybe-all-stagetrain-libiconv
+all-stagefeedback-gettext-runtime: maybe-all-stagefeedback-libiconv
+all-stageautoprofile-gettext-runtime: maybe-all-stageautoprofile-libiconv
+all-stageautofeedback-gettext-runtime: maybe-all-stageautofeedback-libiconv
 configure-gdb: maybe-configure-sim
 configure-gdb: maybe-all-gnulib
 configure-gdb: maybe-all-gdbsupport
