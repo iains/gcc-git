@@ -13255,25 +13255,13 @@ XGETTEXT=
 GMSGFMT=
 POSUB=
 
-if test -f  ../gettext-runtime/Makefile; then
-  BUILD_INCLUDED_LIBINTL=`grep BUILD_INCLUDED_LIBINTL ../gettext-runtime/Makefile|sed s/BUILD_INCLUDED_LIBINTL\ =\ //`
-  USE_NLS=`grep USE_NLS ../gettext-runtime/Makefile|sed s/USE_NLS\ =\ //`
-  LIBICONV=`grep ^LIBICONV ../gettext-runtime/Makefile|sed s/LIBICONV\ =\ //`
-  INTL_MACOSX_LIBS=`grep ^INTL_MACOSX_LIBS ../gettext-runtime/Makefile|sed s/INTL_MACOSX_LIBS\ =\ //`
-  XGETTEXT=`grep XGETTEXT ../gettext-runtime/Makefile|sed s/XGETTEXT\ =\ //`
-  GMSGFMT=`grep GMSGFMT ../gettext-runtime/Makefile|sed s/GMSGFMT\ =\ //`
-  POSUB=`grep POSUB ../gettext-runtime/Makefile|sed s/POSUB\ =\ //`
-  LIBINTL="\${top_builddir}/../gettext-runtime/intl/.libs/libintl.a $LIBICONV $INTL_MACOSX_LIBS"
-  INCINTL="-I\${top_builddir}/../gettext-runtime/intl"
+# We can use an in-tree build of libintl.
+if test -f  ../gettext-runtime/uninstalled-config.sh; then
+  relative_builddir='${top_builddir}/../gettext-runtime'
+  .  ../gettext-runtime/uninstalled-config.sh
 elif test -f  ../intl/config.intl; then
   .  ../intl/config.intl
 fi
-
-
-
-
-
-
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether NLS is requested" >&5
 $as_echo_n "checking whether NLS is requested... " >&6; }
@@ -19867,7 +19855,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 19870 "configure"
+#line 19858 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -19973,7 +19961,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 19976 "configure"
+#line 19964 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
