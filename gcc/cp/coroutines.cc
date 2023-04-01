@@ -2819,8 +2819,8 @@ flatten_await_stmt (var_nest_node *n, hash_set<tree> *promoted,
 	  /* Await expressions with initializers have a compiler-temporary
 	     as the awaitable.  'promote' this.  */
 	  tree var = TREE_OPERAND (t, 1);
-	  bool already_present = promoted->add (var);
-	  gcc_checking_assert (!already_present);
+	  // Check we did not already promote this.
+	  gcc_checking_assert (!promoted->contains (var));
 	  tree init = TREE_OPERAND (t, 2);
 	  switch (TREE_CODE (init))
 	    {
