@@ -17311,7 +17311,7 @@ $as_echo "$ac_sectionLDflags" >&6; }
 if test "${enable_symvers+set}" = set; then :
   enableval=$enable_symvers;
       case "$enableval" in
-       yes|no|gnu*|sun) ;;
+       yes|no|gnu*|sun|darwin*) ;;
        *) as_fn_error $? "Unknown argument to enable/disable symvers" "$LINENO" 5 ;;
                           esac
 
@@ -17343,6 +17343,10 @@ if test x$enable_symvers = xyes ; then
       esac
     fi
   fi
+fi
+
+if test x$enable_symvers = xdarwin-versioned-namespace ; then
+enable_symvers=no
 fi
 
 # Check if 'sun' was requested on non-Solaris 2 platforms.

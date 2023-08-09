@@ -50,6 +50,7 @@
 # include <condition_variable>
 # include <thread>
 #endif
+#include <atomic>
 #include <ext/atomicity.h>     // __gnu_cxx::__is_single_threaded
 
 #if defined _GLIBCXX_HAS_GTHREADS && ! defined _GLIBCXX_HAVE_TLS
@@ -803,119 +804,53 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 #endif // __cpp_lib_scoped_lock
 
 #ifdef _GLIBCXX_HAS_GTHREADS
+
   /// Flag type used by std::call_once
   struct once_flag
   {
-    constexpr once_flag() noexcept = default;
+    /// Constructor
+    constexpr once_flag()  noexcept
+    : _M_state_(0), _M_mutx_(__GTHREAD_MUTEX_INIT),
+      _M_condv_(__GTHREAD_COND_INIT) {}
+
+    void __do_call_once(void (*)(void*), void*);
+
+    template<typename _Callable, typename... _Args>
+      friend void
+      call_once(once_flag& __once, _Callable&& __f, _Args&&... __args);
+
+  private:
+    __gthread_mutex_t _M_mutx_;
+    __gthread_cond_t _M_condv_;
+    // call state: 0 = init, 1 = someone is trying, 2 = done.
+    atomic_uint _M_state_;
 
     /// Deleted copy constructor
     once_flag(const once_flag&) = delete;
     /// Deleted assignment operator
     once_flag& operator=(const once_flag&) = delete;
-
-  private:
-    // For gthreads targets a pthread_once_t is used with pthread_once, but
-    // for most targets this doesn't work correctly for exceptional executions.
-    __gthread_once_t _M_once = __GTHREAD_ONCE_INIT;
-
-    struct _Prepare_execution;
-
-    template<typename _Callable, typename... _Args>
-      friend void
-      call_once(once_flag& __once, _Callable&& __f, _Args&&... __args);
   };
-
-  /// @cond undocumented
-# ifdef _GLIBCXX_HAVE_TLS
-  // If TLS is available use thread-local state for the type-erased callable
-  // that is being run by std::call_once in the current thread.
-  extern __thread void* __once_callable;
-  extern __thread void (*__once_call)();
-
-  // RAII type to set up state for pthread_once call.
-  struct once_flag::_Prepare_execution
-  {
-    template<typename _Callable>
-      explicit
-      _Prepare_execution(_Callable& __c)
-      {
-	// Store address in thread-local pointer:
-	__once_callable = std::__addressof(__c);
-	// Trampoline function to invoke the closure via thread-local pointer:
-	__once_call = [] { (*static_cast<_Callable*>(__once_callable))(); };
-      }
-
-    ~_Prepare_execution()
-    {
-      // PR libstdc++/82481
-      __once_callable = nullptr;
-      __once_call = nullptr;
-    }
-
-    _Prepare_execution(const _Prepare_execution&) = delete;
-    _Prepare_execution& operator=(const _Prepare_execution&) = delete;
-  };
-
-# else
-  // Without TLS use a global std::mutex and store the callable in a
-  // global std::function.
-  extern function<void()> __once_functor;
-
-  extern void
-  __set_once_functor_lock_ptr(unique_lock<mutex>*);
-
-  extern mutex&
-  __get_once_mutex();
-
-  // RAII type to set up state for pthread_once call.
-  struct once_flag::_Prepare_execution
-  {
-    template<typename _Callable>
-      explicit
-      _Prepare_execution(_Callable& __c)
-      {
-	// Store the callable in the global std::function
-	__once_functor = __c;
-	__set_once_functor_lock_ptr(&_M_functor_lock);
-      }
-
-    ~_Prepare_execution()
-    {
-      if (_M_functor_lock)
-	__set_once_functor_lock_ptr(nullptr);
-    }
-
-  private:
-    // XXX This deadlocks if used recursively (PR 97949)
-    unique_lock<mutex> _M_functor_lock{__get_once_mutex()};
-
-    _Prepare_execution(const _Prepare_execution&) = delete;
-    _Prepare_execution& operator=(const _Prepare_execution&) = delete;
-  };
-# endif
-  /// @endcond
-
-  // This function is passed to pthread_once by std::call_once.
-  // It runs __once_call() or __once_functor().
-  extern "C" void __once_proxy(void);
 
   /// Invoke a callable and synchronize with other calls using the same flag
   template<typename _Callable, typename... _Args>
-    void
-    call_once(once_flag& __once, _Callable&& __f, _Args&&... __args)
-    {
-      // Closure type that runs the function
-      auto __callable = [&] {
+  void
+  call_once (once_flag& __flag, _Callable&& __f, _Args&&... __args)
+  {
+    if (__flag._M_state_.load (std::memory_order_acquire) == 2)
+      return;
+
+    // Closure type that runs the original function with the supplied args.
+    auto __callable = [&] {
 	  std::__invoke(std::forward<_Callable>(__f),
 			std::forward<_Args>(__args)...);
-      };
-
-      once_flag::_Prepare_execution __exec(__callable);
-
-      // XXX pthread_once does not reset the flag if an exception is thrown.
-      if (int __e = __gthread_once(&__once._M_once, &__once_proxy))
-	__throw_system_error(__e);
-    }
+    };
+    // Trampoline to call the actual fn; we will pass in the closure address.
+    void (*__oc_tramp)(void*)
+      = [] (void *ca) { (*static_cast<decltype(__callable)*>(ca))(); };
+    // Attempt to do it and synchronize with any other threads that are also
+    // trying.
+    __flag.__do_call_once (__oc_tramp, std::__addressof(__callable));
+}
 
 #else // _GLIBCXX_HAS_GTHREADS
 

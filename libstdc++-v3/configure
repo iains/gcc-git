@@ -711,6 +711,8 @@ ENABLE_SYMVERS_SUN_FALSE
 ENABLE_SYMVERS_SUN_TRUE
 ENABLE_SYMVERS_DARWIN_FALSE
 ENABLE_SYMVERS_DARWIN_TRUE
+ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE
+ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE
 ENABLE_SYMVERS_GNU_NAMESPACE_FALSE
 ENABLE_SYMVERS_GNU_NAMESPACE_TRUE
 ENABLE_SYMVERS_GNU_FALSE
@@ -12280,7 +12282,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12283 "configure"
+#line 12285 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12386,7 +12388,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12389 "configure"
+#line 12391 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -16182,7 +16184,7 @@ $as_echo "$glibcxx_cv_atomic_long_long" >&6; }
   # Fake what AC_TRY_COMPILE does.
 
     cat > conftest.$ac_ext << EOF
-#line 16185 "configure"
+#line 16187 "configure"
 int main()
 {
   typedef bool atomic_type;
@@ -16217,7 +16219,7 @@ $as_echo "$glibcxx_cv_atomic_bool" >&6; }
     rm -f conftest*
 
     cat > conftest.$ac_ext << EOF
-#line 16220 "configure"
+#line 16222 "configure"
 int main()
 {
   typedef short atomic_type;
@@ -16252,7 +16254,7 @@ $as_echo "$glibcxx_cv_atomic_short" >&6; }
     rm -f conftest*
 
     cat > conftest.$ac_ext << EOF
-#line 16255 "configure"
+#line 16257 "configure"
 int main()
 {
   // NB: _Atomic_word not necessarily int.
@@ -16288,7 +16290,7 @@ $as_echo "$glibcxx_cv_atomic_int" >&6; }
     rm -f conftest*
 
     cat > conftest.$ac_ext << EOF
-#line 16291 "configure"
+#line 16293 "configure"
 int main()
 {
   typedef long long atomic_type;
@@ -16444,7 +16446,7 @@ $as_echo "mutex" >&6; }
   # unnecessary for this test.
 
     cat > conftest.$ac_ext << EOF
-#line 16447 "configure"
+#line 16449 "configure"
 int main()
 {
   _Decimal32 d1;
@@ -16486,7 +16488,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
   # unnecessary for this test.
 
   cat > conftest.$ac_ext << EOF
-#line 16489 "configure"
+#line 16491 "configure"
 template<typename T1, typename T2>
   struct same
   { typedef T2 type; };
@@ -50840,7 +50842,7 @@ $as_echo "$ac_cv_path_CXXFILT" >&6; }
 if test "${enable_symvers+set}" = set; then :
   enableval=$enable_symvers;
       case "$enableval" in
-       yes|no|gnu|gnu-versioned-namespace|darwin|darwin-export|sun) ;;
+       yes|no|gnu|gnu-versioned-namespace|darwin|darwin-versioned-namespace|sun) ;;
        *) as_fn_error $? "Unknown argument to enable/disable symvers" "$LINENO" 5 ;;
 	  	        esac
 
@@ -50872,6 +50874,7 @@ if test x$enable_symvers = xyes ; then
     else
       case ${target_os} in
 	darwin*)
+	  # We no longer have a clashing system install.
 	  enable_symvers=darwin ;;
 	# Sun symbol versioning exists since Solaris 2.5.
 	solaris2.[5-9]* | solaris2.1[0-9]*)
@@ -50895,11 +50898,6 @@ $as_echo "$as_me: WARNING: === Symbol versioning will be disabled." >&2;}
       esac
     fi
   fi
-fi
-
-# Check to see if 'darwin' or 'darwin-export' can win.
-if test x$enable_symvers = xdarwin-export ; then
-    enable_symvers=darwin
 fi
 
 # Check if 'sun' was requested on non-Solaris 2 platforms.
@@ -51053,6 +51051,15 @@ $as_echo "#define _GLIBCXX_SYMVER_GNU 1" >>confdefs.h
 $as_echo "#define _GLIBCXX_SYMVER_GNU_NAMESPACE 1" >>confdefs.h
 
     ;;
+  darwin-versioned-namespace)
+    #libtool_VERSION=7:0:0
+    #SYMVER_FILE=config/abi/pre/darwin-versioned-namespace.ver
+    libtool_VERSION=8:0:0
+    SYMVER_FILE=config/abi/pre/gnu-versioned-namespace.ver
+
+$as_echo "#define _GLIBCXX_SYMVER_DARWIN_NAMESPACE 1" >>confdefs.h
+
+    ;;
   darwin)
     SYMVER_FILE=config/abi/pre/gnu.ver
 
@@ -51104,6 +51111,7 @@ if test $glibcxx_cv_have_as_symver_directive = yes; then
 $as_echo "#define HAVE_AS_SYMVER_DIRECTIVE 1" >>confdefs.h
 
 fi
+
 
 
 
@@ -51267,17 +51275,17 @@ fi
 
   if test x$enable_symvers = xgnu-versioned-namespace; then
     # gnu-versioned-namespace is incompatible with the dual ABI...
+    enable_libstdcxx_dual_abi="no"
+  elif test x$enable_symvers = xdarwin-versioned-namespace; then
+    # darwin-versioned-namespace is incompatible with the dual ABI.
+    enable_libstdcxx_dual_abi="no"
+  fi
+  if test x"$enable_libstdcxx_dual_abi" != xyes; then
     { $as_echo "$as_me:${as_lineno-$LINENO}: dual ABI is disabled" >&5
 $as_echo "$as_me: dual ABI is disabled" >&6;}
     enable_libstdcxx_dual_abi="no"
     # ... and use the cxx11 one.
     default_libstdcxx_abi="new"
-  else
-    if test x"$enable_libstdcxx_dual_abi" != xyes; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: dual ABI is disabled" >&5
-$as_echo "$as_me: dual ABI is disabled" >&6;}
-      default_libstdcxx_abi="gcc4-compatible"
-    fi
   fi
 
 
@@ -55346,6 +55354,15 @@ else
 fi
 
 
+    if test $enable_symvers = darwin-versioned-namespace; then
+  ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE=
+  ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE='#'
+else
+  ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE='#'
+  ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE=
+fi
+
+
     if test $enable_symvers = darwin; then
   ENABLE_SYMVERS_DARWIN_TRUE=
   ENABLE_SYMVERS_DARWIN_FALSE='#'
@@ -55923,6 +55940,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_SYMVERS_GNU_NAMESPACE_TRUE}" && test -z "${ENABLE_SYMVERS_GNU_NAMESPACE_FALSE}"; then
   as_fn_error $? "conditional \"ENABLE_SYMVERS_GNU_NAMESPACE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE}" && test -z "${ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_SYMVERS_DARWIN_NAMESPACE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${ENABLE_SYMVERS_DARWIN_TRUE}" && test -z "${ENABLE_SYMVERS_DARWIN_FALSE}"; then

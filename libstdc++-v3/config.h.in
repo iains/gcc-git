@@ -700,6 +700,9 @@
 /* Define to use darwin versioning in the shared library. */
 #undef _GLIBCXX_SYMVER_DARWIN
 
+/* Define to use darwin namespace versioning in the shared library. */
+#undef _GLIBCXX_SYMVER_DARWIN_NAMESPACE
+
 /* Define to use GNU versioning in the shared library. */
 #undef _GLIBCXX_SYMVER_GNU
 

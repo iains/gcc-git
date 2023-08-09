@@ -1294,8 +1294,13 @@ if ENABLE_SYMVERS_GNU_NAMESPACE
 stamp-namespace-version:
 	echo 1 > stamp-namespace-version
 else
+if ENABLE_SYMVERS_DARWIN_NAMESPACE
+stamp-namespace-version:
+	echo 2 > stamp-namespace-version
+else
 stamp-namespace-version:
 	echo 0 > stamp-namespace-version
+endif
 endif
 
 if ENABLE_EXTERN_TEMPLATE

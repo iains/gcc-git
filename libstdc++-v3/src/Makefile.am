@@ -113,12 +113,16 @@ endif
 if ENABLE_SYMVERS_GNU_NAMESPACE
 cxx0x_compat_sources =
 else
+if ENABLE_SYMVERS_DARWIN_NAMESPACE
+cxx0x_compat_sources =
+else
 cxx0x_compat_sources = \
 	compatibility-atomic-c++0x.cc \
 	compatibility-c++0x.cc \
 	compatibility-chrono.cc \
 	compatibility-condvar.cc \
 	compatibility-thread-c++0x.cc
+endif
 endif
 
 parallel_compat_sources = \
@@ -360,6 +364,19 @@ libstdc++-symbols.ver-sun : libstdc++-symbols.ver \
 	 > $@ || (rm -f $@ ; exit 1)
 endif
 if ENABLE_SYMVERS_DARWIN
+version_arg = -Wl,-exported_symbols_list,libstdc++-symbols.explist
+version_dep = libstdc++-symbols.explist
+libstdc++-symbols.explist : libstdc++-symbols.ver \
+		${glibcxx_srcdir}/scripts/make_exports.pl \
+		$(libstdc___la_OBJECTS) $(libstdc___la_LIBADD)
+	perl ${glibcxx_srcdir}/scripts/make_exports.pl \
+	  libstdc++-symbols.ver \
+	  $(libstdc___la_OBJECTS:%.lo=.libs/%.o) \
+	 `echo $(libstdc___la_LIBADD) | \
+	    sed 's,/\([^/.]*\)\.la,/.libs/\1.a,g'` \
+	 > $@ || (rm -f $@ ; exit 1)
+endif
+if ENABLE_SYMVERS_DARWIN_NAMESPACE
 version_arg = -Wl,-exported_symbols_list,libstdc++-symbols.explist
 version_dep = libstdc++-symbols.explist
 libstdc++-symbols.explist : libstdc++-symbols.ver \

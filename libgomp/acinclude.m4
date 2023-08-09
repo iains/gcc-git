@@ -228,7 +228,7 @@ AC_DEFUN([LIBGOMP_ENABLE_SYMVERS], [
 
 LIBGOMP_ENABLE(symvers,yes,[=STYLE],
   [enables symbol versioning of the shared library],
-  [permit yes|no|gnu*|sun])
+  [permit yes|no|gnu*|sun|darwin*])
 
 # If we never went through the LIBGOMP_CHECK_LINKER_FEATURES macro, then we
 # don't know enough about $LD to do tricks...
@@ -252,6 +252,10 @@ if test x$enable_symvers = xyes ; then
       esac
     fi
   fi
+fi
+
+if test x$enable_symvers = xdarwin-versioned-namespace ; then
+enable_symvers=no
 fi
 
 # Check if 'sun' was requested on non-Solaris 2 platforms.

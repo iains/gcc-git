@@ -1315,6 +1315,8 @@ GLIBCXX_3.4.11 {
     _ZNKSt10lock_error4whatEv;
 
     _ZSt11__once_call;
+    _ZNSt9once_flag14__do_call_onceEPFvPvES0_;
+    # old implementation
     _ZSt15__once_callable;
     _ZSt14__once_functor;
     _ZSt23__get_once_functor_lockv;

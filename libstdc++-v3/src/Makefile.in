@@ -152,11 +152,11 @@ am__DEPENDENCIES_1 =
 @GLIBCXX_LDBL_COMPAT_TRUE@am__objects_1 = compatibility-ldbl.lo
 am__objects_2 = compatibility.lo compatibility-debug_list.lo \
 	compatibility-debug_list-2.lo $(am__objects_1)
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@am__objects_3 = compatibility-atomic-c++0x.lo \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-c++0x.lo \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-chrono.lo \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-condvar.lo \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-thread-c++0x.lo
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@am__objects_3 = compatibility-atomic-c++0x.lo \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-c++0x.lo \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-chrono.lo \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-condvar.lo \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-thread-c++0x.lo
 @ENABLE_DUAL_ABI_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@am__objects_4 = compatibility-ldbl-alt128-cxx11.lo
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@am__objects_5 = compatibility-ldbl-alt128.lo \
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	$(am__objects_4)
@@ -521,13 +521,14 @@ SUBDIRS = c++98 c++11 c++17 c++20 c++23 c++26 \
 @ENABLE_DUAL_ABI_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_cxx11_sources = \
 @ENABLE_DUAL_ABI_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	compatibility-ldbl-alt128-cxx11.cc
 
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@cxx0x_compat_sources = \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-atomic-c++0x.cc \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-c++0x.cc \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-chrono.cc \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-condvar.cc \
-@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-thread-c++0x.cc
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@cxx0x_compat_sources = \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-atomic-c++0x.cc \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-c++0x.cc \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-chrono.cc \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-condvar.cc \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-thread-c++0x.cc
 
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@cxx0x_compat_sources = 
 @ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@cxx0x_compat_sources = 
 parallel_compat_sources = \
 	compatibility-parallel_list.cc  compatibility-parallel_list-2.cc
@@ -667,11 +668,13 @@ CXXLINK = \
 	-o $@
 
 @ENABLE_SYMVERS_TRUE@CLEANFILES = libstdc++-symbols.ver $(version_dep)
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,-exported_symbols_list,libstdc++-symbols.explist
 @ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,-exported_symbols_list,libstdc++-symbols.explist
 @ENABLE_SYMVERS_FALSE@version_arg = 
 @ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,--version-script=libstdc++-symbols.ver
 @ENABLE_SYMVERS_GNU_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,--version-script=libstdc++-symbols.ver
 @ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,-M,libstdc++-symbols.ver-sun
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libstdc++-symbols.explist
 @ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libstdc++-symbols.explist
 @ENABLE_SYMVERS_FALSE@version_dep = 
 @ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libstdc++-symbols.ver
@@ -1109,6 +1112,15 @@ compatibility-condvar.o: compatibility-condvar.cc
 @ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@	 `echo $(libstdc___la_LIBADD) | \
 @ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@	    sed 's,/\([^/.]*\)\.la,/.libs/\1.a,g'` \
 @ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@	 > $@ || (rm -f $@ ; exit 1)
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@libstdc++-symbols.explist : libstdc++-symbols.ver \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@		${glibcxx_srcdir}/scripts/make_exports.pl \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@		$(libstdc___la_OBJECTS) $(libstdc___la_LIBADD)
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@	perl ${glibcxx_srcdir}/scripts/make_exports.pl \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@	  libstdc++-symbols.ver \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@	  $(libstdc___la_OBJECTS:%.lo=.libs/%.o) \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@	 `echo $(libstdc___la_LIBADD) | \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@	    sed 's,/\([^/.]*\)\.la,/.libs/\1.a,g'` \
+@ENABLE_SYMVERS_DARWIN_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@	 > $@ || (rm -f $@ ; exit 1)
 
 # Control additional build primary rules.
 all-once: libstdc++convenience.la $(STAMP_DEBUG)

@@ -342,7 +342,14 @@ namespace std
 
 #if _GLIBCXX_INLINE_VERSION
 // Inline namespace for symbol versioning of (nearly) everything in std.
-# define _GLIBCXX_BEGIN_NAMESPACE_VERSION namespace __8 {
+# if _GLIBCXX_INLINE_VERSION == 1
+#   define _GLIBCXX_BEGIN_NAMESPACE_VERSION namespace __8 {
+# elif _GLIBCXX_INLINE_VERSION == 2
+// Darwin-specific version.
+#   define _GLIBCXX_BEGIN_NAMESPACE_VERSION namespace __8 {
+# else
+#   error "unexpected inline namespace version"
+# endif
 # define _GLIBCXX_END_NAMESPACE_VERSION }
 // Unused when everything in std is versioned anyway.
 # define _GLIBCXX_BEGIN_INLINE_ABI_NAMESPACE(X)

@@ -4100,7 +4100,7 @@ AC_DEFUN([GLIBCXX_ENABLE_SYMVERS], [
 
 GLIBCXX_ENABLE(symvers,$1,[[[=STYLE]]],
   [enables symbol versioning of the shared library],
-  [permit yes|no|gnu|gnu-versioned-namespace|darwin|darwin-export|sun])
+  [permit yes|no|gnu|gnu-versioned-namespace|darwin|darwin-versioned-namespace|sun])
 
 # If we never went through the GLIBCXX_CHECK_LINKER_FEATURES macro, then we
 # don't know enough about $LD to do tricks...
@@ -4124,6 +4124,7 @@ if test x$enable_symvers = xyes ; then
     else
       case ${target_os} in
 	darwin*)
+	  # We no longer have a clashing system install.
 	  enable_symvers=darwin ;;
 	# Sun symbol versioning exists since Solaris 2.5.
 	solaris2.[[5-9]]* | solaris2.1[[0-9]]*)
@@ -4144,11 +4145,6 @@ if test x$enable_symvers = xyes ; then
       esac
     fi
   fi
-fi
-
-# Check to see if 'darwin' or 'darwin-export' can win.
-if test x$enable_symvers = xdarwin-export ; then
-    enable_symvers=darwin
 fi
 
 # Check if 'sun' was requested on non-Solaris 2 platforms.
@@ -4248,6 +4244,14 @@ case $enable_symvers in
     AC_DEFINE(_GLIBCXX_SYMVER_GNU_NAMESPACE, 1,
 	      [Define to use GNU namespace versioning in the shared library.])
     ;;
+  darwin-versioned-namespace)
+    #libtool_VERSION=7:0:0
+    #SYMVER_FILE=config/abi/pre/darwin-versioned-namespace.ver
+    libtool_VERSION=8:0:0
+    SYMVER_FILE=config/abi/pre/gnu-versioned-namespace.ver
+    AC_DEFINE(_GLIBCXX_SYMVER_DARWIN_NAMESPACE, 1,
+	      [Define to use darwin namespace versioning in the shared library.])
+    ;;
   darwin)
     SYMVER_FILE=config/abi/pre/gnu.ver
     AC_DEFINE(_GLIBCXX_SYMVER_DARWIN, 1,
@@ -4280,6 +4284,7 @@ AC_SUBST(port_specific_symbol_files)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS, test $enable_symvers != no)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_GNU, test $enable_symvers = gnu)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_GNU_NAMESPACE, test $enable_symvers = gnu-versioned-namespace)
+GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_DARWIN_NAMESPACE, test $enable_symvers = darwin-versioned-namespace)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_DARWIN, test $enable_symvers = darwin)
 GLIBCXX_CONDITIONAL(ENABLE_SYMVERS_SUN, test $enable_symvers = sun)
 AC_MSG_NOTICE(versioning on shared library symbols is $enable_symvers)
@@ -4876,15 +4881,16 @@ AC_DEFUN([GLIBCXX_ENABLE_LIBSTDCXX_DUAL_ABI], [
   GLIBCXX_ENABLE(libstdcxx-dual-abi,$1,,[support two versions of std::string])
   if test x$enable_symvers = xgnu-versioned-namespace; then
     # gnu-versioned-namespace is incompatible with the dual ABI...
+    enable_libstdcxx_dual_abi="no"
+  elif test x$enable_symvers = xdarwin-versioned-namespace; then
+    # darwin-versioned-namespace is incompatible with the dual ABI.
+    enable_libstdcxx_dual_abi="no"
+  fi
+  if test x"$enable_libstdcxx_dual_abi" != xyes; then
     AC_MSG_NOTICE([dual ABI is disabled])
     enable_libstdcxx_dual_abi="no"
     # ... and use the cxx11 one.
     default_libstdcxx_abi="new"
-  else
-    if test x"$enable_libstdcxx_dual_abi" != xyes; then
-      AC_MSG_NOTICE([dual ABI is disabled])
-      default_libstdcxx_abi="gcc4-compatible"
-    fi
   fi
   GLIBCXX_CONDITIONAL(ENABLE_DUAL_ABI, test $enable_libstdcxx_dual_abi = yes)
 ])
