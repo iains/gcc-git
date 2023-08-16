@@ -83,6 +83,7 @@ GLIBCXX_3.4 {
       std::d[p-z]*;
       std::error[^_]*;
       std::exception::*;
+      std::exception_ptr::*;
       std::gslice*;
       std::h[^a]*;
       std::i[a-m]*;
@@ -140,6 +141,7 @@ GLIBCXX_3.4 {
       std::money_base*;
 #     std::moneypunct[^_]*;
 #     std::moneypunct_byname*;
+      std::nested_exception*;
 #     std::n[^u]*;
       std::n[^aueo]*;
       std::nothrow;
@@ -157,7 +159,7 @@ GLIBCXX_3.4 {
 #     std::range_error::r*;
 #     std::range_error::~r*;
 #     std::re[^t]*;
-#     std::rethrow_exception
+      std::rethrow_exception
 #     std::runtime_error::r*
       std::runtime_error::what*;
 #     std::runtime_error::~r*;
@@ -1103,9 +1105,6 @@ GLIBCXX_3.4 {
 
     # std::uncaught_exception()
     _ZSt18uncaught_exceptionv;
-
-    _ZNSt13exception_ptr*;
-    _ZSt17rethrow_exceptionSt13exception_ptr;
 
   # DO NOT DELETE THIS LINE.  Port-specific symbols, if any, will be here.
 
@@ -2524,7 +2523,8 @@ GLIBCXX_3.4.32 {
     _ZNSt7__cxx1112basic_stringI[cw]St11char_traitsI[cw]ESaI[cw]EE11_S_allocateERS3_[jmy];
 } GLIBCXX_3.4.31;
 
-# Symbols in the support library (libsupc++) have their own tag.
+##  Re-exported ABI lib.
+
 CXXABI_1.3 {
 
   global:
@@ -2629,6 +2629,71 @@ CXXABI_1.3 {
     # __gnu_cxx::_verbose_terminate_handler()
     _ZN9__gnu_cxx27__verbose_terminate_handlerEv;
 
+    # operator new(size_t)
+    _Znw[jmy];
+    # operator new(size_t, std::nothrow_t const&)
+    _Znw[jmy]RKSt9nothrow_t;
+
+    # operator delete(void*)
+    _ZdlPv;
+    # operator delete(void*, std::nothrow_t const&)
+    _ZdlPvRKSt9nothrow_t;
+
+    # operator new[](size_t)
+    _Zna[jmy];
+    # operator new[](size_t, std::nothrow_t const&)
+    _Zna[jmy]RKSt9nothrow_t;
+
+    # operator delete[](void*)
+    _ZdaPv;
+    # operator delete[](void*, std::nothrow_t const&)
+    _ZdaPvRKSt9nothrow_t;
+
+    _ZSt15get_new_handlerv;
+    _ZSt15set_new_handlerPFvvE;
+
+    _ZSt14get_unexpectedv;
+    _ZSt14set_unexpectedPFvvE;
+
+    _ZSt7nothrow;
+
+    _ZT[SIV]St9exception;
+    _ZNSt9exceptionD[012]Ev;
+    _ZNKSt9exception4whatEv;
+
+    _ZT[SIV]St13bad_exception;
+    _ZNSt13bad_exceptionD[012]Ev;
+    _ZNKSt13bad_exception4whatEv;
+
+    _ZSt18uncaught_exceptionv;
+    _ZSt19uncaught_exceptionsv;
+
+    _ZSt9terminatev;
+    _ZSt13get_terminatev;
+    _ZSt13set_terminatePFvvE;
+
+    _ZT[SIV]St8bad_cast;
+    # _ZNSt8bad_castC[12]Ev;
+    _ZNSt8bad_castD[012]Ev;
+    _ZNKSt8bad_cast4whatEv;
+
+    _ZT[SIV]St10bad_typeid;
+    # _ZNSt10bad_typeidC[12]Ev;
+    _ZNSt10bad_typeidD[012]Ev;
+    _ZNKSt10bad_typeid4whatEv;
+ 
+    _ZT[SIV]St9bad_alloc;
+    # _ZNSt9bad_allocC[12]Ev;
+    _ZNSt9bad_allocD[012]Ev;
+    _ZNKSt9bad_alloc4whatEv;
+
+    _ZT[SIV]St9type_info;
+    _ZNSt9type_infoD[012]Ev;
+    _ZNKSt9type_info14__is_pointer_pEv;
+    _ZNKSt9type_info15__is_function_pEv;
+
+  # DO NOT DELETE THIS LINE.  Port-specific symbols, if any, will be here.
+
 };
 
 CXXABI_1.3.1 {
@@ -2655,7 +2720,8 @@ CXXABI_1.3.3 {
     _ZTIPDi;
     _ZTIPKDi;
 
-#ifdef HAVE_EXCEPTION_PTR_SINCE_GCC46
+#if 1
+    # def HAVE_EXCEPTION_PTR_SINCE_GCC46
     # exception_ptr
     _ZNSt15__exception_ptr13exception_ptrC[12]Ev;
     _ZNSt15__exception_ptr13exception_ptrC[12]ERKS0_;

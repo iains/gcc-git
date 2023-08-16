@@ -31,6 +31,7 @@
 
 #if _GLIBCXX_USE_DUAL_ABI && __cpp_rtti
 #include <cxxabi.h>
+#include "../../cxxabi/private_typeinfo.h"
 #include <typeinfo>
 #endif
 

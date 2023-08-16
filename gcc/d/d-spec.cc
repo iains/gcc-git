@@ -486,7 +486,7 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
       if (saw_libcxx)
 	{
 	  new_decoded_options[j++] = *saw_libcxx;
-	  if (LIBSTDCXXABI != NULL && saw_static_libcxx)
+	  if (LIBSTDCXXABI != NULL)
 	    {
 	      generate_option (OPT_l,
 			       LIBSTDCXXABI, 1,
@@ -501,7 +501,7 @@ lang_specific_driver (cl_decoded_option **in_decoded_options,
 			    ? LIBSTDCXX_PROFILE
 			    : LIBSTDCXX),
 			   1, CL_DRIVER, &new_decoded_options[j++]);
-	  if (LIBSTDCXXABI != NULL && saw_static_libcxx)
+	  if (LIBSTDCXXABI != NULL)
 	    {
 	      added_libraries++;
 	      generate_option (OPT_l,

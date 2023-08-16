@@ -34,8 +34,9 @@ std_HEADERS = \
 	compare cxxabi.h exception initializer_list new typeinfo
 
 bits_HEADERS = \
-	atomic_lockfree_defines.h cxxabi_forced.h \
-	exception_defines.h exception_ptr.h hash_bytes.h nested_exception.h exception.h cxxabi_init_exception.h
+	atomic_lockfree_defines.h cxxabi_forced.h cxxabi_init_exception.h \
+	exception_defines.h exception_ptr.h nested_exception.h exception.h \
+	hash_bytes.h
 
 headers = $(std_HEADERS) $(bits_HEADERS)
 

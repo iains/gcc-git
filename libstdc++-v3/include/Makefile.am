@@ -281,15 +281,15 @@ endif GLIBCXX_HOSTED
 bits_host_headers = \
 	${glibcxx_srcdir}/${CPU_OPT_BITS_RANDOM}
 
-bits_sup_srcdir = ${glibcxx_srcdir}/libsupc++
+bits_sup_srcdir = ${glibcxx_srcdir}/cxxabi
 bits_sup_headers = \
 	${bits_sup_srcdir}/atomic_lockfree_defines.h \
 	${bits_sup_srcdir}/cxxabi_forced.h \
 	${bits_sup_srcdir}/cxxabi_init_exception.h \
-	${bits_sup_srcdir}/exception.h \
-	${bits_sup_srcdir}/exception_defines.h \
-	${bits_sup_srcdir}/exception_ptr.h \
 	${bits_sup_srcdir}/hash_bytes.h \
+	${bits_sup_srcdir}/exception_defines.h \
+	${bits_sup_srcdir}/exception.h \
+	${bits_sup_srcdir}/exception_ptr.h \
 	${bits_sup_srcdir}/nested_exception.h
 
 # C++17 Parallel Algorithm Includes.

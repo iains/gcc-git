@@ -877,6 +877,7 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
 	{
 	  append_option (OPT_l, saw_profile_flag ? LIBCXX_PROFILE : LIBCXX, 1);
 	  added_libraries++;
+	  /* If we have a separate C++ ABI library add that. */
 	  if (LIBCXXABI != NULL)
 	    {
 	      append_option (OPT_l, saw_profile_flag ? LIBCXXABI_PROFILE
@@ -889,7 +890,8 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
 	  append_option (OPT_l, saw_profile_flag ? LIBSTDCXX_PROFILE
 			 : LIBSTDCXX, 1);
 	  added_libraries++;
-	  if (LIBSTDCXXABI != NULL && library > 1)
+	  /* If we have a separate C++ ABI library add that. */
+	  if (LIBSTDCXXABI != NULL)
 	    {
 	      append_option (OPT_l, LIBSTDCXXABI, 1);
 	      added_libraries++;

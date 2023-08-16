@@ -144,15 +144,17 @@ endif
 
 libstdc___la_LIBADD = \
 	$(GLIBCXX_LIBS) \
+	$(top_builddir)/cxxabi/libc++abiconvenience.la \
 	$(top_builddir)/src/c++98/libc++98convenience.la \
 	$(top_builddir)/src/c++11/libc++11convenience.la \
 	$(top_builddir)/src/c++17/libc++17convenience.la \
 	$(top_builddir)/src/c++20/libc++20convenience.la
 
+#	$(top_builddir)/libsupc++/libsupc++.la 
+
 libstdc___la_DEPENDENCIES = \
 	${version_dep} \
-	$(top_builddir)/libsupc++/libsupc++convenience.la \
-	$(top_builddir)/libsupc++/libsupc++.la \
+	$(top_builddir)/cxxabi/libc++abiconvenience.la \
 	$(top_builddir)/src/c++98/libc++98convenience.la \
 	$(top_builddir)/src/c++11/libc++11convenience.la \
 	$(top_builddir)/src/c++17/libc++17convenience.la \
@@ -168,7 +170,9 @@ libstdc___la_LDFLAGS = \
 
 if ENABLE_SYMVERS_DARWIN
 libstdc___la_LDFLAGS += -Wl,-rpath,@loader_path/../lib \
-	-Wl,-reexport_library,$(top_builddir)/libsupc++/.libs/libsupc++.dylib
+	-Wl,-lc++abi
+#	-Wl,-reexport_library,/usr/lib/libc++abi.dylib
+#	-Wl,-reexport_library,$(top_builddir)/libsupc++/.libs/libsupc++.dylib
 else
 libstdc___la_LDFLAGS += -lm
 endif

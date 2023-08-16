@@ -30,6 +30,7 @@
 #include <ios>
 #include <bits/functexcept.h>
 #include <cxxabi.h>
+//#include "../../cxxabi/private_typeinfo.h"
 
 #ifdef _GLIBCXX_USE_NLS
 # include <libintl.h>
@@ -62,7 +63,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   ios_base::failure::what() const throw()
   { return runtime_error::what(); }
 
-#if __cpp_rtti
+#if 0 && __cpp_rtti
   // These functions are defined in src/c++98/ios_failure.cc
   extern void __construct_ios_failure(void*, const char*);
   extern void __destroy_ios_failure(void*);

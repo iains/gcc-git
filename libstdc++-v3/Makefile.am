@@ -28,7 +28,7 @@ if GLIBCXX_HOSTED
 endif
 
 ## Keep this list sync'd with acinclude.m4:GLIBCXX_CONFIGURE.
-SUBDIRS = include libsupc++ src $(hosted_source)
+SUBDIRS = include cxxabi src $(hosted_source)
 
 ACLOCAL_AMFLAGS = -I . -I .. -I ../config
 
