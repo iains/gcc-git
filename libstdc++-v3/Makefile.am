@@ -27,8 +27,14 @@ if GLIBCXX_HOSTED
   hosted_source = doc po testsuite python
 endif
 
+if GLIBCXX_CXXABI
+abi_subdir = cxxabi
+else
+abi_subdir = libsupc++
+endif
+
 ## Keep this list sync'd with acinclude.m4:GLIBCXX_CONFIGURE.
-SUBDIRS = include cxxabi src $(hosted_source)
+SUBDIRS = include $(abi_subdir) src $(hosted_source)
 
 ACLOCAL_AMFLAGS = -I . -I .. -I ../config
 
@@ -140,6 +146,8 @@ AM_MAKEFLAGS = \
 	"CC_FOR_TARGET=$(CC_FOR_TARGET)" \
 	"CFLAGS=$(CFLAGS)" \
 	"CXXFLAGS=$(CXXFLAGS)" \
+	"CXX_ABI_LIB_NAME=$(CXX_ABI_LIB_NAME)" \
+	"CXX_ABI_LIB_SUBDIR=$(CXX_ABI_LIB_SUBDIR)" \
 	"CFLAGS_FOR_BUILD=$(CFLAGS_FOR_BUILD)" \
 	"CFLAGS_FOR_TARGET=$(CFLAGS_FOR_TARGET)" \
 	"EXPECT=$(EXPECT)" \

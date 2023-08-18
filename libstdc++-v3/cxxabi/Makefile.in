@@ -362,6 +362,7 @@ build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
 check_msgfmt = @check_msgfmt@
+cxx_abi_lib_subdir = @cxx_abi_lib_subdir@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -411,6 +412,7 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 python_mod_dir = @python_mod_dir@
 sbindir = @sbindir@
+separate_gxx_abi_lib = @separate_gxx_abi_lib@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
@@ -454,9 +456,9 @@ WARN_CXXFLAGS = \
 # -I/-D flags to pass when compiling.
 AM_CPPFLAGS = $(GLIBCXX_INCLUDES) $(CPPFLAGS)
 
-# Integrated libc++abiconvenience.la that is to be a part of libstdc++.a
-# This consists of conversion shim(s) and/or some of the sources from libsupc++
-# where those are needed to support libstdc++.
+# A shim library to support the use of an external libc++abi DSO.
+# We do not support incorporating the c++abi sources into libstdc++ (it
+# does not seem to be useful and the sources are licensed differently).
 noinst_LTLIBRARIES = libc++abiconvenience.la
 std_HEADERS = \
 	compare cxxabi.h exception initializer_list new typeinfo
@@ -466,18 +468,12 @@ bits_HEADERS = \
 	hash_bytes.h exception.h exception_ptr.h nested_exception.h \
 	exception_defines.h
 
-
-#	exception_defines.h exception_ptr.h hash_bytes.h nested_exception.h exception.h 
 headers = $(std_HEADERS) $(bits_HEADERS)
 sources = \
 	shim.cc \
 	exception_ptr.cc \
 	hash_bytes.cc
 
-
-#	si_class_type_info.cc 
-#	class_type_info.cc 
-#	tinfo.cc 
 libc__abiconvenience_la_SOURCES = $(sources)
 
 # AM_CXXFLAGS needs to be in each subdirectory so that it can be

@@ -1277,6 +1277,6 @@ extern void darwin_driver_init (unsigned int *,struct cl_decoded_option **);
 #undef BTF_INFO_SECTION_NAME
 #define BTF_INFO_SECTION_NAME "__CTF_BTF,__btf,regular,debug"
 
-#define LIBSTDCXXABI "c++abi"
+//#define LIBSTDCXXABI "c++abi"
 
 #endif /* CONFIG_DARWIN_H */

@@ -90,6 +90,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@am__append_1 = libsup++-symbols.ver \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	$(version_dep)
 subdir = libsupc++
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/../config/acx.m4 \
@@ -400,6 +402,7 @@ build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
 check_msgfmt = @check_msgfmt@
+cxx_abi_lib_subdir = @cxx_abi_lib_subdir@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -449,6 +452,7 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 python_mod_dir = @python_mod_dir@
 sbindir = @sbindir@
+separate_gxx_abi_lib = @separate_gxx_abi_lib@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
@@ -582,11 +586,13 @@ sources = \
 
 libsupc___la_SOURCES = $(sources) $(c_sources) $(vtv_sources)
 libsupc__convenience_la_SOURCES = $(sources) $(c_sources) $(vtv_sources)
-libsupc___la_LDFLAGS = \
-	-version-info $(libtool_VERSION) ${version_arg}
+@GLIBCXX_SEPARATE_ABI_LIB_TRUE@libsupc___la_LDFLAGS = \
+@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	-version-info $(libtool_VERSION) ${version_arg}
 
-libsupc___la_LINK = $(CXXLINK) $(libsupc___la_LDFLAGS)
-libsupc___la_DEPENDENCIES = ${version_dep}
+@GLIBCXX_SEPARATE_ABI_LIB_TRUE@libsupc___la_LINK = $(CXXLINK) $(libsupc___la_LDFLAGS)
+@GLIBCXX_SEPARATE_ABI_LIB_TRUE@libsupc___la_DEPENDENCIES = ${version_dep}
+@GLIBCXX_SEPARATE_ABI_LIB_FALSE@NO_SHARED_TAG = --tag disable-shared
+@GLIBCXX_SEPARATE_ABI_LIB_TRUE@NO_SHARED_TAG = 
 atomicity_file = ${glibcxx_srcdir}/$(ATOMICITY_SRCDIR)/atomicity.h
 
 # AM_CXXFLAGS needs to be in each subdirectory so that it can be
@@ -613,7 +619,7 @@ C_COMPILE = \
 
 
 # LTCOMPILE is copied from LTCXXCOMPILE below.
-LTCOMPILE = $(LIBTOOL) --tag CC $(LIBTOOLFLAGS) --mode=compile \
+LTCOMPILE = $(LIBTOOL) --tag CC $(NO_SHARED_TAG) $(LIBTOOLFLAGS) --mode=compile \
 	    $(CC) $(DEFS) $(C_INCLUDES) \
 	    $(glibcxx_lt_pic_flag) $(glibcxx_compiler_shared_flag) \
 	    $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(EXTRA_CFLAGS)
@@ -646,7 +652,7 @@ LTCOMPILE = $(LIBTOOL) --tag CC $(LIBTOOLFLAGS) --mode=compile \
 # last. (That way, things like -O2 passed down from the toplevel can
 # be overridden by --enable-debug.)
 LTCXXCOMPILE = \
-	$(LIBTOOL) --tag CXX \
+	$(LIBTOOL) --tag CXX $(NO_SHARED_TAG) \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=compile $(CXX) $(TOPLEVEL_INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(EXTRA_CXX_FLAGS)
@@ -660,28 +666,22 @@ LTLDFLAGS = $(shell $(SHELL) $(top_srcdir)/../libtool-ldflags $(LDFLAGS))
 # directory to configure libstdc++-v3 to use gcc as the C++
 # compilation driver.
 CXXLINK = \
-	$(LIBTOOL) --tag CXX \
+	$(LIBTOOL) --tag CXX $(NO_SHARED_TAG) \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXX) \
 	$(OPT_LDFLAGS) $(SECTION_LDFLAGS) $(AM_CXXFLAGS) $(LTLDFLAGS) -o $@
 
 
 # By adding these files here, automake will remove them for 'make clean'
-@ENABLE_SYMVERS_FALSE@CLEANFILES = stamp-*
-
-# By adding these files here, automake will remove them for 'make clean'
-@ENABLE_SYMVERS_TRUE@CLEANFILES = libsup++-symbols.ver $(version_dep) \
-@ENABLE_SYMVERS_TRUE@	stamp-*
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,-exported_symbols_list,libsup++-symbols.explist
-@ENABLE_SYMVERS_FALSE@version_arg = 
-@ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,--version-script=libsup++-symbols.ver
-@ENABLE_SYMVERS_GNU_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,--version-script=libsup++-symbols.ver
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@version_arg = -Wl,-M,libsup++-symbols.ver-sun
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libsup++-symbols.explist
-@ENABLE_SYMVERS_FALSE@version_dep = 
-@ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libsup++-symbols.ver
-@ENABLE_SYMVERS_GNU_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libsup++-symbols.ver
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@version_dep = libsup++-symbols.ver-sun
+CLEANFILES = $(am__append_1) stamp-*
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_arg = -Wl,-exported_symbols_list,libsup++-symbols.explist
+@ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_arg = -Wl,--version-script=libsup++-symbols.ver
+@ENABLE_SYMVERS_GNU_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_arg = -Wl,--version-script=libsup++-symbols.ver
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_arg = -Wl,-M,libsup++-symbols.ver-sun
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_dep = libsup++-symbols.explist
+@ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_dep = libsup++-symbols.ver
+@ENABLE_SYMVERS_GNU_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_dep = libsup++-symbols.ver
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@version_dep = libsup++-symbols.ver-sun
 
 # Install notes
 # We have to have rules modified from the default to counteract SUN make
@@ -1004,36 +1004,36 @@ atomicity.cc: ${atomicity_file}
 
 # Symbol versioning for shared libraries.
 # See configure.host and configure.ac for port_specific_symbol_files.
-@ENABLE_SYMVERS_TRUE@libsup++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_ABI_FILE)
-@ENABLE_SYMVERS_TRUE@	cp ${glibcxx_srcdir}/$(SYMVER_ABI_FILE) $@.tmp
-@ENABLE_SYMVERS_TRUE@	chmod +w $@.tmp
-@ENABLE_SYMVERS_TRUE@	if test "x$(port_specific_abi_symbol_files)" != x; then \
-@ENABLE_SYMVERS_TRUE@	  if grep '^# Appended to version file.' \
-@ENABLE_SYMVERS_TRUE@	       $(port_specific_abi_symbol_files) > /dev/null 2>&1; then \
-@ENABLE_SYMVERS_TRUE@	    cat $(port_specific_abi_symbol_files) >> $@.tmp; \
-@ENABLE_SYMVERS_TRUE@	  else \
-@ENABLE_SYMVERS_TRUE@	    sed -n '1,/DO NOT DELETE/p' $@.tmp > tmp.top; \
-@ENABLE_SYMVERS_TRUE@	    sed -n '/DO NOT DELETE/,$$p' $@.tmp > tmp.bottom; \
-@ENABLE_SYMVERS_TRUE@	    cat tmp.top $(port_specific_abi_symbol_files) tmp.bottom > $@.tmp; \
-@ENABLE_SYMVERS_TRUE@	    rm tmp.top tmp.bottom; \
-@ENABLE_SYMVERS_TRUE@	  fi; \
-@ENABLE_SYMVERS_TRUE@	fi
-@ENABLE_SYMVERS_TRUE@	$(EGREP) -v '^[ 	]*#(#| |$$)' $@.tmp | \
-@ENABLE_SYMVERS_TRUE@	  $(CC) -E -P -include $(CONFIG_HEADER) - > $@ || (rm -f $@ ; exit 1)
-@ENABLE_SYMVERS_TRUE@	rm -f $@.tmp
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@libsup++-symbols.ver-sun : libsup++-symbols.ver \
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@		$(toplevel_srcdir)/contrib/make_sunver.pl \
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@		$(libsupc___la_OBJECTS)
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@	CXXFILT="$(CXXFILT)"; export CXXFILT; \
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@	perl $(toplevel_srcdir)/contrib/make_sunver.pl \
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@	  libsup++-symbols.ver \
-@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@	  $(libsupc___la_OBJECTS:%.lo=.libs/%.o) > $@ || (rm -f $@ ; exit 1)
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@libsup++-symbols.explist : libsup++-symbols.ver \
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@		${glibcxx_srcdir}/scripts/make_exports.pl \
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@		$(libsupc___la_OBJECTS)
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@	perl ${glibcxx_srcdir}/scripts/make_exports.pl \
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@	  libsup++-symbols.ver \
-@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@	  $(libsupc___la_OBJECTS:%.lo=.libs/%.o) > $@ || (rm -f $@ ; exit 1)
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@libsup++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_ABI_FILE)
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	cp ${glibcxx_srcdir}/$(SYMVER_ABI_FILE) $@.tmp
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	chmod +w $@.tmp
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	if test "x$(port_specific_abi_symbol_files)" != x; then \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  if grep '^# Appended to version file.' \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	       $(port_specific_abi_symbol_files) > /dev/null 2>&1; then \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	    cat $(port_specific_abi_symbol_files) >> $@.tmp; \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  else \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	    sed -n '1,/DO NOT DELETE/p' $@.tmp > tmp.top; \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	    sed -n '/DO NOT DELETE/,$$p' $@.tmp > tmp.bottom; \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	    cat tmp.top $(port_specific_abi_symbol_files) tmp.bottom > $@.tmp; \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	    rm tmp.top tmp.bottom; \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  fi; \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	fi
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	$(EGREP) -v '^[ 	]*#(#| |$$)' $@.tmp | \
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  $(CC) -E -P -include $(CONFIG_HEADER) - > $@ || (rm -f $@ ; exit 1)
+@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	rm -f $@.tmp
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@libsup++-symbols.ver-sun : libsup++-symbols.ver \
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@		$(toplevel_srcdir)/contrib/make_sunver.pl \
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@		$(libsupc___la_OBJECTS)
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	CXXFILT="$(CXXFILT)"; export CXXFILT; \
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	perl $(toplevel_srcdir)/contrib/make_sunver.pl \
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  libsup++-symbols.ver \
+@ENABLE_SYMVERS_SUN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  $(libsupc___la_OBJECTS:%.lo=.libs/%.o) > $@ || (rm -f $@ ; exit 1)
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@libsup++-symbols.explist : libsup++-symbols.ver \
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@		${glibcxx_srcdir}/scripts/make_exports.pl \
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@		$(libsupc___la_OBJECTS)
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	perl ${glibcxx_srcdir}/scripts/make_exports.pl \
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  libsup++-symbols.ver \
+@ENABLE_SYMVERS_DARWIN_TRUE@@ENABLE_SYMVERS_TRUE@@GLIBCXX_SEPARATE_ABI_LIB_TRUE@	  $(libsupc___la_OBJECTS:%.lo=.libs/%.o) > $@ || (rm -f $@ ; exit 1)
 
 install-stdHEADERS: $(std_HEADERS)
 	@$(NORMAL_INSTALL)

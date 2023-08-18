@@ -71,9 +71,9 @@ ADA_INCLUDES_FOR_SUBDIR = -I. -I$(fsrcdir)/ada
 
 CXX_LFLAGS = \
  -B../../../$(target_noncanonical)/libstdc++-v3/src/.libs \
- -B../../../$(target_noncanonical)/libstdc++-v3/libsupc++/.libs \
+ -B../../../$(target_noncanonical)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs \
  -L../../../$(target_noncanonical)/libstdc++-v3/src/.libs \
- -L../../../$(target_noncanonical)/libstdc++-v3/libsupc++/.libs
+ -L../../../$(target_noncanonical)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs
 
 # Variables for gnattools, native
 TOOLS_FLAGS_TO_PASS_NATIVE= \

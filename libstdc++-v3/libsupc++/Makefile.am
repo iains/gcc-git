@@ -121,11 +121,16 @@ endif
 libsupc___la_SOURCES = $(sources) $(c_sources) $(vtv_sources)
 libsupc__convenience_la_SOURCES = $(sources) $(c_sources) $(vtv_sources)
 
+if GLIBCXX_SEPARATE_ABI_LIB
 libsupc___la_LDFLAGS = \
 	-version-info $(libtool_VERSION) ${version_arg}
 libsupc___la_LINK = $(CXXLINK) $(libsupc___la_LDFLAGS)
 
 libsupc___la_DEPENDENCIES = ${version_dep}
+NO_SHARED_TAG =
+else
+NO_SHARED_TAG = --tag disable-shared
+endif
 
 cp-demangle.c:
 	rm -f $@
@@ -170,7 +175,7 @@ C_COMPILE = \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(EXTRA_CFLAGS)
 
 # LTCOMPILE is copied from LTCXXCOMPILE below.
-LTCOMPILE = $(LIBTOOL) --tag CC $(LIBTOOLFLAGS) --mode=compile \
+LTCOMPILE = $(LIBTOOL) --tag CC $(NO_SHARED_TAG) $(LIBTOOLFLAGS) --mode=compile \
 	    $(CC) $(DEFS) $(C_INCLUDES) \
 	    $(glibcxx_lt_pic_flag) $(glibcxx_compiler_shared_flag) \
 	    $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(EXTRA_CFLAGS)
@@ -202,7 +207,7 @@ LTCOMPILE = $(LIBTOOL) --tag CC $(LIBTOOLFLAGS) --mode=compile \
 # last. (That way, things like -O2 passed down from the toplevel can
 # be overridden by --enable-debug.)
 LTCXXCOMPILE = \
-	$(LIBTOOL) --tag CXX \
+	$(LIBTOOL) --tag CXX $(NO_SHARED_TAG) \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=compile $(CXX) $(TOPLEVEL_INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) $(EXTRA_CXX_FLAGS)
@@ -216,11 +221,14 @@ LTLDFLAGS = $(shell $(SHELL) $(top_srcdir)/../libtool-ldflags $(LDFLAGS))
 # directory to configure libstdc++-v3 to use gcc as the C++
 # compilation driver.
 CXXLINK = \
-	$(LIBTOOL) --tag CXX \
+	$(LIBTOOL) --tag CXX $(NO_SHARED_TAG) \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXX) \
 	$(OPT_LDFLAGS) $(SECTION_LDFLAGS) $(AM_CXXFLAGS) $(LTLDFLAGS) -o $@
 
+CLEANFILES =
+
+if GLIBCXX_SEPARATE_ABI_LIB
 # Symbol versioning for shared libraries.
 # See configure.host and configure.ac for port_specific_symbol_files.
 if ENABLE_SYMVERS
@@ -242,7 +250,7 @@ libsup++-symbols.ver:  ${glibcxx_srcdir}/$(SYMVER_ABI_FILE)
 	  $(CC) -E -P -include $(CONFIG_HEADER) - > $@ || (rm -f $@ ; exit 1)
 	rm -f $@.tmp
 
-CLEANFILES = libsup++-symbols.ver
+CLEANFILES += libsup++-symbols.ver
 
 if ENABLE_SYMVERS_GNU
 version_arg = -Wl,--version-script=libsup++-symbols.ver
@@ -275,10 +283,7 @@ libsup++-symbols.explist : libsup++-symbols.ver \
 endif
 
 CLEANFILES += $(version_dep)
-else
-version_arg =
-version_dep =
-CLEANFILES =
+endif
 endif
 
 # Install notes

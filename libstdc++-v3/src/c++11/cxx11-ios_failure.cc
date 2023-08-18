@@ -29,8 +29,9 @@
 #define _GLIBCXX_USE_CXX11_ABI 1
 #include <ios>
 #include <bits/functexcept.h>
+#define NEED_PRIVATE_TYPEINFO_API
 #include <cxxabi.h>
-//#include "../../cxxabi/private_typeinfo.h"
+#undef NEED_PRIVATE_TYPEINFO_API
 
 #ifdef _GLIBCXX_USE_NLS
 # include <libintl.h>
@@ -63,7 +64,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   ios_base::failure::what() const throw()
   { return runtime_error::what(); }
 
-#if 0 && __cpp_rtti
+#if HAVE_PRIVATE_TYPEINFO_API && __cpp_rtti
   // These functions are defined in src/c++98/ios_failure.cc
   extern void __construct_ios_failure(void*, const char*);
   extern void __destroy_ios_failure(void*);

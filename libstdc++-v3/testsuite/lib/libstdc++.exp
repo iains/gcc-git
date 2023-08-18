@@ -713,7 +713,7 @@ proc v3_target_compile_as_c { source dest type options } {
 
 	set libdir "-L${comp_base_dir}/lib"
     } else {
-	set libdir "-L${blddir}/cxxabi/.libs"
+	set libdir "-L${blddir}/${cxx_abi_lib_subdir}/.libs"
 	set libdir [concat $libdir "-L${blddir}/src/.libs"]
     }
 

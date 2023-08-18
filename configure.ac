@@ -1470,6 +1470,40 @@ elif test "$have_compiler" = yes; then
   fi
 fi
 
+# Allow choosing to configure the compiler to use a separate C++ ABI support
+# library, rather than including it as part of libstdc++.
+separate_gxx_abi_lib=
+AC_ARG_WITH(separate-gxx-abi-lib,
+[AS_HELP_STRING([--with-separate-gxx-abi-lib[{=supc++,c++abi,yes,no}]],
+		[specify that G++ uses a separate library to implement C++
+		 language ABI support.  When this is not set libstdc++ is
+		 built with the ABI library self-contained and no extra
+		 library is used.  For 'supc++', libstdc++ uses the native
+		 ABI library G++ but linked as a separate entity. When 'c++abi'
+		 is specified, libstdc++ is built to use an externally-
+		 provided libc++abi.  For 'yes' a suitable choice is made based
+		 on the target.])],
+[separate_gxx_abi_lib=$with_separate_gxx_abi_lib],[separate_gxx_abi_lib=no])
+
+case $separate_gxx_abi_lib in
+  no)
+    separate_gxx_abi_lib=
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  supc\+\+ | yes)
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  c\+\+abi)
+    cxx_abi_lib_subdir=cxxabi
+    ;;
+  *)
+    AC_MSG_ERROR([unrecognised C++ ABI library option '$separate_gxx_abi_lib'])
+    ;;
+esac
+AC_SUBST(separate_gxx_abi_lib)
+AC_SUBST(cxx_abi_lib_subdir)
+AC_MSG_NOTICE([the C++ ABI lib directory is $cxx_abi_lib_subdir])
+
 AC_ARG_ENABLE([pgo-build],
 [AS_HELP_STRING([--enable-pgo-build[[=lto]]],
 		[enable the PGO build])],
@@ -3904,10 +3938,10 @@ GCC_TARGET_TOOL(as, AS_FOR_TARGET, AS, [gas/as-new])
 GCC_TARGET_TOOL(cc, CC_FOR_TARGET, CC, [gcc/xgcc -B$$r/$(HOST_SUBDIR)/gcc/])
 dnl see comments for CXX_FOR_TARGET_FLAG_TO_PASS
 GCC_TARGET_TOOL(c++, CXX_FOR_TARGET, CXX,
-		[gcc/xg++ -B$$r/$(HOST_SUBDIR)/gcc/ -nostdinc++ `if test -f $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags; then $(SHELL) $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags --build-includes; else echo -funconfigured-libstdc++-v3 ; fi` -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs],
+		[gcc/xg++ -B$$r/$(HOST_SUBDIR)/gcc/ -nostdinc++ `if test -f $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags; then $(SHELL) $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags --build-includes; else echo -funconfigured-libstdc++-v3 ; fi` -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs],
 		c++)
 GCC_TARGET_TOOL(c++ for libstdc++, RAW_CXX_FOR_TARGET, CXX,
-		[gcc/xgcc -shared-libgcc -B$$r/$(HOST_SUBDIR)/gcc -nostdinc++ -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/libsupc++/.libs],
+		[gcc/xgcc -shared-libgcc -B$$r/$(HOST_SUBDIR)/gcc -nostdinc++ -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs],
 		c++)
 GCC_TARGET_TOOL(dlltool, DLLTOOL_FOR_TARGET, DLLTOOL, [binutils/dlltool])
 GCC_TARGET_TOOL(dsymutil, DSYMUTIL_FOR_TARGET, DSYMUTIL)

@@ -1084,6 +1084,10 @@ RTL_SSA_H = $(PRETTY_PRINT_H) insn-config.h splay-tree-utils.h \
 # cross compiler which does not use the native headers and libraries.
 INTERNAL_CFLAGS = -DIN_GCC @CROSS@
 
+ifneq ($(CXX_ABI_LIB_NAME),)
+INTERNAL_CFLAGS += -DLIBSTDCXXABI=\"$(CXX_ABI_LIB_NAME)\"
+endif
+
 # This is the variable actually used when we compile. If you change this,
 # you probably want to update BUILD_CFLAGS in configure.ac
 ALL_CFLAGS = $(T_CFLAGS) $(CFLAGS-$@) \

@@ -827,6 +827,12 @@ toplevel_srcdir
 toplevel_builddir
 glibcxx_srcdir
 glibcxx_builddir
+GLIBCXX_CXXABI_FALSE
+GLIBCXX_CXXABI_TRUE
+GLIBCXX_SEPARATE_ABI_LIB_FALSE
+GLIBCXX_SEPARATE_ABI_LIB_TRUE
+cxx_abi_lib_subdir
+separate_gxx_abi_lib
 ac_ct_CXX
 CXXFLAGS
 CXX
@@ -921,6 +927,7 @@ enable_option_checking
 enable_multilib
 enable_silent_rules
 enable_largefile
+with_separate_gxx_abi_lib
 with_target_subdir
 with_cross_host
 with_newlib
@@ -1696,6 +1703,16 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-separate-gxx-abi-lib{=supc++,c++abi,yes,no}
+                          specify that G++ uses a separate library to
+                          implement C++ language ABI support. When this is not
+                          set libstdc++ is built with the ABI library
+                          self-contained and no extra library is used. For
+                          'supc++', libstdc++ uses the native ABI library G++
+                          but linked as a separate entity. When 'c++abi' is
+                          specified, libstdc++ is built to use an externally-
+                          provided libc++abi. For 'yes' a suitable choice is
+                          made based on the target.
   --with-target-subdir=SUBDIR
                           configuring in a subdirectory
   --with-cross-host=HOST  configuring with a cross compiler
@@ -5257,6 +5274,43 @@ rm -rf conftest*
 
 
 fi
+
+
+# This must come before GLIBCXX_CONFIGURE so that the abi library subdir is
+# known, FIXME: we need this twice, it could live somewhere common.
+# Allow choosing to configure the compiler to use a separate C++ ABI support
+# library, rather than including it as part of libstdc++.  This option should
+# have been validated by the top level.
+separate_gxx_abi_lib=
+
+# Check whether --with-separate-gxx-abi-lib was given.
+if test "${with_separate_gxx_abi_lib+set}" = set; then :
+  withval=$with_separate_gxx_abi_lib; separate_gxx_abi_lib=$with_separate_gxx_abi_lib
+else
+  separate_gxx_abi_lib=no
+fi
+
+
+case $separate_gxx_abi_lib in
+  no)
+    separate_gxx_abi_lib=
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  supc\+\+ | yes)
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  c\+\+abi)
+    cxx_abi_lib_subdir=cxxabi
+    ;;
+  *)
+    as_fn_error $? "unrecognised C++ ABI library option '$separate_gxx_abi_lib'" "$LINENO" 5
+    ;;
+esac
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: the C++ ABI lib directory is $cxx_abi_lib_subdir" >&5
+$as_echo "$as_me: the C++ ABI lib directory is $cxx_abi_lib_subdir" >&6;}
+
 
 
 # Runs configure.host, and assorted other critical bits.  Sets
@@ -12283,7 +12337,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12286 "configure"
+#line 12340 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12389,7 +12443,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12392 "configure"
+#line 12446 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -16185,7 +16239,7 @@ $as_echo "$glibcxx_cv_atomic_long_long" >&6; }
   # Fake what AC_TRY_COMPILE does.
 
     cat > conftest.$ac_ext << EOF
-#line 16188 "configure"
+#line 16242 "configure"
 int main()
 {
   typedef bool atomic_type;
@@ -16220,7 +16274,7 @@ $as_echo "$glibcxx_cv_atomic_bool" >&6; }
     rm -f conftest*
 
     cat > conftest.$ac_ext << EOF
-#line 16223 "configure"
+#line 16277 "configure"
 int main()
 {
   typedef short atomic_type;
@@ -16255,7 +16309,7 @@ $as_echo "$glibcxx_cv_atomic_short" >&6; }
     rm -f conftest*
 
     cat > conftest.$ac_ext << EOF
-#line 16258 "configure"
+#line 16312 "configure"
 int main()
 {
   // NB: _Atomic_word not necessarily int.
@@ -16291,7 +16345,7 @@ $as_echo "$glibcxx_cv_atomic_int" >&6; }
     rm -f conftest*
 
     cat > conftest.$ac_ext << EOF
-#line 16294 "configure"
+#line 16348 "configure"
 int main()
 {
   typedef long long atomic_type;
@@ -16447,7 +16501,7 @@ $as_echo "mutex" >&6; }
   # unnecessary for this test.
 
     cat > conftest.$ac_ext << EOF
-#line 16450 "configure"
+#line 16504 "configure"
 int main()
 {
   _Decimal32 d1;
@@ -16489,7 +16543,7 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
   # unnecessary for this test.
 
   cat > conftest.$ac_ext << EOF
-#line 16492 "configure"
+#line 16546 "configure"
 template<typename T1, typename T2>
   struct same
   { typedef T2 type; };
@@ -55262,6 +55316,24 @@ EXTRA_CFLAGS="$EXTRA_CFLAGS $CET_FLAGS"
 # Determine cross-compile flags and AM_CONDITIONALs.
 #AC_SUBST(GLIBCXX_IS_NATIVE)
 #AM_CONDITIONAL(CANADIAN, test $CANADIAN = yes)
+    if test x"$separate_gxx_abi_lib" != x; then
+  GLIBCXX_SEPARATE_ABI_LIB_TRUE=
+  GLIBCXX_SEPARATE_ABI_LIB_FALSE='#'
+else
+  GLIBCXX_SEPARATE_ABI_LIB_TRUE='#'
+  GLIBCXX_SEPARATE_ABI_LIB_FALSE=
+fi
+
+
+    if test "$cxx_abi_lib_subdir" = cxxabi; then
+  GLIBCXX_CXXABI_TRUE=
+  GLIBCXX_CXXABI_FALSE='#'
+else
+  GLIBCXX_CXXABI_TRUE='#'
+  GLIBCXX_CXXABI_FALSE=
+fi
+
+
     if test $is_hosted = yes; then
   GLIBCXX_HOSTED_TRUE=
   GLIBCXX_HOSTED_FALSE='#'
@@ -55711,7 +55783,7 @@ $as_echo "$gxx_include_dir" >&6; }
   GLIBCXX_INCLUDES="\
 -I$glibcxx_builddir/include/$host_alias \
 -I$glibcxx_builddir/include \
--I$glibcxx_srcdir/cxxabi"
+-I$glibcxx_srcdir/${cxx_abi_lib_subdir}"
 
   # For Canadian crosses, pick this up too.
   if test $CANADIAN = yes; then
@@ -55905,6 +55977,14 @@ else
   am__EXEEXT_FALSE=
 fi
 
+if test -z "${GLIBCXX_SEPARATE_ABI_LIB_TRUE}" && test -z "${GLIBCXX_SEPARATE_ABI_LIB_FALSE}"; then
+  as_fn_error $? "conditional \"GLIBCXX_SEPARATE_ABI_LIB\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${GLIBCXX_CXXABI_TRUE}" && test -z "${GLIBCXX_CXXABI_FALSE}"; then
+  as_fn_error $? "conditional \"GLIBCXX_CXXABI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${MAINTAINER_MODE_TRUE}" && test -z "${MAINTAINER_MODE_FALSE}"; then
   as_fn_error $? "conditional \"MAINTAINER_MODE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5

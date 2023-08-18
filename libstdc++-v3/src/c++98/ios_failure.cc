@@ -30,8 +30,9 @@
 #include <ios>
 
 #if _GLIBCXX_USE_DUAL_ABI && __cpp_rtti
+#define NEED_PRIVATE_TYPEINFO_API
 #include <cxxabi.h>
-#include "../../cxxabi/private_typeinfo.h"
+#undef NEED_PRIVATE_TYPEINFO_API
 #include <typeinfo>
 #endif
 

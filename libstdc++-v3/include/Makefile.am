@@ -281,7 +281,7 @@ endif GLIBCXX_HOSTED
 bits_host_headers = \
 	${glibcxx_srcdir}/${CPU_OPT_BITS_RANDOM}
 
-bits_sup_srcdir = ${glibcxx_srcdir}/cxxabi
+bits_sup_srcdir = ${glibcxx_srcdir}/${cxx_abi_lib_subdir}
 bits_sup_headers = \
 	${bits_sup_srcdir}/atomic_lockfree_defines.h \
 	${bits_sup_srcdir}/cxxabi_forced.h \

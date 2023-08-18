@@ -112,6 +112,9 @@ RPATH_ENVVAR = @RPATH_ENVVAR@
 # executables in PATH.
 GCC_SHLIB_SUBDIR = @GCC_SHLIB_SUBDIR@
 
+CXX_ABI_LIB_NAME = @separate_gxx_abi_lib@
+CXX_ABI_LIB_SUBDIR = @cxx_abi_lib_subdir@
+
 # If the build should make suitable code for shared host resources.
 host_shared = @host_shared@
 
@@ -205,6 +208,8 @@ HOST_EXPORTS = \
 	CONFIG_SHELL="$(SHELL)"; export CONFIG_SHELL; \
 	CXX="$(CXX)"; export CXX; \
 	CXXFLAGS="$(CXXFLAGS)"; export CXXFLAGS; \
+	CXX_ABI_LIB_NAME="$(CXX_ABI_LIB_NAME)"; export CXX_ABI_LIB_NAME; \
+	CXX_ABI_LIB_SUBDIR="$(CXX_ABI_LIB_SUBDIR)"; export CXX_ABI_LIB_SUBDIR; \
 	GFORTRAN="$(GFORTRAN)"; export GFORTRAN; \
 	GOC="$(GOC)"; export GOC; \
 	GDC="$(GDC)"; export GDC; \
@@ -253,6 +258,7 @@ HOST_EXPORTS = \
 
 POSTSTAGE1_CXX_EXPORT = \
 	CXX='$(CXX)'; export CXX; \
+	CXX_ABI_LIB_SUBDIR="$(CXX_ABI_LIB_SUBDIR)"; export CXX_ABI_LIB_SUBDIR; \
 	CXX_FOR_BUILD='$(CXX_FOR_BUILD)'; export CXX_FOR_BUILD;
 @if target-libstdc++-v3-bootstrap
 # Override the above if we're bootstrapping C++.
@@ -260,12 +266,12 @@ POSTSTAGE1_CXX_EXPORT = \
 	CXX="$(STAGE_CC_WRAPPER) $$r/$(HOST_SUBDIR)/prev-gcc/xg++$(exeext) \
 	  -B$$r/$(HOST_SUBDIR)/prev-gcc/ -B$(build_tooldir)/bin/ -nostdinc++ \
 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
-	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/cxxabi/.libs \
+	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs \
 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include/$(TARGET_SUBDIR) \
 	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/include \
-	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$s/libstdc++-v3/cxxabi \
+	  `if $(LEAN); then echo ' -isystem '; else echo ' -I'; fi`$$s/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR) \
 	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
-	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/cxxabi/.libs"; \
+	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs"; \
 	  export CXX; \
 	CXX_FOR_BUILD="$$CXX"; export CXX_FOR_BUILD;
 @endif target-libstdc++-v3-bootstrap
@@ -287,7 +293,9 @@ POSTSTAGE1_HOST_EXPORTS = \
 	  -I$$r/prev-$(TARGET_SUBDIR)/libphobos/libdruntime -I$$s/libphobos/libdruntime \
 	  -L$$r/prev-$(TARGET_SUBDIR)/libphobos/src/.libs \
 	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
-	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs"; \
+	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
+	  -B$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs \
+	  -L$$r/prev-$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs"; \
 	export GDC; \
 	GDC_FOR_BUILD="$$GDC"; export GDC_FOR_BUILD; \
 	GNATBIND="$$r/$(HOST_SUBDIR)/prev-gcc/gnatbind"; export GNATBIND; \
@@ -310,6 +318,8 @@ BASE_TARGET_EXPORTS = \
 	CONFIG_SHELL="$(SHELL)"; export CONFIG_SHELL; \
 	CPPFLAGS="$(CPPFLAGS_FOR_TARGET)"; export CPPFLAGS; \
 	CXXFLAGS="$(CXXFLAGS_FOR_TARGET)"; export CXXFLAGS; \
+	CXX_ABI_LIB_NAME="$(CXX_ABI_LIB_NAME)"; export CXX_ABI_LIB_NAME; \
+	CXX_ABI_LIB_SUBDIR="$(CXX_ABI_LIB_SUBDIR)"; export CXX_ABI_LIB_SUBDIR; \
 	GFORTRAN="$(GFORTRAN_FOR_TARGET) $(XGCC_FLAGS_FOR_TARGET) $$TFLAGS"; export GFORTRAN; \
 	GOC="$(GOC_FOR_TARGET) $(XGCC_FLAGS_FOR_TARGET) $$TFLAGS"; export GOC; \
 	GDC="$(GDC_FOR_TARGET) $(XGCC_FLAGS_FOR_TARGET) $$TFLAGS"; export GDC; \
@@ -786,7 +796,7 @@ EXTRA_TARGET_FLAGS = \
 	'CC=$$(CC_FOR_TARGET) $$(XGCC_FLAGS_FOR_TARGET) $$(TFLAGS)' \
 	'CFLAGS=$$(CFLAGS_FOR_TARGET)' \
 	'CXX=$$(CXX_FOR_TARGET) -B$$r/$$(TARGET_SUBDIR)/libstdc++-v3/src/.libs \
-	 -B$$r/$$(TARGET_SUBDIR)/libstdc++-v3/cxxabi/.libs \
+	 -B$$r/$$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs \
 	 $$(XGCC_FLAGS_FOR_TARGET) $$(TFLAGS)' \
 	'CXXFLAGS=$$(CXXFLAGS_FOR_TARGET)' \
 	'DLLTOOL=$$(DLLTOOL_FOR_TARGET)' \

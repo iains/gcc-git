@@ -94,6 +94,45 @@ CXXFLAGS="$save_CXXFLAGS"
 
 AC_SYS_LARGEFILE
 
+# This must come before GLIBCXX_CONFIGURE so that the abi library subdir is
+# known, FIXME: we need this twice, it could live somewhere common.
+# Allow choosing to configure the compiler to use a separate C++ ABI support
+# library, rather than including it as part of libstdc++.  This option should
+# have been validated by the top level.
+separate_gxx_abi_lib=
+AC_ARG_WITH(separate-gxx-abi-lib,
+[AS_HELP_STRING([--with-separate-gxx-abi-lib[{=supc++,c++abi,yes,no}]],
+		[specify that G++ uses a separate library to implement C++
+		 language ABI support.  When this is not set libstdc++ is
+		 built with the ABI library self-contained and no extra
+		 library is used.  For 'supc++', libstdc++ uses the native
+		 ABI library G++ but linked as a separate entity. When 'c++abi'
+		 is specified, libstdc++ is built to use an externally-
+		 provided libc++abi.  For 'yes' a suitable choice is made based
+		 on the target.])],
+[separate_gxx_abi_lib=$with_separate_gxx_abi_lib],[separate_gxx_abi_lib=no])
+
+case $separate_gxx_abi_lib in
+  no)
+    separate_gxx_abi_lib=
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  supc\+\+ | yes)
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  c\+\+abi)
+    cxx_abi_lib_subdir=cxxabi
+    ;;
+  *)
+    AC_MSG_ERROR([unrecognised C++ ABI library option '$separate_gxx_abi_lib'])
+    ;;
+esac
+AC_SUBST(separate_gxx_abi_lib)
+AC_SUBST(cxx_abi_lib_subdir)
+AC_MSG_NOTICE([the C++ ABI lib directory is $cxx_abi_lib_subdir])
+GLIBCXX_CONDITIONAL(GLIBCXX_SEPARATE_ABI_LIB, [test x"$separate_gxx_abi_lib" != x])
+GLIBCXX_CONDITIONAL(GLIBCXX_CXXABI, [test "$cxx_abi_lib_subdir" = cxxabi])
+
 # Runs configure.host, and assorted other critical bits.  Sets
 # up critical shell variables.
 GLIBCXX_CONFIGURE

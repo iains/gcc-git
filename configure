@@ -712,6 +712,8 @@ gmplibs
 PGO_BUILD_LTO_CFLAGS
 PGO_BUILD_USE_CFLAGS
 PGO_BUILD_GEN_CFLAGS
+cxx_abi_lib_subdir
+separate_gxx_abi_lib
 HAVE_CXX11_FOR_BUILD
 HAVE_CXX11
 do_compare
@@ -820,6 +822,7 @@ enable_libgm2
 enable_libssp
 enable_libstdcxx
 enable_bootstrap
+with_separate_gxx_abi_lib
 enable_pgo_build
 with_mpc
 with_mpc_include
@@ -1603,6 +1606,16 @@ Optional Packages:
   --with-system-zlib      use installed libz
   --with-zstd             Support zstd compressed debug sections
                           (default=auto)
+  --with-separate-gxx-abi-lib{=supc++,c++abi,yes,no}
+                          specify that G++ uses a separate library to
+                          implement C++ language ABI support. When this is not
+                          set libstdc++ is built with the ABI library
+                          self-contained and no extra library is used. For
+                          'supc++', libstdc++ uses the native ABI library G++
+                          but linked as a separate entity. When 'c++abi' is
+                          specified, libstdc++ is built to use an externally-
+                          provided libc++abi. For 'yes' a suitable choice is
+                          made based on the target.
   --with-mpc=PATH         specify prefix directory for installed MPC package.
                           Equivalent to --with-mpc-include=PATH/include plus
                           --with-mpc-lib=PATH/lib
@@ -7918,6 +7931,38 @@ $as_echo "#define HAVE_CXX11_FOR_BUILD 1" >>confdefs.h
 
   fi
 fi
+
+# Allow choosing to configure the compiler to use a separate C++ ABI support
+# library, rather than including it as part of libstdc++.
+separate_gxx_abi_lib=
+
+# Check whether --with-separate-gxx-abi-lib was given.
+if test "${with_separate_gxx_abi_lib+set}" = set; then :
+  withval=$with_separate_gxx_abi_lib; separate_gxx_abi_lib=$with_separate_gxx_abi_lib
+else
+  separate_gxx_abi_lib=no
+fi
+
+
+case $separate_gxx_abi_lib in
+  no)
+    separate_gxx_abi_lib=
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  supc\+\+ | yes)
+    cxx_abi_lib_subdir=libsupc++
+    ;;
+  c\+\+abi)
+    cxx_abi_lib_subdir=cxxabi
+    ;;
+  *)
+    as_fn_error $? "unrecognised C++ ABI library option '$separate_gxx_abi_lib'" "$LINENO" 5
+    ;;
+esac
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: the C++ ABI lib directory is $cxx_abi_lib_subdir" >&5
+$as_echo "$as_me: the C++ ABI lib directory is $cxx_abi_lib_subdir" >&6;}
 
 # Check whether --enable-pgo-build was given.
 if test "${enable_pgo_build+set}" = set; then :
@@ -18216,7 +18261,7 @@ else
   esac
   if test $ok = yes; then
     # An in-tree tool is available and we can use it
-    CXX_FOR_TARGET='$$r/$(HOST_SUBDIR)/gcc/xg++ -B$$r/$(HOST_SUBDIR)/gcc/ -nostdinc++ `if test -f $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags; then $(SHELL) $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags --build-includes; else echo -funconfigured-libstdc++-v3 ; fi` -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/cxxabi/.libs'
+    CXX_FOR_TARGET='$$r/$(HOST_SUBDIR)/gcc/xg++ -B$$r/$(HOST_SUBDIR)/gcc/ -nostdinc++ `if test -f $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags; then $(SHELL) $$r/$(TARGET_SUBDIR)/libstdc++-v3/scripts/testsuite_flags --build-includes; else echo -funconfigured-libstdc++-v3 ; fi` -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs'
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: just compiled" >&5
 $as_echo "just compiled" >&6; }
   elif expr "x$CXX_FOR_TARGET" : "x/" > /dev/null; then
@@ -18261,7 +18306,7 @@ else
   esac
   if test $ok = yes; then
     # An in-tree tool is available and we can use it
-    RAW_CXX_FOR_TARGET='$$r/$(HOST_SUBDIR)/gcc/xgcc -shared-libgcc -B$$r/$(HOST_SUBDIR)/gcc -nostdinc++ -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/cxxabi/.libs'
+    RAW_CXX_FOR_TARGET='$$r/$(HOST_SUBDIR)/gcc/xgcc -shared-libgcc -B$$r/$(HOST_SUBDIR)/gcc -nostdinc++ -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/src/.libs -L$$r/$(TARGET_SUBDIR)/libstdc++-v3/$(CXX_ABI_LIB_SUBDIR)/.libs'
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: just compiled" >&5
 $as_echo "just compiled" >&6; }
   elif expr "x$RAW_CXX_FOR_TARGET" : "x/" > /dev/null; then

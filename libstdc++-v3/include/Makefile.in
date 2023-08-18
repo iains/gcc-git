@@ -291,6 +291,7 @@ build_os = @build_os@
 build_vendor = @build_vendor@
 builddir = @builddir@
 check_msgfmt = @check_msgfmt@
+cxx_abi_lib_subdir = @cxx_abi_lib_subdir@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
@@ -340,6 +341,7 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 python_mod_dir = @python_mod_dir@
 sbindir = @sbindir@
+separate_gxx_abi_lib = @separate_gxx_abi_lib@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
@@ -636,7 +638,7 @@ bits_freestanding = \
 bits_host_headers = \
 	${glibcxx_srcdir}/${CPU_OPT_BITS_RANDOM}
 
-bits_sup_srcdir = ${glibcxx_srcdir}/cxxabi
+bits_sup_srcdir = ${glibcxx_srcdir}/${cxx_abi_lib_subdir}
 bits_sup_headers = \
 	${bits_sup_srcdir}/atomic_lockfree_defines.h \
 	${bits_sup_srcdir}/cxxabi_forced.h \

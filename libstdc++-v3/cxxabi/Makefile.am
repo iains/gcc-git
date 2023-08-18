@@ -1,10 +1,10 @@
-## Makefile to use c++abi as the support library.
+## Makefile to allow use of c++abi as the support library.
 
 include $(top_srcdir)/fragment.am
 
-# Integrated libc++abiconvenience.la that is to be a part of libstdc++.a
-# This consists of conversion shim(s) and/or some of the sources from libsupc++
-# where those are needed to support libstdc++.
+# A shim library to support the use of an external libc++abi DSO.
+# We do not support incorporating the c++abi sources into libstdc++ (it
+# does not seem to be useful and the sources are licensed differently).
 
 noinst_LTLIBRARIES = libc++abiconvenience.la
 
@@ -16,18 +16,12 @@ bits_HEADERS = \
 	hash_bytes.h exception.h exception_ptr.h nested_exception.h \
 	exception_defines.h
 
-#	exception_defines.h exception_ptr.h hash_bytes.h nested_exception.h exception.h 
-
 headers = $(std_HEADERS) $(bits_HEADERS)
 
 sources = \
 	shim.cc \
 	exception_ptr.cc \
 	hash_bytes.cc
-
-#	si_class_type_info.cc 
-#	class_type_info.cc 
-#	tinfo.cc 
 
 libc__abiconvenience_la_SOURCES = $(sources)
 

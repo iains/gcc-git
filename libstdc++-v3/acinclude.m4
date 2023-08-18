@@ -28,7 +28,8 @@ AC_DEFUN([GLIBCXX_CHECK_HOST], [
 
 dnl
 dnl Initialize the rest of the library configury.  At this point we have
-dnl variables like $host.
+dnl variables like $host.  We must also have a definition for 
+dnl $cxx_abi_lib_subdir.
 dnl
 dnl Sets:
 dnl  SUBDIRS
@@ -660,7 +661,8 @@ AM_CONDITIONAL(BUILD_EPUB, test x"$glibcxx_epub_stylesheets" = x"yes")
 
 
 dnl
-dnl Set up *_INCLUDES variables for all sundry Makefile.am's.
+dnl Set up *_INCLUDES variables for all sundry Makefile.am's. This must come
+dnl after the abi library subdirectory is configured.
 dnl
 dnl Substs:
 dnl  GLIBCXX_INCLUDES
@@ -671,7 +673,7 @@ AC_DEFUN([GLIBCXX_EXPORT_INCLUDES], [
   GLIBCXX_INCLUDES="\
 -I$glibcxx_builddir/include/$host_alias \
 -I$glibcxx_builddir/include \
--I$glibcxx_srcdir/cxxabi"
+-I$glibcxx_srcdir/${cxx_abi_lib_subdir}"
 
   # For Canadian crosses, pick this up too.
   if test $CANADIAN = yes; then
