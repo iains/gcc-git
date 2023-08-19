@@ -669,6 +669,7 @@ proc v3_target_compile_as_c { source dest type options } {
     global cxxflags
     global STATIC_LIBCXXFLAGS
     global tool
+    global cxx_abi_lib_subdir
 
     if { [target_info needs_status_wrapper] != "" && [info exists gluefile] } {
 	lappend options "libs=${gluefile}"
@@ -687,7 +688,7 @@ proc v3_target_compile_as_c { source dest type options } {
     # This is needed for "C" tests, as this type of test may need the
     # C++ includes. And if we're not testing in the build directory,
     # the includes variable is not likely to include the necessary
-    # info.
+    # info.libiconv
     if { ![file exists $flags_file] } {
 	# ??? We need a --print-include-dirs option to GCC, so that
 	# we can avoid these hacks.  The heuristics here will not
@@ -713,7 +714,12 @@ proc v3_target_compile_as_c { source dest type options } {
 
 	set libdir "-L${comp_base_dir}/lib"
     } else {
-	set libdir "-L${blddir}/${cxx_abi_lib_subdir}/.libs"
+        set libdir ""
+        if { [info exists cxx_abi_lib_subdir] } {
+	   set libdir "-L${blddir}/${cxx_abi_lib_subdir}/.libs"
+	} else {
+	   puts "no definition for cxx_abi_lib_subdir"
+	}
 	set libdir [concat $libdir "-L${blddir}/src/.libs"]
     }
 
@@ -1592,6 +1598,20 @@ proc check_effective_target_tzdb { } {
 	set cond "defined _GLIBCXX_ZONEINFO_DIR || _GLIBCXX_STATIC_TZDATA"
 	return [v3_check_preprocessor_condition tzdb $cond]
     }]
+}
+
+# Return 1 if the target uses libsupc++ (which is the case for all
+# configurations that do not use cxxabi).
+proc check_v3_target_libsupcxx { } {
+    global cxx_abi_lib_subdir
+    if { [string equal "cxxabi" ${cxx_abi_lib_subdir}] } {
+       return 0
+    }
+    return 1
+}
+
+proc check_effective_target_libsupcxx { } {
+    return [check_v3_target_libsupcxx]
 }
 
 set additional_prunes ""

@@ -16,6 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 
 // { dg-do run }
+// { dg-require-effective-target libsupcxx }
 
 namespace __gnu_cxx {
   void __freeres();

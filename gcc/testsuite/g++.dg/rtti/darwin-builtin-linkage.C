@@ -4,6 +4,7 @@
 /* Verify that none of the type_info structures for the fundamental
    types are emitted as weak on Darwin.  */
 
+#define NEED_PRIVATE_TYPEINFO_API
 #include <cxxabi.h>
 
 namespace __cxxabiv1 {

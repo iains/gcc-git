@@ -37,6 +37,8 @@
 #include <bits/move.h>
 #include <bits/exception_ptr.h>
 
+#define _LIBCPP_NORETURN  __attribute__((noreturn))
+
 extern "C++" {
 
 namespace std _GLIBCXX_VISIBILITY(default)
@@ -221,7 +223,6 @@ public:
 	__ne_ptr->rethrow_nested();
 #endif
     }
-
   /// @} group exceptions
 } // namespace std
 

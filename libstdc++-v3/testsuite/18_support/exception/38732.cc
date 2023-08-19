@@ -30,6 +30,12 @@
 
 struct __cxa_exception
 {
+#if !defined(_GLIBCXX_LIBSUPCXX) && (__LP64__ || __ARM_EABI_UNWINDER__)
+  /* c++abi inserts this padding to satisfy revised alignment specs. I do not
+     quite understand the rationale (but the layout is changed).  */
+  void *res;
+  size_t res1;
+#endif
   std::type_info *exceptionType;
   void (*exceptionDestructor)(void *);
   std::unexpected_handler unexpectedHandler;

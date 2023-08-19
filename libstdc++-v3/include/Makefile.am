@@ -1347,6 +1347,14 @@ stamp-float128:
 	echo 'undef _GLIBCXX_USE_FLOAT128' > stamp-float128
 endif
 
+if GLIBCXX_CXXABI
+stamp-libsupcxx:
+	echo 'undef _GLIBCXX_LIBSUPCXX' > stamp-libsupcxx
+else
+stamp-libsupcxx:
+	echo 'define _GLIBCXX_LIBSUPCXX 1' > stamp-libsupcxx
+endif
+
 # This header is not installed, it's only used to build libstdc++ itself.
 ${host_builddir}/largefile-config.h: ${CONFIG_HEADER} stamp-${host_alias}
 	@rm -f $@.tmp
@@ -1368,7 +1376,8 @@ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
 			      stamp-dual-abi \
 			      stamp-cxx11-abi \
 			      stamp-allocator-new \
-			      stamp-float128
+			      stamp-float128 \
+			      stamp-libsupcxx
 	@date=`cat ${toplevel_srcdir}/gcc/DATESTAMP` ;\
 	release=`sed 's/^\([0-9]*\).*$$/\1/' ${toplevel_srcdir}/gcc/BASE-VER` ;\
 	ns_version=`cat stamp-namespace-version` ;\
@@ -1378,6 +1387,7 @@ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
 	cxx11abi=`cat stamp-cxx11-abi` ;\
 	allocatornew=`cat stamp-allocator-new` ;\
 	float128=`cat stamp-float128` ;\
+	libsupcxx=`cat stamp-libsupcxx` ;\
 	ldbl_compat='s,g,g,' ;\
 	grep "^[	 ]*#[	 ]*define[	 ][	 ]*_GLIBCXX_LONG_DOUBLE_COMPAT[	 ][	 ]*1[	 ]*$$" \
 	${CONFIG_HEADER} > /dev/null 2>&1 \
@@ -1401,6 +1411,7 @@ ${host_builddir}/c++config.h: ${CONFIG_HEADER} \
 	-e "s,define _GLIBCXX_USE_CXX11_ABI, define _GLIBCXX_USE_CXX11_ABI $$cxx11abi," \
 	-e "s,define _GLIBCXX_USE_ALLOCATOR_NEW, define _GLIBCXX_USE_ALLOCATOR_NEW $$allocatornew," \
 	-e "s,define _GLIBCXX_USE_FLOAT128,$$float128," \
+	-e "s,define _GLIBCXX_LIBSUPCXX,$$libsupcxx," \
 	-e "$$ldbl_compat" \
 	-e "$$ldbl_alt128_compat" \
 	-e "$$verbose_assert" \

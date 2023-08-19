@@ -27,7 +27,11 @@ void
 test01()
 {
   const std::unexpected_handler orig = std::get_unexpected();
+#if _GLIBCXX_LIBSUPCXX
   VERIFY( orig == std::terminate ); // GNU-specific behaviour
+  /* c++abi sets the default to a demangling terminate, but that is internal
+     so we cannot test for it here.  */
+#endif
 
   std::unexpected_handler prev = std::set_unexpected(unex_handler);
   VERIFY( std::get_unexpected() == unex_handler );
@@ -44,7 +48,9 @@ test02()
   // PR libstdc++/90682
   std::set_unexpected(0); // Undefined in C++98, unspecified in C++11 and C++14
   const std::unexpected_handler dfault = std::get_unexpected();
+#if _GLIBCXX_LIBSUPCXX
   VERIFY( dfault == std::terminate ); // GNU-specific behaviour
+#endif
   const std::unexpected_handler prev = std::set_unexpected(0);
   VERIFY( prev == dfault );
 }

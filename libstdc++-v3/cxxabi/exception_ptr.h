@@ -12,6 +12,11 @@
 
 #include <bits/c++config.h>
 #include <bits/exception_defines.h>
+#include <bits/cxxabi_init_exception.h>
+//#if __cplusplus >= 201103L
+//# include <bits/move.h>
+//# include <new>
+//#endif
 
 #define _LIBCPP_VISIBILITY(vis) __attribute__((__visibility__(vis)))
 #define _LIBCPP_HIDDEN _LIBCPP_VISIBILITY("hidden")
@@ -33,7 +38,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
 class exception_ptr;
 
 exception_ptr current_exception() _GLIBCXX_USE_NOEXCEPT;
-_LIBCPP_NORETURN void rethrow_exception(exception_ptr);
+_GLIBCXX_NORETURN void rethrow_exception(exception_ptr);
 
 class _LIBCPP_TYPE_VIS exception_ptr
 {
@@ -42,6 +47,8 @@ public:
     _LIBCPP_INLINE_VISIBILITY exception_ptr() _GLIBCXX_USE_NOEXCEPT
       : __ptr_() {}
    exception_ptr(const exception_ptr&) _GLIBCXX_USE_NOEXCEPT;
+
+   explicit exception_ptr(void* __e) _GLIBCXX_USE_NOEXCEPT;
 
 #if __cplusplus >= 201103L
    exception_ptr(nullptr_t) _GLIBCXX_USE_NOEXCEPT
@@ -91,24 +98,24 @@ exception_ptr::swap(exception_ptr &__other) _GLIBCXX_USE_NOEXCEPT
       __other.__ptr_ = __tmp;
 }
 
-template<class _Ep>
-_LIBCPP_INLINE_VISIBILITY exception_ptr
-make_exception_ptr(_Ep __e) _GLIBCXX_USE_NOEXCEPT
-{
 #if __cpp_exceptions
-    try
-    {
-        throw __e;
-    }
-    catch (...)
-    {
-        return current_exception();
-    }
+  template<class _Ep>
+  exception_ptr
+  make_exception_ptr(_Ep __e) _GLIBCXX_USE_NOEXCEPT
+  {
+    // Use the runtime to initialise it.
+    try { throw __e; }
+    catch (...) { return current_exception(); }
+  }
 #else
-    ((void)__e);
-    __builtin_abort ();
+  // This is always_inline so the linker will never use this useless definition
+  // instead of a working one compiled with exceptions enabled.
+  template<typename _Ex>
+    __attribute__ ((__always_inline__))
+    inline exception_ptr
+    make_exception_ptr(_Ex) _GLIBCXX_USE_NOEXCEPT
+    { return exception_ptr(); }
 #endif
-}
 
   /// @} group exceptions
 } // namespace std

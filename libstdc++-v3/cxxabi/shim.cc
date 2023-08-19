@@ -29,9 +29,9 @@ int uncaught_exceptions () noexcept
 }
 
 
-nested_exception::~nested_exception() noexcept
-{
-}
+//nested_exception::~nested_exception() noexcept
+//{
+//}
 
 } // namespace std
 

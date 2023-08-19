@@ -60,13 +60,12 @@ public:
 #include <bits/c++config.h>
 #include <exception>
 
+#define __glibcxx_want_constexpr_typeinfo
+#include <bits/version.h>
+
 #pragma GCC system_header
 
 #pragma GCC visibility push(default)
-
-#if __cplusplus >= 202100L
-# define __cpp_lib_constexpr_typeinfo 202106L
-#endif
 
 #ifndef __GXX_MERGED_TYPEINFO_NAMES
 // By default, typeinfo names are not merged.
@@ -96,7 +95,7 @@ public:
 /* hack out the uses of integral_constant and <cstdint>, since we need to
    build for c++98 */
 typedef __UINTPTR_TYPE__ ti_uintptr_t;
-#define TOP_BIT (1ULL << (__CHAR_BIT__ * sizeof(ti_uintptr_t) - 1))
+#define TOP_BIT (1ULL << ((__CHAR_BIT__ * sizeof(__type_name_t)) - 1))
 
 namespace std  // purposefully not using versioning namespace
 {
@@ -158,8 +157,10 @@ namespace std  // purposefully not using versioning namespace
   // On arm64 on Apple platforms, use the special NonUniqueARMRTTIBit implementation.
 # if defined(__APPLE__) && defined(__LP64__) && !defined(__x86_64__) && !defined(__ppc64__)
 #   define _LIBCPP_TYPEINFO_COMPARISON_IMPLEMENTATION 3
+#if __cplusplus >= 201103L
 static_assert(sizeof(ti_uintptr_t) == sizeof(__UINT64_TYPE__),
 	      "we should only be using this on 64b arm");
+#endif
 
 # elif !__GXX_MERGED_TYPEINFO_NAMES
 #   define _LIBCPP_TYPEINFO_COMPARISON_IMPLEMENTATION 2
@@ -206,11 +207,11 @@ struct __type_info_implementations {
         __hash = (__hash * 33) ^ __c;
       return __hash;
     }
-    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
+    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE _GLIBCXX23_CONSTEXPR
     static bool __eq(__type_name_t __lhs, __type_name_t __rhs) _GLIBCXX_NOEXCEPT {
       return __lhs == __rhs || __builtin_strcmp(__lhs, __rhs) == 0;
     }
-    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
+    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE _GLIBCXX23_CONSTEXPR
     static bool __lt(__type_name_t __lhs, __type_name_t __rhs) _GLIBCXX_NOEXCEPT {
       return __builtin_strcmp(__lhs, __rhs) < 0;
     }
@@ -235,7 +236,7 @@ struct __type_info_implementations {
         return __v;
       return __non_unique_impl::__hash(__type_name_to_string(__v));
     }
-    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
+    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE _GLIBCXX23_CONSTEXPR
     static bool __eq(__type_name_t __lhs, __type_name_t __rhs) _GLIBCXX_NOEXCEPT {
       if (__lhs == __rhs)
         return true;
@@ -245,7 +246,7 @@ struct __type_info_implementations {
         return false;
       return __builtin_strcmp(__type_name_to_string(__lhs), __type_name_to_string(__rhs)) == 0;
     }
-    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
+    _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE _GLIBCXX23_CONSTEXPR
     static bool __lt(__type_name_t __lhs, __type_name_t __rhs) _GLIBCXX_NOEXCEPT {
       if (__is_type_name_unique(__lhs) || __is_type_name_unique(__rhs))
         return __lhs < __rhs;
@@ -316,10 +317,15 @@ public:
     _LIBCPP_INLINE_VISIBILITY _GLIBCXX23_CONSTEXPR
     bool operator==(const type_info& __arg) const _GLIBCXX_NOEXCEPT
     {
+      // When evaluated in a constant expression, both type infos must come
+      // from the same TU, so it is sufficient to compare their addresses.
+      if (__is_constant_evaluated()) {
+        return this == &__arg;
+      }
       return __impl::__eq(__type_name, __arg.__type_name);
     }
 
-    _LIBCPP_INLINE_VISIBILITY
+    _LIBCPP_INLINE_VISIBILITY _GLIBCXX23_CONSTEXPR
     bool operator!=(const type_info& __arg) const _GLIBCXX_NOEXCEPT
     { return !operator==(__arg); }
 };

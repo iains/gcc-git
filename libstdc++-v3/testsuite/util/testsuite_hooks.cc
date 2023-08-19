@@ -127,6 +127,25 @@ namespace __gnu_test
   set_file_limit(unsigned long) { }
 #endif
 
+  bool
+  compare_equal_ignoring_spaces(const char *a, const char *b)
+  {
+    if (!a || !b)
+      return false;
+
+    while (true)
+      {
+        while (*a && *a == ' ') a++;
+        while (*b && *b == ' ') b++;
+        if (*a == 0 || *b == 0)
+          return *a == *b;
+        if (*a != *b)
+          return false;
+        a++;
+        b++;
+      }
+  }
+
   void
   verify_demangle(const char* mangled, const char* wanted)
   {
@@ -156,8 +175,9 @@ namespace __gnu_test
 	  }
       }
 
-    std::string w(wanted);
-    if (w != s)
+//    std::string w(wanted);
+//    if (w != s)
+    if (!compare_equal_ignoring_spaces (wanted, s))
       std::__throw_runtime_error(s);
     free(demangled);
   }

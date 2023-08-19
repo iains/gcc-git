@@ -18,6 +18,7 @@
 // { dg-options "-D_GLIBCXX_USE_CXX11_ABI=0" }
 // { dg-do run { target c++11 } }
 // { dg-require-effective-target rtti }
+// { dg-xfail-run-if "alternate exception API unavailable" { ! libsupcxx } }
 
 #include <fstream>
 #include <system_error>

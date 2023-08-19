@@ -6,6 +6,8 @@
 #include <typeinfo>
 
 #if defined (__GXX_ABI_VERSION) && __GXX_ABI_VERSION >= 100
+
+#define NEED_PRIVATE_TYPEINFO_API
 #include <cxxabi.h>
 
 struct A {int m;};

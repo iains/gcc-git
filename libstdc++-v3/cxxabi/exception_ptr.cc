@@ -12,6 +12,9 @@ exception_ptr::~exception_ptr() noexcept {
   abi::__cxa_decrement_exception_refcount(__ptr_);
 }
 
+exception_ptr::exception_ptr(void* obj) noexcept
+: __ptr_(obj)  { /* FIXME reference count this... */}
+
 exception_ptr::exception_ptr(const exception_ptr& other) noexcept
     : __ptr_(other.__ptr_)
 {
@@ -39,7 +42,6 @@ exception_ptr current_exception() noexcept
     return ptr;
 }
 
-
 __attribute__((__noreturn__))
 void rethrow_exception(exception_ptr p)
 {
@@ -47,6 +49,26 @@ void rethrow_exception(exception_ptr p)
     // if p.__ptr_ is NULL, above returns so we terminate
     terminate();
 }
+
+// == nested.
+
+nested_exception::~nested_exception() noexcept
+{
+}
+
+//nested_exception::nested_exception() noexcept
+//    : __ptr_(current_exception())
+//{
+//}
+
+//__attribute__((__noreturn__))
+//void
+//nested_exception::rethrow_nested() const
+//{
+//    if (__ptr_ == nullptr)
+//        terminate();
+//    rethrow_exception(__ptr_);
+//}
 
 } // namespace std
 } // extern Cxx

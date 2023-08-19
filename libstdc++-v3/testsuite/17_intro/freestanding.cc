@@ -1,4 +1,4 @@
-// { dg-options "-lsupc++ -fvtable-verify=none" }
+// { dg-options " -fvtable-verify=none" }
 // { dg-do run { target c++11 } }
 
 // Copyright (C) 2010-2024 Free Software Foundation, Inc.

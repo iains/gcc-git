@@ -142,6 +142,7 @@ GLIBCXX_3.4 {
 #     std::moneypunct_byname*;
 #     std::n[^u]*;
       std::n[^aueo]*;
+      std::nested_exception*;
       std::nothrow;
       std::nu[^m]*;
       std::num[^_ep]*;
@@ -2703,7 +2704,7 @@ CXXABI_1.3.5 {
     _ZSt15_Fnv_hash_bytesPKv*;
 
 #ifdef HAVE_EXCEPTION_PTR_SINCE_GCC46
-    # std::nested_exception
+    std::nested_exception
     _ZNSt16nested_exceptionD*;
     _ZTISt16nested_exception;
     _ZTVSt16nested_exception;

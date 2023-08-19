@@ -48,6 +48,9 @@
 #undef __GLIBCXX__ /* The testsuite defines it to 99999999 to block PCH.  */
 #define __GLIBCXX__
 
+// If we are using the libsupc++ ABI support lib
+#define _GLIBCXX_LIBSUPCXX
+
 // Macros for various attributes.
 //   _GLIBCXX_PURE
 //   _GLIBCXX_CONST

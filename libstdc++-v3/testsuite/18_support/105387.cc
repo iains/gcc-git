@@ -33,7 +33,7 @@ void portable_test()
 // In particular, __pbase_type_info::__do_catch() should not cast
 // the given type object into a pointer type and try to access the
 // extended fields.
-
+#if HAVE_GLIBCXX_PRIVATE_TYPEINFO_API
 void non_portable_test()
 {
   // Create a zero-initialized buffer for allocation of the type object
@@ -54,10 +54,12 @@ void non_portable_test()
   std::type_info *abstract_ptr_info = static_cast<std::type_info*>(&ptr_info);
   VERIFY(abstract_ptr_info->__do_catch(p_fund_info, 0, 1) == false);
 }
-
+#endif
 int main()
 {
   portable_test();
+#if HAVE_GLIBCXX_PRIVATE_TYPEINFO_API
   non_portable_test();
+#endif
   return 0;
 }

@@ -1,5 +1,6 @@
 // { dg-do link }
-// { dg-options "-x c -lsupc++" }
+// { dg-options "-x c -lsupc++" { target libsupcxx } }
+// { dg-options "-x c -lc++abi" { target { ! libsupcxx } } }
 // Copyright (C) 2006-2024 Free Software Foundation, Inc.
 //
 // This file is part of the GNU ISO C++ Library.  This library is free

@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <cstdlib>
+#include <cassert>
 
 int exit_status = 1;
 [[noreturn]] void terminate_cleanly() noexcept { std::exit(exit_status); }
@@ -16,6 +17,7 @@ int main()
   {
     // At this point std::current_exception() == nullptr so the
     // std::nested_exception object is empty.
+    assert (std::current_exception() == nullptr && "should be empty");
     std::throw_with_nested(A{});
 
     // Should not reach this point.
@@ -23,6 +25,7 @@ int main()
   }
   catch (const A& a)
   {
+    __builtin_printf ("caught an A\n");
     // This means the expected std::terminate() call will exit cleanly,
     // so this test will PASS.
     exit_status = 0;

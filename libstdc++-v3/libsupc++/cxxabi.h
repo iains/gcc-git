@@ -216,7 +216,7 @@ namespace __cxxabiv1
 #include <typeinfo>
 
 /* We are exposing the CXXABI internal typeinfo API, some callers need this.  */
-#define HAVE_PRIVATE_TYPEINFO_API 1
+#define HAVE_GLIBCXX_PRIVATE_TYPEINFO_API 1
 
 namespace __cxxabiv1
 {

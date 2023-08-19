@@ -1,5 +1,6 @@
 // { dg-do run }
 
+#define NEED_PRIVATE_TYPEINFO_API
 #include <cxxabi.h>
 #include <typeinfo>
 

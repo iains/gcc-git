@@ -66,10 +66,10 @@ namespace __cxxabiv1
       __cxa_free_exception(void*) _GLIBCXX_NOTHROW;
 
       // Initialize exception (this is a GNU extension)
-      //__cxa_refcounted_exception*
-      //__cxa_init_primary_exception(void *__object, std::type_info *__tinfo,
-      //          void (_GLIBCXX_CDTOR_CALLABI *__dest) (void *))
-	//_GLIBCXX_NOTHROW;
+//      __cxa_refcounted_exception*
+//      __cxa_init_primary_exception(void *__object, std::type_info *__tinfo,
+//				  void (_GLIBCXX_CDTOR_CALLABI *__dest) (void *))
+//	_GLIBCXX_NOTHROW;
 
     }
 } // namespace __cxxabiv1
