@@ -95,8 +95,8 @@ public:
 /* hack out the uses of integral_constant and <cstdint>, since we need to
    build for c++98 */
 typedef __UINTPTR_TYPE__ ti_uintptr_t;
-#define TOP_BIT (1ULL << ((__CHAR_BIT__ * sizeof(__type_name_t)) - 1))
-
+//#define TOP_BIT (1ULL << ((__CHAR_BIT__ * sizeof(ti_uintptr_t)) - 1))
+#define TOP_BIT 0x8000000000000000ULL
 namespace std  // purposefully not using versioning namespace
 {
 // ========================================================================== //
@@ -227,7 +227,7 @@ struct __type_info_implementations {
     }
     _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
     static __type_name_t __string_to_type_name(const char* __v) _GLIBCXX_NOEXCEPT {
-      return reinterpret_cast<__type_name_t>(__v);
+      return reinterpret_cast<__type_name_t>(__v) | TOP_BIT;
     }
 
     _LIBCPP_INLINE_VISIBILITY _LIBCPP_ALWAYS_INLINE
