@@ -21,7 +21,8 @@ headers = $(std_HEADERS) $(bits_HEADERS)
 sources = \
 	shim.cc \
 	exception_ptr.cc \
-	hash_bytes.cc
+	hash_bytes.cc \
+	missing-fundamental-typeinfo.S
 
 libc__abiconvenience_la_SOURCES = $(sources)
 
@@ -89,6 +90,13 @@ hash_bytes.lo: hash_bytes.cc
 	$(LTCXXCOMPILE) -std=gnu++11 -c $<
 hash_bytes.o: hash_bytes.cc
 	$(CXXCOMPILE) -std=gnu++11 -c $<
+
+missing-fundamental-typeinfo.S: missing-fti-arm64.h missing-fti-x86_64.h
+
+missing-fundamental-typeinfo.lo: missing-fundamental-typeinfo.S
+	$(LTCXXCOMPILE) -c -xassembler-with-cpp $<
+missing-fundamental-typeinfo.o: missing-fundamental-typeinfo.S
+	$(CXXCOMPILE) -c -xassembler-with-cpp $<
 
 install-stdHEADERS: $(std_HEADERS)
 	@$(NORMAL_INSTALL)

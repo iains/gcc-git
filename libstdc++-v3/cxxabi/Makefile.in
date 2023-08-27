@@ -122,7 +122,8 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libc__abiconvenience_la_LIBADD =
-am__objects_1 = shim.lo exception_ptr.lo hash_bytes.lo
+am__objects_1 = shim.lo exception_ptr.lo hash_bytes.lo \
+	missing-fundamental-typeinfo.lo
 am_libc__abiconvenience_la_OBJECTS = $(am__objects_1)
 libc__abiconvenience_la_OBJECTS =  \
 	$(am_libc__abiconvenience_la_OBJECTS)
@@ -145,6 +146,16 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp =
 am__depfiles_maybe =
+CPPASCOMPILE = $(CCAS) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CCASFLAGS) $(CCASFLAGS)
+LTCPPASCOMPILE = $(LIBTOOL) $(AM_V_lt) $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CCAS) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CCASFLAGS) $(CCASFLAGS)
+AM_V_CPPAS = $(am__v_CPPAS_@AM_V@)
+am__v_CPPAS_ = $(am__v_CPPAS_@AM_DEFAULT_V@)
+am__v_CPPAS_0 = @echo "  CPPAS   " $@;
+am__v_CPPAS_1 = 
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 AM_V_CXX = $(am__v_CXX_@AM_V@)
@@ -156,6 +167,20 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+AM_V_CC = $(am__v_CC_@AM_V@)
+am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
+am__v_CC_0 = @echo "  CC      " $@;
+am__v_CC_1 = 
+CCLD = $(CC)
+LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CCLD = $(am__v_CCLD_@AM_V@)
+am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
+am__v_CCLD_0 = @echo "  CCLD    " $@;
+am__v_CCLD_1 = 
 SOURCES = $(libc__abiconvenience_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -233,6 +258,8 @@ BACKTRACE_USES_MALLOC = @BACKTRACE_USES_MALLOC@
 BASIC_FILE_CC = @BASIC_FILE_CC@
 BASIC_FILE_H = @BASIC_FILE_H@
 CC = @CC@
+CCAS = @CCAS@
+CCASFLAGS = @CCASFLAGS@
 CCODECVT_CC = @CCODECVT_CC@
 CCOLLATE_CC = @CCOLLATE_CC@
 CCTYPE_CC = @CCTYPE_CC@
@@ -472,7 +499,8 @@ headers = $(std_HEADERS) $(bits_HEADERS)
 sources = \
 	shim.cc \
 	exception_ptr.cc \
-	hash_bytes.cc
+	hash_bytes.cc \
+	missing-fundamental-typeinfo.S
 
 libc__abiconvenience_la_SOURCES = $(sources)
 
@@ -537,7 +565,7 @@ CLEANFILES = stamp-*
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cc .lo .o .obj
+.SUFFIXES: .S .cc .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/fragment.am $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -588,6 +616,15 @@ mostlyclean-compile:
 
 distclean-compile:
 	-rm -f *.tab.c
+
+.S.o:
+	$(AM_V_CPPAS)$(CPPASCOMPILE) -c -o $@ $<
+
+.S.obj:
+	$(AM_V_CPPAS)$(CPPASCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.S.lo:
+	$(AM_V_CPPAS)$(LTCPPASCOMPILE) -c -o $@ $<
 
 .cc.o:
 	$(AM_V_CXX)$(CXXCOMPILE) -c -o $@ $<
@@ -791,6 +828,13 @@ hash_bytes.lo: hash_bytes.cc
 	$(LTCXXCOMPILE) -std=gnu++11 -c $<
 hash_bytes.o: hash_bytes.cc
 	$(CXXCOMPILE) -std=gnu++11 -c $<
+
+missing-fundamental-typeinfo.S: missing-fti-arm64.h missing-fti-x86_64.h
+
+missing-fundamental-typeinfo.lo: missing-fundamental-typeinfo.S
+	$(LTCXXCOMPILE) -c -xassembler-with-cpp $<
+missing-fundamental-typeinfo.o: missing-fundamental-typeinfo.S
+	$(CXXCOMPILE) -c -xassembler-with-cpp $<
 
 install-stdHEADERS: $(std_HEADERS)
 	@$(NORMAL_INSTALL)
