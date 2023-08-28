@@ -26,6 +26,13 @@ set lang_link_flags "-shared-libgcc -lstdc++"
 set lang_test_file_found 0
 set lang_library_path "../libstdc++-v3/src/.libs"
 
+global cxx_abi_lib_name
+if { [info exists cxx_abi_lib_name] } {
+    if { [string equal "c++abi" ${cxx_abi_lib_name}] } {
+        lappend lang_link_flags "-lc++abi"
+    }
+}
+
 # Initialize dg.
 dg-init
 

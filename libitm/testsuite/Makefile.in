@@ -285,6 +285,7 @@ _RUNTEST = $(shell if test -f $(top_srcdir)/../dejagnu/runtest; then \
 	     echo $(top_srcdir)/../dejagnu/runtest; else echo runtest; fi)
 
 RUNTEST = $(_RUNTEST) $(AM_RUNTESTFLAGS)
+EXTRA_DEJAGNU_SITE_CONFIG = cxxabi_name.exp
 all: all-am
 
 .SUFFIXES:
@@ -491,6 +492,16 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
+
+cxxabi_name.exp: stamp-cxxabi-name
+
+stamp-cxxabi-name:
+	@if [ "X$(CXX_ABI_LIB_NAME)" != "X" ] ; then \
+	  echo "set cxx_abi_lib_name \"$(CXX_ABI_LIB_NAME)\"" >cxxabi_name.exp; \
+	else \
+	  echo "#  cxx_abi_lib_name is not set" >cxxabi_name.exp; \
+	fi
+	echo `date` > stamp-cxxabi-name
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
