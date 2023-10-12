@@ -80,8 +80,7 @@ GLIBCXX_8.0 {
     __once_proxy;
 
     # targets using emutls
-    __emutls_v._ZSt3__811__once_call;
-    __emutls_v._ZSt3__815__once_callable;
+    __emutls_v._ZNSt3__81?__once_call*;
 
     # std::__convert_to_v
     _ZNSt3__814__convert_to_v*;
@@ -151,6 +150,17 @@ GLIBCXX_8.0 {
     _ZNSt3__88to_charsEPcS0_DF128_NS_12chars_formatE;
     _ZNSt3__88to_charsEPcS0_DF128_NS_12chars_formatEi;
     _ZNSt3__810from_charsEPKcS1_RDF128_NS_12chars_formatE;
+
+    _ZNKSt3__87codecvtID[si]c11__mbstate_tE*;
+    _ZNKSt3__819__codecvt_utf8_baseID[si]E*;
+    _ZNKSt3__820__codecvt_utf16_baseID[si]E*;
+    _ZNKSt3__825__codecvt_utf8_utf16_baseID[si]E*;
+    _ZTVNSt3__818codecvt_utf8_utf16ID[si]L*;
+    _ZNKRSt3__819basic_ostringstream*;
+    _ZNKRSt3__815basic_stringbuf*;
+    _ZNOSt3__815basic_stringbuf*;
+    _ZNKSt3__88ios_base7failureB5cxx11*;
+    _ZNSt3__8*;
 
   local:
     *;
