@@ -1106,6 +1106,7 @@
 <cstdint>,uintptr_t,1,cxx11
 # <cstdio> TODO
 # <cstdlib> TODO
+<cstdlib>,observable,1,cxx11
 # <cstring> TODO
 # <ctime> TODO
 # <cuchar> TODO

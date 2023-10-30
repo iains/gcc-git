@@ -2350,6 +2350,10 @@ cxx_eval_builtin_function_call (const constexpr_ctx *ctx, tree t, tree fun,
 	/* These builtins shall be ignored during constant expression
 	   evaluation.  */
 	return void_node;
+      case BUILT_IN_OBSERVABLE_CHKPT:
+	if (ctx->manifestly_const_eval == mce_true)
+	  return void_node;
+	/* FALLTHROUGH */
       case BUILT_IN_UNREACHABLE:
       case BUILT_IN_TRAP:
 	if (!*non_constant_p && !ctx->quiet)
@@ -12528,7 +12532,7 @@ potential_constant_expression_1 (tree t, bool want_rval, bool strict, bool now,
     case ASSERTION_STMT:
     case PRECONDITION_STMT:
     case POSTCONDITION_STMT:
-      if (!checked_contract_p (get_contract_semantic (t)))
+      if (!contract_evaluated_p (t))
 	return true;
       return RECUR (CONTRACT_CONDITION (t), rval);
 
