@@ -1288,6 +1288,7 @@ struct GTY(()) tree_base {
        MUST_TAIL_CALL in
 	   CALL_EXPR
 
+
    public_flag:
 
        TREE_OVERFLOW in
@@ -1342,6 +1343,7 @@ struct GTY(()) tree_base {
        EXPR_LOCATION_WRAPPER_P in
 	   NON_LVALUE_EXPR, VIEW_CONVERT_EXPR
 
+
    private_flag:
 
        TREE_PRIVATE in
@@ -1367,6 +1369,9 @@ struct GTY(()) tree_base {
 
        ENUM_IS_OPAQUE in
 	   ENUMERAL_TYPE
+
+      contract_const_wrapper_p in
+	   VIEW_CONVERT_EXPR
 
    protected_flag:
 

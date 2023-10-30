@@ -187,7 +187,6 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   div(long __i, long __j) _GLIBCXX_NOTHROW { return ldiv(__i, __j); }
 #endif
 
-
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
 

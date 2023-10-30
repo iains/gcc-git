@@ -9106,7 +9106,7 @@ trees_out::decl_node (tree decl, walk_kind ref)
 	  // deferred noexcept and default parms, or references
 	  // to parms from earlier forward-decls (PR c++/119608).
 	  //
-	  // Currently we'll end up cloning those bits of tree. 
+	  // Currently we'll end up cloning those bits of tree.
 	  // It would be nice to reference those specific nodes.
 	  // I think putting those things in the map when we
 	  // reference their template by name.
@@ -11142,10 +11142,9 @@ trees_out::fn_parms_init (tree fn)
 
   if (!streaming_p ())
     {
-      /* We must walk contract attrs so the dependency graph is complete. */
-      for (tree contract = DECL_CONTRACTS (fn);
-	  contract;
-	  contract = CONTRACT_CHAIN (contract))
+      /* We must walk contract specifiers so the dependency graph is complete. */
+      tree contract = GET_FN_CONTRACT_SPECIFIERS (fn);
+      for (; contract; contract = NEXT_CONTRACT_ATTR (contract))
 	tree_node (contract);
     }
 

@@ -64,6 +64,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "gcc-urlifier.h"
 #include "diagnostic-highlight-colors.h"
 #include "pretty-print-markup.h"
+#include "contracts.h"
 
 /* Possible cases of bad specifiers type used by bad_specifiers. */
 enum bad_spec_place {
@@ -1984,6 +1985,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  /* Even if the types match, prefer the new declarations type
 	     for built-ins which have not been explicitly declared,
 	     for exception lists, etc...  */
+
 	  tree type = TREE_TYPE (newdecl);
 	  tree attribs = (*targetm.merge_type_attributes)
 	    (TREE_TYPE (olddecl), type);
@@ -2404,6 +2406,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 		 declaration of the function or function template in the
 		 translation unit."  */
 	      check_no_redeclaration_friend_default_args (olddecl, newdecl);
+
 	    }
 	}
     }
@@ -2526,7 +2529,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  = DECL_OVERLOADED_OPERATOR_CODE_RAW (olddecl);
       new_defines_function = DECL_INITIAL (newdecl) != NULL_TREE;
 
-      duplicate_contracts (newdecl, olddecl);
+      check_redecl_contract (newdecl, olddecl);
 
       /* Optionally warn about more than one declaration for the same
 	 name, but don't warn about a function declaration followed by a
@@ -2589,6 +2592,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 
   /* Copy all the DECL_... slots specified in the new decl except for
      any that we copy here from the old type.  */
+
   if (merge_attr)
     DECL_ATTRIBUTES (newdecl)
       = (*targetm.merge_decl_attributes) (olddecl, newdecl);
@@ -2606,11 +2610,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
       gcc_assert (!DECL_TEMPLATE_SPECIALIZATIONS (newdecl));
 
       /* Make sure the contracts are equivalent.  */
-      duplicate_contracts (newdecl, olddecl);
-
-      /* Remove contracts from old_result so they aren't appended to
-	 old_result by the merge function.  */
-      remove_contract_attributes (old_result);
+      check_redecl_contract (newdecl, olddecl);
 
       DECL_ATTRIBUTES (old_result)
 	= (*targetm.merge_decl_attributes) (old_result, new_result);
@@ -2692,6 +2692,8 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  DECL_INITIAL (old_result) = DECL_INITIAL (new_result);
 	  if (DECL_FUNCTION_TEMPLATE_P (newdecl))
 	    {
+	      update_contract_arguments(new_result, old_result);
+
 	      DECL_ARGUMENTS (old_result) = DECL_ARGUMENTS (new_result);
 	      for (tree p = DECL_ARGUMENTS (old_result); p; p = DECL_CHAIN (p))
 		DECL_CONTEXT (p) = old_result;
@@ -3162,23 +3164,15 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	}
       if (! types_match || new_defines_function)
 	{
-	  /* These are the final DECL_ARGUMENTS that will be used within the
-	     body; update any references to old DECL_ARGUMENTS in the
-	     contracts, if present.  */
-	  if (tree contracts = DECL_CONTRACTS (newdecl))
-	    remap_contracts (olddecl, newdecl, contracts, true);
+
+	  /* Update the contracts to reflect the new parameter names. */
+	  update_contract_arguments(newdecl, olddecl);
 
 	  /* These need to be copied so that the names are available.
 	     Note that if the types do match, we'll preserve inline
 	     info and other bits, but if not, we won't.  */
 	  DECL_ARGUMENTS (olddecl) = DECL_ARGUMENTS (newdecl);
 	  DECL_RESULT (olddecl) = DECL_RESULT (newdecl);
-
-	  /* In some cases, duplicate_contracts will remove contracts from
-	     OLDDECL, to avoid duplications. Sometimes, the contracts end up
-	     shared. If we removed them, re-add them.  */
-	  if (!DECL_CONTRACTS (olddecl))
-	    copy_contract_attributes (olddecl, newdecl);
 	}
       /* If redeclaring a builtin function, it stays built in
 	 if newdecl is a gnu_inline definition, or if newdecl is just
@@ -3222,38 +3216,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  /* Don't clear out the arguments if we're just redeclaring a
 	     function.  */
 	  if (DECL_ARGUMENTS (olddecl))
-	    {
-	      /* If we removed contracts from previous definition, re-attach
-		 them. Otherwise, rewrite the contracts so they match the
-		 parameters of the new declaration.  */
-	      if (DECL_INITIAL (olddecl)
-		  && DECL_CONTRACTS (newdecl)
-		  && !DECL_CONTRACTS (olddecl))
-		copy_contract_attributes (olddecl, newdecl);
-	      else
-		{
-		  /* Temporarily undo the re-contexting of parameters so we can
-		     actually remap parameters.  The inliner won't replace
-		     parameters if we don't do this.  */
-		  tree args = DECL_ARGUMENTS (newdecl);
-		  for (tree p = args; p; p = DECL_CHAIN (p))
-		    DECL_CONTEXT (p) = newdecl;
-
-		  /* Save new argument names for use in contracts parsing,
-		     unless we've already started parsing the body of olddecl
-		     (particular issues arise when newdecl is from a prior
-		     friend decl with no argument names, see
-		     modules/contracts-tpl-friend-1).  */
-		  if (tree contracts = DECL_CONTRACTS (olddecl))
-		    remap_contracts (newdecl, olddecl, contracts, true);
-
-		  /* And reverse this operation again. */
-		  for (tree p = args; p; p = DECL_CHAIN (p))
-		    DECL_CONTEXT (p) = olddecl;
-		}
-
 	      DECL_ARGUMENTS (newdecl) = DECL_ARGUMENTS (olddecl);
-	    }
 	}
     }
   else if (TREE_CODE (newdecl) == NAMESPACE_DECL)
@@ -3401,6 +3364,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	reregister_specialization (newdecl,
 				   new_template_info,
 				   olddecl);
+
     }
   else
     {
@@ -3523,6 +3487,10 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
      reclaiming memory. */
   if (flag_concepts)
     remove_constraints (newdecl);
+
+  if (flag_contracts)
+    /* Remove the specifiers, and then remove the decl from the lookup.  */
+    remove_decl_with_fn_contracts_specifiers (newdecl);
 
   /* And similarly for any module tracking data.  */
   if (modules_p ())
@@ -5699,7 +5667,10 @@ cxx_init_decl_processing (void)
     init_exception_processing ();
 
   if (flag_contracts)
-    init_terminate_fn ();
+    {
+      init_terminate_fn ();
+      init_builtin_contract_violation_type ();
+    }
 
   if (modules_p ())
     init_modules (parse_in);
@@ -6346,12 +6317,6 @@ check_tag_decl (cp_decl_specifier_seq *declspecs,
 		"an attribute that appertains to a type-specifier is ignored");
     }
 
-  /* Diagnose invalid application of contracts, if any.  */
-  if (find_contract (declspecs->attributes))
-    diagnose_misapplied_contracts (declspecs->attributes);
-  else
-    diagnose_misapplied_contracts (declspecs->std_attributes);
-
   return declared_type;
 }
 
@@ -6493,6 +6458,20 @@ start_decl (const cp_declarator *declarator,
       return error_mark_node;
     }
 
+  if (flag_contracts
+      && TREE_CODE (decl) == FUNCTION_DECL
+      && !processing_template_decl
+      && DECL_RESULT (decl)
+      && is_auto (TREE_TYPE (DECL_RESULT (decl))))
+    for (tree ca = GET_FN_CONTRACT_SPECIFIERS (decl); ca; ca = TREE_CHAIN (ca))
+      if (POSTCONDITION_P (CONTRACT_STATEMENT (ca))
+	  && POSTCONDITION_IDENTIFIER (CONTRACT_STATEMENT (ca)))
+	{
+	  error_at (DECL_SOURCE_LOCATION (decl),
+		    "postconditions with deduced result name types must only"
+		    " appear on function definitions");
+	  return error_mark_node;
+	}
   /* Save the DECL_INITIAL value in case it gets clobbered to assist
      with attribute validation.  */
   initial = DECL_INITIAL (decl);
@@ -6652,10 +6631,6 @@ start_decl (const cp_declarator *declarator,
 	    permerror (declarator->id_loc,
 		       "declaration of %q#D outside of class is not definition",
 		       decl);
-	  else if (flag_contract_strict_declarations)
-	    warning_at (declarator->id_loc, OPT_fcontract_strict_declarations_,
-			"declaration of %q#D outside of class is not definition",
-			decl);
 	}
     }
 
@@ -11935,6 +11910,7 @@ grokfndecl (tree ctype,
 	    int template_count,
 	    tree in_namespace,
 	    tree* attrlist,
+	    tree contract_specifiers,
 	    location_t location)
 {
   tree decl;
@@ -12373,9 +12349,14 @@ grokfndecl (tree ctype,
 	}
     }
 
+
   /* Caller will do the rest of this.  */
   if (check < 0)
-    return decl;
+    {
+      if (decl && decl != error_mark_node && contract_specifiers)
+	SET_FN_CONTRACT_SPECIFIERS (decl, contract_specifiers);
+      return decl;
+    }
 
   if (ctype != NULL_TREE)
     grokclassfn (ctype, decl, flags);
@@ -12406,8 +12387,15 @@ grokfndecl (tree ctype,
       *attrlist = NULL_TREE;
     }
 
-  if (DECL_HAS_CONTRACTS_P (decl))
-    rebuild_postconditions (decl);
+  /* Update now we have a decl and maybe know the return type.  */
+  if (contract_specifiers)
+    {
+      tree t = decl;
+      if (TREE_CODE (decl) == TEMPLATE_DECL)
+	t = DECL_TEMPLATE_RESULT (decl);
+      SET_FN_CONTRACT_SPECIFIERS (t, contract_specifiers);
+      rebuild_postconditions (t);
+    }
 
   /* Check main's type after attributes have been applied.  */
   if (ctype == NULL_TREE && DECL_MAIN_P (decl))
@@ -13752,6 +13740,7 @@ grokdeclarator (const cp_declarator *declarator,
   tree raises = NULL_TREE;
   int template_count = 0;
   tree returned_attrs = NULL_TREE;
+  tree contract_specifiers = NULL_TREE;
   tree parms = NULL_TREE;
   const cp_declarator *id_declarator;
   /* The unqualified name of the declarator; either an
@@ -14747,8 +14736,7 @@ grokdeclarator (const cp_declarator *declarator,
 	}
     }
 
-  if (declspecs->std_attributes
-      && !diagnose_misapplied_contracts (declspecs->std_attributes))
+  if (declspecs->std_attributes)
     {
       location_t attr_loc = declspecs->locations[ds_std_attribute];
       auto_diagnostic_group d;
@@ -14757,9 +14745,6 @@ grokdeclarator (const cp_declarator *declarator,
 	inform (attr_loc, "an attribute that appertains to a type-specifier "
 		"is ignored");
     }
-
-  if (attrlist)
-    diagnose_misapplied_contracts (*attrlist);
 
   /* Skip over build_memfn_type when a FUNCTION_DECL is an xobj memfn.  */
   bool is_xobj_member_function = false;
@@ -14799,12 +14784,6 @@ grokdeclarator (const cp_declarator *declarator,
 	}
 
       inner_declarator = declarator->declarator;
-
-      /* Check that contracts aren't misapplied.  */
-      if (tree contract_attr = find_contract (declarator->std_attributes))
-	if (declarator->kind != cdk_function
-	    || innermost_code != cdk_function)
-	  diagnose_misapplied_contracts (contract_attr);
 
       /* We don't want to warn in parameter context because we don't
 	 yet know if the parse will succeed, and this might turn out
@@ -15343,20 +15322,10 @@ grokdeclarator (const cp_declarator *declarator,
 	      }
 
 	    /* Actually apply the contract attributes to the declaration.  */
-	    for (tree *p = &attrs; *p;)
-	      {
-		tree l = *p;
-		if (cxx_contract_attribute_p (l))
-		  {
-		    *p = TREE_CHAIN (l);
-		    /* Intentionally reverse order of contracts so they're
-		       reversed back into their lexical order.  */
-		    TREE_CHAIN (l) = NULL_TREE;
-		    returned_attrs = chainon (l, returned_attrs);
-		  }
-		else
-		  p = &TREE_CHAIN (l);
-	     }
+	    if (flag_contracts)
+	      contract_specifiers
+		= attr_chainon (contract_specifiers,
+				declarator->u.function.contract_specifiers);
 
 	    if (attrs)
 	      /* [dcl.fct]/2:
@@ -16319,15 +16288,10 @@ grokdeclarator (const cp_declarator *declarator,
 			       is_xobj_member_function, sfk,
 			       funcdef_flag, late_return_type_p,
 			       template_count, in_namespace,
-			       attrlist, id_loc);
-            decl = set_virt_specifiers (decl, virt_specifiers);
+			       attrlist, contract_specifiers, id_loc);
+	    decl = set_virt_specifiers (decl, virt_specifiers);
 	    if (decl == NULL_TREE)
 	      return error_mark_node;
-#if 0
-	    /* This clobbers the attrs stored in `decl' from `attrlist'.  */
-	    /* The decl and setting of decl_attr is also turned off.  */
-	    decl = build_decl_attribute_variant (decl, decl_attr);
-#endif
 
 	    /* [class.conv.ctor]
 
@@ -16398,8 +16362,7 @@ grokdeclarator (const cp_declarator *declarator,
 	       warn for standard attributes.  */
 	    if (attrlist
 		&& !funcdef_flag
-		&& cxx11_attribute_p (*attrlist)
-		&& !all_attributes_are_contracts_p (*attrlist))
+		&& cxx11_attribute_p (*attrlist))
 	      {
 		*attrlist = NULL_TREE;
 		auto_diagnostic_group d;
@@ -16648,7 +16611,7 @@ grokdeclarator (const cp_declarator *declarator,
 
 	decl = grokfndecl (ctype, type, original_name, parms, unqualified_id,
 			   declspecs,
-                           reqs, virtualp, flags, memfn_quals, rqual, raises,
+			   reqs, virtualp, flags, memfn_quals, rqual, raises,
 			   1, friendp,
 			   publicp,
 			   inlinep | (2 * constexpr_p) | (4 * concept_p)
@@ -16658,7 +16621,7 @@ grokdeclarator (const cp_declarator *declarator,
 			   funcdef_flag,
 			   late_return_type_p,
 			   template_count, in_namespace, attrlist,
-			   id_loc);
+			   contract_specifiers, id_loc);
 	if (decl == NULL_TREE)
 	  return error_mark_node;
 
@@ -20173,9 +20136,6 @@ finish_function (bool inline_p)
   if (fndecl == NULL_TREE || fndecl == error_mark_node)
     return error_mark_node;
 
-  bool do_contracts = (DECL_HAS_CONTRACTS_P (fndecl)
-		       && !processing_template_decl);
-
   if (!DECL_OMP_DECLARE_REDUCTION_P (fndecl))
     finish_lambda_scope ();
 
@@ -20218,7 +20178,7 @@ finish_function (bool inline_p)
 			      current_eh_spec_block);
 
      /* If outlining succeeded, then add contracts handling if needed.  */
-     if (coroutine->cp_valid_coroutine () && do_contracts)
+     if (coroutine->cp_valid_coroutine ())
 	maybe_apply_function_contracts (fndecl);
     }
   else
@@ -20236,8 +20196,7 @@ finish_function (bool inline_p)
 			      (TREE_TYPE (current_function_decl)),
 			      current_eh_spec_block);
 
-     if (do_contracts)
-	maybe_apply_function_contracts (current_function_decl);
+      maybe_apply_function_contracts (current_function_decl);
 
     }
 
