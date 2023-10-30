@@ -36,6 +36,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "attribs.h"
 #include "flags.h"
 #include "selftest.h"
+#include "contracts.h"
 
 static tree bot_manip (tree *, int *, void *);
 static tree bot_replace (tree *, int *, void *);
@@ -4000,8 +4001,6 @@ called_fns_equal (tree t1, tree t2)
     return cp_tree_equal (t1, t2);
 }
 
-bool comparing_override_contracts;
-
 /* In a component reference, return the innermost object of
    the postfix-expression.  */
 
@@ -4419,13 +4418,6 @@ cp_tree_equal (tree t1, tree t2)
 			  PACK_INDEX_INDEX (t2)))
 	return false;
       return true;
-
-    case COMPONENT_REF:
-      /* If we're comparing contract conditions of overrides, member references
-	 compare equal if they designate the same member.  */
-      if (comparing_override_contracts)
-	return equivalent_member_references (t1, t2);
-      break;
 
     default:
       break;
