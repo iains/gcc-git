@@ -238,7 +238,6 @@ static int discriminator_for_string_literal (tree, tree);
 static void write_discriminator (const int);
 static void write_local_name (tree, const tree, const tree);
 static void dump_substitution_candidates (void);
-static tree mangle_decl_string (const tree);
 static void maybe_check_abi_tags (tree, tree = NULL_TREE, int = 10);
 
 /* Control functions.  */
@@ -800,10 +799,19 @@ write_mangled_name (const tree decl, bool top_level)
 
   check_abi_tags (decl);
 
-  if (unmangled_name_p (decl))
+  bool pre = DECL_IS_PRE_FN_P(decl);
+  bool post = DECL_IS_POST_FN_P(decl);
+  tree mdecl = decl;
+
+  /* If we have a pre or post check, mangle the name of the checked
+   function. */
+  if (pre || post)
+    mdecl = get_orig_for_outlined (decl);
+
+  if (unmangled_name_p (mdecl))
     {
       if (top_level)
-	write_string (IDENTIFIER_POINTER (DECL_NAME (decl)));
+	write_string (IDENTIFIER_POINTER (DECL_NAME (mdecl)));
       else
 	{
 	  /* The standard notes: "The <encoding> of an extern "C"
@@ -812,14 +820,19 @@ write_mangled_name (const tree decl, bool top_level)
 	     overloaded operators that way though, because it contains
 	     characters invalid in assembler.  */
 	  write_string ("_Z");
-	  write_source_name (DECL_NAME (decl));
+	  write_source_name (DECL_NAME (mdecl));
 	}
     }
   else
     {
       write_string ("_Z");
-      write_encoding (decl);
+      write_encoding (mdecl);
     }
+
+  if (pre)
+    write_string (JOIN_STR "pre");
+  else if (post)
+    write_string (JOIN_STR "post");
 
   /* If this is a coroutine helper, then append an appropriate string to
      identify which.  */
@@ -4543,7 +4556,7 @@ mangle_module_global_init (int module)
 
 /* Generate the mangled name of DECL.  */
 
-static tree
+tree
 mangle_decl_string (const tree decl)
 {
   tree result;
