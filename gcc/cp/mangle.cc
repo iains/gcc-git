@@ -238,7 +238,6 @@ static int discriminator_for_string_literal (tree, tree);
 static void write_discriminator (const int);
 static void write_local_name (tree, const tree, const tree);
 static void dump_substitution_candidates (void);
-static tree mangle_decl_string (const tree);
 static void maybe_check_abi_tags (tree, tree = NULL_TREE, int = 10);
 
 /* Control functions.  */
@@ -821,12 +820,10 @@ write_mangled_name (const tree decl, bool top_level)
       write_encoding (decl);
     }
 
-  /* If this is the pre/post function for a guarded function, append
-     .pre/post, like something from create_virtual_clone.  */
   if (DECL_IS_PRE_FN_P (decl))
-    write_string (".pre");
+    write_string (JOIN_STR "pre");
   else if (DECL_IS_POST_FN_P (decl))
-    write_string (".post");
+    write_string (JOIN_STR "post");
 
   /* If this is a coroutine helper, then append an appropriate string to
      identify which.  */
@@ -4550,7 +4547,7 @@ mangle_module_global_init (int module)
 
 /* Generate the mangled name of DECL.  */
 
-static tree
+tree
 mangle_decl_string (const tree decl)
 {
   tree result;

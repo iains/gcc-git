@@ -2378,7 +2378,9 @@ comdat_linkage (tree decl)
   if (flag_weak)
     {
       make_decl_one_only (decl, cxx_comdat_group (decl));
-      if (HAVE_COMDAT_GROUP && flag_contracts && DECL_CONTRACTS (decl))
+      if (HAVE_COMDAT_GROUP
+	  && flag_contracts
+	  && (DECL_CONTRACT_ATTRS (decl) || GET_FN_CONTRACT_SPECIFIERS (decl)))
 	{
 	  symtab_node *n = symtab_node::get (decl);
 	  if (tree pre = DECL_PRE_FN (decl))
@@ -5812,6 +5814,11 @@ c_parse_final_cleanups (void)
 	  && wrapup_global_declarations (pending_statics->address (),
 					 pending_statics->length ()))
 	reconsider = true;
+    }
+
+  if (flag_contracts_nonattr && flag_contracts)
+    {
+      maybe_emit_violation_handler_wrappers ();
     }
 
   /* All templates have been instantiated.  */

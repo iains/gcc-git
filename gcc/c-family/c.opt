@@ -1899,6 +1899,10 @@ Enum(on_off) String(off) Value(0)
 EnumValue
 Enum(on_off) String(on) Value(1)
 
+fcontracts-nonattr
+C++ Var(flag_contracts_nonattr) Init(0)
+Enable the non-attribute syntax for contracts.
+
 fcontract-assumption-mode=
 C++ Joined RejectNegative
 -fcontract-assumption-mode=[on|off]	Enable or disable treating axiom level contracts as assumptions (default on).
@@ -1926,6 +1930,37 @@ C++ Joined RejectNegative
 fcontract-semantic=
 C++ Joined RejectNegative
 -fcontract-semantic=<level>:<semantic>	Specify the concrete semantics for level.
+
+Enum
+Name(p2900_semantic) Type(int)  UnknownError(unrecognized contract evaluation semantic %qs)
+
+EnumValue
+Enum(p2900_semantic) String(ignore) Value(1)
+
+EnumValue
+Enum(p2900_semantic) String(enforce) Value(3)
+
+EnumValue
+Enum(p2900_semantic) String(observe) Value(4)
+
+EnumValue
+Enum(p2900_semantic) String(quick_enforce) Value(5)
+
+fcontract-evaluation-semantic=
+C++ Joined RejectNegative Enum(p2900_semantic) Var(flag_contract_evaluation_semantic) Init (3)
+-fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce]	Select the contract evaluation semantic (defaults to enforce).
+
+fcontract-checks-outlined
+C++ Var(flag_contract_checks_outlined) Init(0)
+-fcontract-checks-outlined	Build contract checks as an out-of-line function.
+
+fcontract-disable-optimized-checks
+C++ Var(flag_contract_disable_optimized_checks) Init(0)
+-fcontract-disable-optimized-checks	Disable optimisation of contract checks.
+
+fcontract-disable-check-epochs
+C++ Var(flag_contract_disable_check_epochs) Init(0)
+-fcontract-disable-epoch-checks	Disable insertion of epoch markers after each contract check.
 
 fcoroutines
 C++ LTO Var(flag_coroutines)
