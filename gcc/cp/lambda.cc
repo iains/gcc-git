@@ -33,6 +33,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "target.h"
 #include "decl.h"
 #include "flags.h"
+#include "contracts.h"
 
 /* Constructor for a lambda expression.  */
 
