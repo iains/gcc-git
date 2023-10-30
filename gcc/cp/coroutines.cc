@@ -33,7 +33,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "gcc-rich-location.h"
 #include "hash-map.h"
 #include "coroutines.h"
-#include "contracts.h"
+#include "contracts.h" // remove_contract_attributes().
 
 /* ================= Debug. ================= */
 
@@ -4420,7 +4420,8 @@ coro_build_actor_or_destroy_function (tree orig, tree fn_type,
   DECL_USER_ALIGN (fn) = DECL_USER_ALIGN (orig);
   /* Apply attributes from the original fn.  */
   DECL_ATTRIBUTES (fn) = copy_list (DECL_ATTRIBUTES (orig));
-  /* but we do not want ones for contracts.  */
+  /* We do not want contract attributes (they apply to the ramp, not to either
+     the resumer or destroyer).  */
   remove_contract_attributes (fn);
 
   /* A void return.  */
