@@ -428,6 +428,7 @@ set_contract_semantic (tree t, contract_semantic semantic)
   TREE_LANG_FLAG_2 (t) = (semantic & 0x02) >> 1;
   TREE_LANG_FLAG_0 (t) = (semantic & 0x04) >> 2;
 }
+
 /* Test if EXP is a contract const wrapper node.  */
 
 inline bool
