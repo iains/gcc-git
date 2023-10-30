@@ -45,6 +45,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "c-family/c-type-mismatch.h"
 #include "tristate.h"
 #include "tree-pretty-print-markup.h"
+#include "contracts.h"
 
 /* The various kinds of conversion.  */
 
@@ -360,12 +361,11 @@ set_flags_from_callee (tree call)
 }
 
 tree
-build_call_a (tree function, int n, tree *argarray)
+build_call_a_1(tree function, int n, tree *argarray)
 {
   tree decl;
   tree result_type;
   tree fntype;
-  int i;
 
   function = build_addr_func (function, tf_warning_or_error);
 
@@ -383,6 +383,23 @@ build_call_a (tree function, int n, tree *argarray)
 
   decl = get_callee_fndecl (function);
 
+  require_complete_eh_spec_types (fntype, decl);
+
+  TREE_HAS_CONSTRUCTOR (function) = (decl && DECL_CONSTRUCTOR_P (decl));
+
+  return function;
+}
+
+tree
+build_call_a (tree function, int n, tree *argarray)
+{
+  int i;
+  tree decl;
+
+  function = build_call_a_1 (function, n, argarray);
+
+  decl = get_callee_fndecl (function);
+
   if (decl && !TREE_USED (decl))
     {
       /* We invoke build_call directly for several library
@@ -394,10 +411,6 @@ build_call_a (tree function, int n, tree *argarray)
 			       "__", 2));
       mark_used (decl);
     }
-
-  require_complete_eh_spec_types (fntype, decl);
-
-  TREE_HAS_CONSTRUCTOR (function) = (decl && DECL_CONSTRUCTOR_P (decl));
 
   /* Don't pass empty class objects by value.  This is useful
      for tags in STL, which are used to control overload resolution.
@@ -5300,9 +5313,7 @@ build_new_function_call (tree fn, vec<tree, va_gc> **args,
       result = error_mark_node;
     }
   else
-    {
-      result = build_over_call (cand, LOOKUP_NORMAL, complain);
-    }
+    result = build_over_call (cand, LOOKUP_NORMAL, complain);
 
   if (flag_coroutines
       && result
@@ -11019,6 +11030,7 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
       && DECL_BUILT_IN_CLASS (fn) == BUILT_IN_NORMAL)
     maybe_warn_class_memaccess (input_location, fn, args);
 
+  tree orig_fn = fn;
   if (DECL_VINDEX (fn) && (flags & LOOKUP_NONVIRTUAL) == 0)
     {
       tree t;
@@ -11052,7 +11064,7 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
       ADDR_EXPR_DENOTES_CALL_P (fn) = true;
     }
 
-  tree call = build_cxx_call (fn, nargs, argarray, complain|decltype_flag);
+  tree call = build_cxx_call (fn, nargs, argarray, complain|decltype_flag, orig_fn);
   if (call == error_mark_node)
     return call;
   if (cand->flags & LOOKUP_LIST_INIT_CTOR)
@@ -11524,7 +11536,9 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
   SET_EXPR_LOCATION (fn, loc);
 
   fndecl = get_callee_fndecl (fn);
-  if (!orig_fndecl)
+  if (!fndecl && orig_fndecl)
+    fndecl = orig_fndecl;
+  else if (!orig_fndecl)
     orig_fndecl = fndecl;
 
   /* Check that arguments to builtin functions match the expectations.  */
@@ -11565,6 +11579,9 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
 	    }
 	}
     }
+
+  /* When we have contracts enabled, and they are P2900-style then we might
+     wrap a virtual method call with caller-side checking.  */
 
   if (VOID_TYPE_P (TREE_TYPE (fn)))
     return fn;
