@@ -41,6 +41,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "fold-const.h"
 #include "intl.h"
 #include "toplev.h"
+#include "contracts.h"
 
 static bool verify_constant (tree, bool, bool *, bool *);
 #define VERIFY_CONSTANT(X)						\
@@ -2395,6 +2396,10 @@ cxx_eval_builtin_function_call (const constexpr_ctx *ctx, tree t, tree fun,
 	/* These builtins shall be ignored during constant expression
 	   evaluation.  */
 	return void_node;
+      case BUILT_IN_OBSERVABLE_CHKPT:
+	if (ctx->manifestly_const_eval == mce_true)
+	  return void_node;
+	/* FALLTHROUGH */
       case BUILT_IN_UNREACHABLE:
       case BUILT_IN_TRAP:
 	if (!*non_constant_p && !ctx->quiet)
@@ -10324,7 +10329,18 @@ cxx_eval_constant_expression (const constexpr_ctx *ctx, tree t,
     case ASSERTION_STMT:
     case PRECONDITION_STMT:
     case POSTCONDITION_STMT:
-      gcc_checking_assert (false && "hoo...");
+      {
+	if (contract_ignored_p (t))
+	  break;
+
+	if (!cxx_eval_assert (ctx, CONTRACT_CONDITION (t),
+			      G_("contract predicate is false in "
+				 "constant expression"),
+			      EXPR_LOCATION (t), contract_evaluated_p (t),
+			      non_constant_p, overflow_p))
+	  *non_constant_p = true;
+	r = void_node;
+      }
       break;
 
     case TEMPLATE_ID_EXPR:
@@ -12709,7 +12725,9 @@ potential_constant_expression_1 (tree t, bool want_rval, bool strict, bool now,
     case ASSERTION_STMT:
     case PRECONDITION_STMT:
     case POSTCONDITION_STMT:
-      gcc_checking_assert (false && "hmm...");
+      if (!contract_evaluated_p (t))
+	return true;
+      return RECUR (CONTRACT_CONDITION (t), rval);
 
     case LABEL_EXPR:
       t = LABEL_EXPR_LABEL (t);
