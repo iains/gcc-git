@@ -229,6 +229,7 @@ enum scope_kind {
   sk_transaction,    /* A synchronized or atomic statement.  */
   sk_omp,	     /* An OpenMP structured block.  */
   sk_lambda,	     /* A lambda scope.  */
+  sk_contract,	     /* A P2900 contract.  */
   sk_count	     /* Number of scope_kind enumerations.  */
 };
 
