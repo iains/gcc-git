@@ -46,6 +46,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "predict.h"
 #include "memmodel.h"
 #include "gimplify.h"
+#include "contracts.h"
 
 /* There routines provide a modular interface to perform many parsing
    operations.  They may therefore be used during actual parsing, or
@@ -609,7 +610,8 @@ set_one_cleanup_loc (tree t, location_t loc)
   if (!t)
     return;
 
-  protected_set_expr_location (t, loc);
+  if (TREE_CODE (t) != POSTCONDITION_STMT)
+    protected_set_expr_location (t, loc);
 
   /* Avoid locus differences for C++ cdtor calls depending on whether
      cdtor_returns_this: a conversion to void is added to discard the return
@@ -2763,6 +2765,14 @@ finish_non_static_data_member (tree decl, tree object, tree qualifying_scope,
 	  if (current_function_decl
 	      && DECL_STATIC_FUNCTION_P (current_function_decl))
 	    error ("invalid use of member %qD in static member function", decl);
+	  else if (current_function_decl
+		   && processing_contract_condition
+		   && DECL_CONSTRUCTOR_P (current_function_decl))
+	    error ("invalid use of member %qD in constructor %<pre%> contract", decl);
+	  else if (current_function_decl
+		   && processing_contract_condition
+		   && DECL_DESTRUCTOR_P (current_function_decl))
+	    error ("invalid use of member %qD in destructor %<post%> contract", decl);
 	  else
 	    error ("invalid use of non-static data member %qD", decl);
 	  inform (DECL_SOURCE_LOCATION (decl), "declared here");
@@ -3656,6 +3666,10 @@ finish_this_expr (void)
     }
   else if (fn && DECL_STATIC_FUNCTION_P (fn))
     error ("%<this%> is unavailable for static member functions");
+  else if (fn && processing_contract_condition && DECL_CONSTRUCTOR_P (fn))
+    error ("invalid use of %<this%> before it is valid");
+  else if (fn && processing_contract_condition && DECL_DESTRUCTOR_P (fn))
+    error ("invalid use of %<this%> after it is valid");
   else if (fn)
     error ("invalid use of %<this%> in non-member function");
   else
@@ -4667,6 +4681,9 @@ process_outer_var_ref (tree decl, tsubst_flags_t complain, bool odr_use)
 	}
       return error_mark_node;
     }
+  else if (processing_contract_condition && (TREE_CODE (decl) == PARM_DECL))
+    /* Use of a parameter in a contract condition is fine.  */
+    return decl;
   else
     {
       if (complain & tf_error)
@@ -4802,6 +4819,7 @@ finish_id_expression_1 (tree id_expression,
 	  && DECL_CONTEXT (decl) == NULL_TREE
 	  && !CONSTRAINT_VAR_P (decl)
 	  && !cp_unevaluated_operand
+	  && !processing_contract_condition
 	  && !processing_omp_trait_property_expr)
 	{
 	  *error_msg = G_("use of parameter outside function body");
@@ -4844,6 +4862,7 @@ finish_id_expression_1 (tree id_expression,
 						   | TYPE_QUAL_CONST));
 	  r = build1 (VIEW_CONVERT_EXPR, ctype, r);
 	}
+
       r = convert_from_reference (r);
       if (integral_constant_expression_p
 	  && !dependent_type_p (TREE_TYPE (decl))
@@ -4855,6 +4874,10 @@ finish_id_expression_1 (tree id_expression,
 		   "integral or enumeration type", decl, TREE_TYPE (decl));
 	  *non_integral_constant_expression_p = true;
 	}
+
+      if (flag_contracts && processing_contract_condition)
+	r = constify_contract_access(r);
+
       return r;
     }
   else if (TREE_CODE (decl) == UNBOUND_CLASS_TEMPLATE)
@@ -4978,10 +5001,21 @@ finish_id_expression_1 (tree id_expression,
 	}
       else if (TREE_CODE (decl) == FIELD_DECL)
 	{
+	  if (flag_contracts && processing_contract_condition
+	      && contract_class_ptr == current_class_ptr)
+	    {
+	      error ("%qD 'this' required when accessing a member within a "
+		  "constructor precondition or destructor postcondition "
+		  "contract check", decl);
+		      return error_mark_node;
+	    }
 	  /* Since SCOPE is NULL here, this is an unqualified name.
 	     Access checking has been performed during name lookup
 	     already.  Turn off checking to avoid duplicate errors.  */
 	  push_deferring_access_checks (dk_no_check);
+
+
+
 	  decl = finish_non_static_data_member (decl, NULL_TREE,
 						/*qualifying_scope=*/NULL_TREE);
 	  pop_deferring_access_checks ();
@@ -5001,6 +5035,14 @@ finish_id_expression_1 (tree id_expression,
 		      && !shared_member_p (decl))))
 	    {
 	      /* A set of member functions.  */
+	      if (flag_contracts && processing_contract_condition
+		  && contract_class_ptr == current_class_ptr)
+		{
+		  error ("%qD 'this' required when accessing a member within a "
+		      "constructor precondition or destructor postcondition "
+		      "contract check", decl);
+		  return error_mark_node;
+		}
 	      decl = maybe_dummy_object (DECL_CONTEXT (first_fn), 0);
 	      return finish_class_member_access_expr (decl, id_expression,
 						      /*template_p=*/false,
@@ -5035,6 +5077,10 @@ finish_id_expression_1 (tree id_expression,
 	  decl = convert_from_reference (decl);
 	}
     }
+
+  check_param_in_postcondition (decl, location);
+  if (flag_contracts && processing_contract_condition)
+    decl = constify_contract_access(decl);
 
   return cp_expr (decl, location);
 }
@@ -12828,6 +12874,12 @@ finish_decltype_type (tree expr, bool id_expression_or_member_access_p,
       if (identifier_p (expr))
         expr = lookup_name (expr);
 
+      /* If e is a constified expression inside a contract assertion,
+	 strip the const wrapper. Per P2900R14, "For a function f with the
+	 return type T , the result name is an lvalue of type const T , decltype(r)
+	 is T , and decltype((r)) is const T&."  */
+      expr = strip_contract_const_wrapper (expr);
+
       if (INDIRECT_REF_P (expr)
 	  || TREE_CODE (expr) == VIEW_CONVERT_EXPR)
         /* This can happen when the expression is, e.g., "a.b". Just
@@ -14175,6 +14227,8 @@ apply_deduced_return_type (tree fco, tree return_type)
     DECL_NAME (fco) = make_conv_op_name (return_type);
 
   TREE_TYPE (fco) = change_return_type (return_type, TREE_TYPE (fco));
+
+  maybe_update_postconditions (fco);
 
   /* Apply the type to the result object.  */
 
