@@ -36,6 +36,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "attribs.h"
 #include "flags.h"
 #include "selftest.h"
+#include "contracts.h"
 
 static tree bot_manip (tree *, int *, void *);
 static tree bot_replace (tree *, int *, void *);
