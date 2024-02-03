@@ -48,15 +48,11 @@ basic_file.cc: ${glibcxx_srcdir}/$(BASIC_FILE_CC)
 	$(LN_S) ${glibcxx_srcdir}/$(BASIC_FILE_CC) ./$@ || true
 
 if ENABLE_DUAL_ABI
-cxx11_abi_sources = \
-	cow-locale_init.cc \
+dual_abi_sources = \
 	cow-shim_facets.cc \
-	cxx11-hash_tr1.cc \
-	cxx11-ios_failure.cc \
-	cxx11-shim_facets.cc \
-	cxx11-stdexcept.cc
+	cxx11-shim_facets.cc
 else
-cxx11_abi_sources =
+dual_abi_sources =
 endif
 
 sources_freestanding = \
@@ -68,8 +64,12 @@ sources = \
 	chrono.cc \
 	codecvt.cc \
 	condition_variable.cc \
+	cow-locale_init.cc \
 	cow-stdexcept.cc \
 	ctype.cc \
+	cxx11-hash_tr1.cc \
+	cxx11-ios_failure.cc \
+	cxx11-stdexcept.cc \
 	debug.cc \
 	functexcept.cc \
 	functional.cc \
@@ -88,20 +88,12 @@ sources = \
 	snprintf_lite.cc \
 	system_error.cc \
 	thread.cc \
-	${cxx11_abi_sources} \
+	${dual_abi_sources} \
 	${host_sources} \
 	${host_sources_extra}
 
 if ENABLE_DUAL_ABI
 extra_string_inst_sources = \
-	cow-fstream-inst.cc \
-	cow-sstream-inst.cc \
-	cow-string-inst.cc \
-	cow-string-io-inst.cc \
-	cow-wstring-inst.cc \
-	cow-wstring-io-inst.cc \
-	cxx11-locale-inst.cc \
-	cxx11-wlocale-inst.cc \
 	sso_string.cc
 else
 extra_string_inst_sources =
@@ -111,6 +103,14 @@ if ENABLE_EXTERN_TEMPLATE
 # XTEMPLATE_FLAGS = -fno-implicit-templates
 inst_sources = \
 	$(extra_string_inst_sources) \
+	cow-fstream-inst.cc \
+	cow-sstream-inst.cc \
+	cow-string-inst.cc \
+	cow-string-io-inst.cc \
+	cow-wstring-inst.cc \
+	cow-wstring-io-inst.cc \
+	cxx11-locale-inst.cc \
+	cxx11-wlocale-inst.cc \
 	ext11-inst.cc \
 	fstream-inst.cc \
 	ios-inst.cc \

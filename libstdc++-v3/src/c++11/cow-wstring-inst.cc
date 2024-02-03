@@ -29,12 +29,9 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
 #include <bits/c++config.h>
 
+#if ! _GLIBCXX_USE_CXX11_ABI
 #ifdef _GLIBCXX_USE_WCHAR_T
 #define C wchar_t
 #include "string-inst.cc"
-
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
 #endif
-
 #endif

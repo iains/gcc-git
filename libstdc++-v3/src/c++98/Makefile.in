@@ -121,30 +121,29 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libc__98convenience_la_LIBADD =
-@ENABLE_DUAL_ABI_TRUE@am__objects_1 = cow-istream-string.lo
-@ENABLE_DUAL_ABI_TRUE@am__objects_2 = collate_members_cow.lo \
+@ENABLE_DUAL_ABI_TRUE@am__objects_1 = collate_members_cow.lo \
 @ENABLE_DUAL_ABI_TRUE@	messages_members_cow.lo \
 @ENABLE_DUAL_ABI_TRUE@	monetary_members_cow.lo \
 @ENABLE_DUAL_ABI_TRUE@	numeric_members_cow.lo
-am__objects_3 = $(am__objects_2) codecvt_members.lo collate_members.lo \
+am__objects_2 = $(am__objects_1) codecvt_members.lo collate_members.lo \
 	messages_members.lo monetary_members.lo numeric_members.lo \
 	time_members.lo
-am__objects_4 = c++locale.lo
-@ENABLE_EXTERN_TEMPLATE_TRUE@am__objects_5 = allocator-inst.lo \
+am__objects_3 = c++locale.lo
+@ENABLE_EXTERN_TEMPLATE_TRUE@am__objects_4 = allocator-inst.lo \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	concept-inst.lo ext-inst.lo \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	misc-inst.lo
-am__objects_6 = parallel_settings.lo
-am__objects_7 = bitmap_allocator.lo pool_allocator.lo mt_allocator.lo \
-	codecvt.lo complex_io.lo globals_io.lo hash_tr1.lo \
-	hashtable_tr1.lo ios_failure.lo ios_init.lo ios_locale.lo \
-	list.lo list-aux.lo list-aux-2.lo list_associated.lo \
-	list_associated-2.lo locale.lo locale_facets.lo \
-	math_stubs_float.lo math_stubs_long_double.lo stdexcept.lo \
-	strstream.lo tree.lo istream.lo istream-string.lo streambuf.lo \
-	valarray.lo $(am__objects_1) $(am__objects_3) $(am__objects_4) \
-	$(am__objects_5) $(am__objects_6)
+am__objects_5 = parallel_settings.lo
+am__objects_6 = bitmap_allocator.lo pool_allocator.lo mt_allocator.lo \
+	codecvt.lo complex_io.lo cow-istream-string.lo globals_io.lo \
+	hash_tr1.lo hashtable_tr1.lo ios_failure.lo ios_init.lo \
+	ios_locale.lo list.lo list-aux.lo list-aux-2.lo \
+	list_associated.lo list_associated-2.lo locale.lo \
+	locale_facets.lo math_stubs_float.lo math_stubs_long_double.lo \
+	stdexcept.lo strstream.lo tree.lo istream.lo istream-string.lo \
+	streambuf.lo valarray.lo $(am__objects_2) $(am__objects_3) \
+	$(am__objects_4) $(am__objects_5)
 @GLIBCXX_HOSTED_TRUE@am_libc__98convenience_la_OBJECTS =  \
-@GLIBCXX_HOSTED_TRUE@	$(am__objects_7)
+@GLIBCXX_HOSTED_TRUE@	$(am__objects_6)
 libc__98convenience_la_OBJECTS = $(am_libc__98convenience_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -469,10 +468,6 @@ host_sources = \
 host_sources_extra = \
 	c++locale.cc
 
-@ENABLE_DUAL_ABI_FALSE@cxx11_abi_sources = 
-@ENABLE_DUAL_ABI_TRUE@cxx11_abi_sources = \
-@ENABLE_DUAL_ABI_TRUE@	cow-istream-string.cc
-
 # XTEMPLATE_FLAGS =
 @ENABLE_EXTERN_TEMPLATE_FALSE@inst_sources = 
 
@@ -492,6 +487,7 @@ sources = \
 	mt_allocator.cc \
 	codecvt.cc \
 	complex_io.cc \
+	cow-istream-string.cc \
 	globals_io.cc \
 	hash_tr1.cc \
 	hashtable_tr1.cc \
@@ -514,7 +510,6 @@ sources = \
 	istream-string.cc \
 	streambuf.cc \
 	valarray.cc \
-	${cxx11_abi_sources} \
 	${host_sources} \
 	${host_sources_extra} \
 	${inst_sources} \
@@ -868,6 +863,9 @@ time_members.cc: ${glibcxx_srcdir}/$(CTIME_CC)
 
 c++locale.cc: ${glibcxx_srcdir}/$(CLOCALE_CC)
 	$(LN_S) ${glibcxx_srcdir}/$(CLOCALE_CC) ./$@ || true
+
+basic_file.cc: ${glibcxx_srcdir}/$(BASIC_FILE_CC)
+	$(LN_S) ${glibcxx_srcdir}/$(BASIC_FILE_CC) ./$@ || true
 
 vpath % $(top_srcdir)/src/c++98
 

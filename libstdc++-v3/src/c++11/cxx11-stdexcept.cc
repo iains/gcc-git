@@ -29,9 +29,7 @@
 #define _GLIBCXX_USE_CXX11_ABI 1
 #include <stdexcept>
 
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
-#endif
+#if _GLIBCXX_USE_CXX11_ABI
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -76,3 +74,5 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+
+#endif // _GLIBCXX_USE_CXX11_ABI

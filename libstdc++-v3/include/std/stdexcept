@@ -42,8 +42,8 @@ namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
-#if _GLIBCXX_USE_DUAL_ABI
-#if _GLIBCXX_USE_CXX11_ABI
+#if _GLIBCXX_USE_DUAL_ABI || _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_DEFINE_STDEXCEPT_INSTANTIATIONS
   // Emulates an old COW string when the new std::string is in use.
   struct __cow_string
   {
@@ -62,12 +62,14 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     __cow_string(__cow_string&&) noexcept;
     __cow_string& operator=(__cow_string&&) noexcept;
 #endif
+    const char* c_str() const _GLIBCXX_NOEXCEPT;
   };
-
-  typedef basic_string<char> __sso_string;
-#else // _GLIBCXX_USE_CXX11_ABI
+#endif // ! _GLIBCXX_DEFINE_STDEXCEPT_INSTANTIATIONS
+#else
   typedef basic_string<char> __cow_string;
+#endif
 
+#if _GLIBCXX_USE_DUAL_ABI && ! _GLIBCXX_USE_CXX11_ABI
   // Emulates a new SSO string when the old std::string is in use.
   struct __sso_string
   {
@@ -94,10 +96,8 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     __sso_string& operator=(__sso_string&&) noexcept;
 #endif
   };
-#endif // _GLIBCXX_USE_CXX11_ABI
-#else  // _GLIBCXX_USE_DUAL_ABI
+#else
   typedef basic_string<char> __sso_string;
-  typedef basic_string<char> __cow_string;
 #endif
 
   /**
@@ -127,7 +127,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     logic_error& operator=(logic_error&&) noexcept;
 #endif
 
-#if _GLIBCXX_USE_CXX11_ABI || _GLIBCXX_DEFINE_STDEXCEPT_COPY_OPS
+#if _GLIBCXX_USE_CXX11_ABI || _GLIBCXX_DEFINE_STDEXCEPT_INSTANTIATIONS
     logic_error(const logic_error&) _GLIBCXX_NOTHROW;
     logic_error& operator=(const logic_error&) _GLIBCXX_NOTHROW;
 #elif __cplusplus >= 201103L
@@ -233,7 +233,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     runtime_error& operator=(runtime_error&&) noexcept;
 #endif
 
-#if _GLIBCXX_USE_CXX11_ABI || _GLIBCXX_DEFINE_STDEXCEPT_COPY_OPS
+#if _GLIBCXX_USE_CXX11_ABI || _GLIBCXX_DEFINE_STDEXCEPT_INSTANTIATIONS
     runtime_error(const runtime_error&) _GLIBCXX_NOTHROW;
     runtime_error& operator=(const runtime_error&) _GLIBCXX_NOTHROW;
 #elif __cplusplus >= 201103L

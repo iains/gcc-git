@@ -1029,6 +1029,8 @@ class StdStringPrinter(printer_base):
     def __init__(self, typename, val):
         self._val = val
         self._new_string = typename.find("::__cxx11::basic_string") != -1
+        if not self._new_string:
+            self._new_string = typename.find("::" + _versioned_namespace + "basic_string") != -1
 
     def to_string(self):
         # Make sure &string works, too.

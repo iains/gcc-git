@@ -30,7 +30,7 @@
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
 // use_facet and has_facet instantiations
 INSTANTIATE_FACET_ACCESSORS(num_get<C>);
 INSTANTIATE_FACET_ACCESSORS(num_put<C>);
@@ -38,7 +38,7 @@ INSTANTIATE_FACET_ACCESSORS(num_put<C>);
 
 _GLIBCXX_BEGIN_NAMESPACE_LDBL
 
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   template class num_get<C, istreambuf_iterator<C> >;
   template class num_put<C, ostreambuf_iterator<C> >;
 #endif
@@ -88,7 +88,7 @@ _GLIBCXX_BEGIN_NAMESPACE_LDBL
 		   unsigned long long&) const;
 #endif
 
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   // num_put member function templates
   template
     ostreambuf_iterator<C>

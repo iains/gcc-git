@@ -31,6 +31,16 @@
 // by another file which defines _GLIBCXX_USE_CXX11_ABI=0.
 # define _GLIBCXX_USE_CXX11_ABI 1
 #endif
+
+#if _GLIBCXX_USE_CXX11_ABI
+# define _GLIBCXX_BUILD_CXX11_ABI 1
+#else
+# define _GLIBCXX_BUILD_CXX11_ABI 0
+#endif
+
+#include <bits/c++config.h>
+
+#if _GLIBCXX_BUILD_CXX11_ABI == _GLIBCXX_USE_CXX11_ABI
 #include <istream>
 #include <string>
 
@@ -289,3 +299,4 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+#endif // _GLIBCXX_BUILD_CXX11_ABI == _GLIBCXX_USE_CXX11_ABI

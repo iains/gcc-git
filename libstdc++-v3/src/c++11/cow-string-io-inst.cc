@@ -30,10 +30,7 @@
 #include <istream>
 #include <ostream>
 
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
-#endif
-
+#if ! _GLIBCXX_USE_CXX11_ABI
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -57,3 +54,4 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+#endif

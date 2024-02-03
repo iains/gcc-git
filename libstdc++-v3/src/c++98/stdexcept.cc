@@ -35,8 +35,10 @@ namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   logic_error::logic_error(const string& __arg)
   : exception(), _M_msg(__arg) { }
+#endif
 
   logic_error::~logic_error() _GLIBCXX_USE_NOEXCEPT { }
 
@@ -44,28 +46,38 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   logic_error::what() const _GLIBCXX_USE_NOEXCEPT
   { return _M_msg.c_str(); }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   domain_error::domain_error(const string& __arg)
   : logic_error(__arg) { }
+#endif
 
   domain_error::~domain_error() _GLIBCXX_USE_NOEXCEPT { }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   invalid_argument::invalid_argument(const string& __arg)
   : logic_error(__arg) { }
+#endif
 
   invalid_argument::~invalid_argument() _GLIBCXX_USE_NOEXCEPT { }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   length_error::length_error(const string& __arg)
   : logic_error(__arg) { }
+#endif
 
   length_error::~length_error() _GLIBCXX_USE_NOEXCEPT { }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   out_of_range::out_of_range(const string& __arg)
   : logic_error(__arg) { }
+#endif
 
   out_of_range::~out_of_range() _GLIBCXX_USE_NOEXCEPT { }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   runtime_error::runtime_error(const string& __arg)
   : exception(), _M_msg(__arg) { }
+#endif
 
   runtime_error::~runtime_error() _GLIBCXX_USE_NOEXCEPT { }
 
@@ -73,18 +85,24 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   runtime_error::what() const _GLIBCXX_USE_NOEXCEPT
   { return _M_msg.c_str(); }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   range_error::range_error(const string& __arg)
   : runtime_error(__arg) { }
+#endif
 
   range_error::~range_error() _GLIBCXX_USE_NOEXCEPT { }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   overflow_error::overflow_error(const string& __arg)
   : runtime_error(__arg) { }
+#endif
 
   overflow_error::~overflow_error() _GLIBCXX_USE_NOEXCEPT { }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   underflow_error::underflow_error(const string& __arg)
   : runtime_error(__arg) { }
+#endif
 
   underflow_error::~underflow_error() _GLIBCXX_USE_NOEXCEPT { }
 

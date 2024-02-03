@@ -337,26 +337,6 @@ namespace std
 #define _GLIBCXX_USE_CXX11_ABI
 #endif
 
-#if _GLIBCXX_USE_CXX11_ABI
-namespace std
-{
-  inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
-}
-namespace __gnu_cxx
-{
-  inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
-}
-# define _GLIBCXX_NAMESPACE_CXX11 __cxx11::
-# define _GLIBCXX_BEGIN_NAMESPACE_CXX11 namespace __cxx11 {
-# define _GLIBCXX_END_NAMESPACE_CXX11 }
-# define _GLIBCXX_DEFAULT_ABI_TAG _GLIBCXX_ABI_TAG_CXX11
-#else
-# define _GLIBCXX_NAMESPACE_CXX11
-# define _GLIBCXX_BEGIN_NAMESPACE_CXX11
-# define _GLIBCXX_END_NAMESPACE_CXX11
-# define _GLIBCXX_DEFAULT_ABI_TAG
-#endif
-
 // Non-zero if inline namespaces are used for versioning the entire library.
 #define _GLIBCXX_INLINE_VERSION 
 
@@ -415,7 +395,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // Non-inline namespace for components replaced by alternates in active mode.
   namespace __cxx1998
   {
-# if _GLIBCXX_USE_CXX11_ABI
+# if _GLIBCXX_USE_CXX11_ABI && ! _GLIBCXX_INLINE_VERSION
   inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
 # endif
   }
@@ -443,6 +423,26 @@ _GLIBCXX_END_NAMESPACE_VERSION
 #  warning currently using inlined namespace mode which may fail \
    without inlining due to lack of weak symbols
 # endif
+#endif
+
+#if _GLIBCXX_USE_CXX11_ABI && ! _GLIBCXX_INLINE_VERSION
+namespace std
+{
+  inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
+}
+namespace __gnu_cxx
+{
+  inline namespace __cxx11 __attribute__((__abi_tag__ ("cxx11"))) { }
+}
+# define _GLIBCXX_NAMESPACE_CXX11 __cxx11::
+# define _GLIBCXX_BEGIN_NAMESPACE_CXX11 namespace __cxx11 {
+# define _GLIBCXX_END_NAMESPACE_CXX11 }
+# define _GLIBCXX_DEFAULT_ABI_TAG _GLIBCXX_ABI_TAG_CXX11
+#else
+# define _GLIBCXX_NAMESPACE_CXX11
+# define _GLIBCXX_BEGIN_NAMESPACE_CXX11
+# define _GLIBCXX_END_NAMESPACE_CXX11
+# define _GLIBCXX_DEFAULT_ABI_TAG
 #endif
 
 // Macros for namespace scope. Either namespace std:: or the name

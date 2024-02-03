@@ -36,7 +36,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 // This file might be compiled twice, but we only want to define the members
 // of money_base once.
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
 
   // Construct and return valid pattern consisting of some combination of:
   // space none symbol sign value

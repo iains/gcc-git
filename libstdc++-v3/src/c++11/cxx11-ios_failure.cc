@@ -38,9 +38,7 @@
 # define _(msgid)   (msgid)
 #endif
 
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
-#endif
+#if _GLIBCXX_USE_CXX11_ABI
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -62,7 +60,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   ios_base::failure::what() const throw()
   { return runtime_error::what(); }
 
-#if __cpp_rtti
+#if _GLIBCXX_USE_DUAL_ABI && __cpp_rtti
   // These functions are defined in src/c++98/ios_failure.cc
   extern void __construct_ios_failure(void*, const char*);
   extern void __destroy_ios_failure(void*);
@@ -118,7 +116,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     // Otherwise proceed as normal to see if the handler matches.
     return __class_type_info::__do_upcast(dst_type, obj_ptr);
   }
-#else // ! __cpp_rtti
+#else // ! _GLIBCXX_USE_DUAL_ABI || ! __cpp_rtti
   using __ios_failure = ios::failure;
 #endif
 
@@ -136,3 +134,5 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+
+#endif // _GLIBCXX_USE_CXX11_ABI

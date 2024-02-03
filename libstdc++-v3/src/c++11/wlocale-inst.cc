@@ -30,7 +30,9 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
 #include <bits/c++config.h>
 
-#ifdef _GLIBCXX_USE_WCHAR_T
-#define C wchar_t
-#include "locale-inst.cc"
-#endif // _GLIBCXX_USE_WCHAR_T
+#if ! _GLIBCXX_USE_CXX11_ABI
+# ifdef _GLIBCXX_USE_WCHAR_T
+#  define C wchar_t
+#  include "locale-inst.cc"
+# endif // _GLIBCXX_USE_WCHAR_T
+#endif

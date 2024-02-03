@@ -122,27 +122,28 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libc__11convenience_la_LIBADD =
 am__objects_1 = limits.lo placeholders.lo
-@ENABLE_DUAL_ABI_TRUE@am__objects_2 = cow-locale_init.lo \
-@ENABLE_DUAL_ABI_TRUE@	cow-shim_facets.lo cxx11-hash_tr1.lo \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-ios_failure.lo \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-shim_facets.lo cxx11-stdexcept.lo
+@ENABLE_DUAL_ABI_TRUE@am__objects_2 = cow-shim_facets.lo \
+@ENABLE_DUAL_ABI_TRUE@	cxx11-shim_facets.lo
 am__objects_3 = ctype_configure_char.lo ctype_members.lo
 am__objects_4 = basic_file.lo
 am__objects_5 = assert_fail.lo chrono.lo codecvt.lo \
-	condition_variable.lo cow-stdexcept.lo ctype.lo debug.lo \
-	functexcept.lo functional.lo futex.lo future.lo hash_c++0x.lo \
-	hashtable_c++0x.lo ios.lo ios_errcat.lo locale_init.lo \
-	localename.lo mutex.lo random.lo regex.lo shared_ptr.lo \
-	snprintf_lite.lo system_error.lo thread.lo $(am__objects_2) \
-	$(am__objects_3) $(am__objects_4)
-@ENABLE_DUAL_ABI_TRUE@am__objects_6 = cow-fstream-inst.lo \
-@ENABLE_DUAL_ABI_TRUE@	cow-sstream-inst.lo cow-string-inst.lo \
-@ENABLE_DUAL_ABI_TRUE@	cow-string-io-inst.lo \
-@ENABLE_DUAL_ABI_TRUE@	cow-wstring-inst.lo \
-@ENABLE_DUAL_ABI_TRUE@	cow-wstring-io-inst.lo \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-locale-inst.lo \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-wlocale-inst.lo sso_string.lo
+	condition_variable.lo cow-locale_init.lo cow-stdexcept.lo \
+	ctype.lo cxx11-hash_tr1.lo cxx11-ios_failure.lo \
+	cxx11-stdexcept.lo debug.lo functexcept.lo functional.lo \
+	futex.lo future.lo hash_c++0x.lo hashtable_c++0x.lo ios.lo \
+	ios_errcat.lo locale_init.lo localename.lo mutex.lo random.lo \
+	regex.lo shared_ptr.lo snprintf_lite.lo system_error.lo \
+	thread.lo $(am__objects_2) $(am__objects_3) $(am__objects_4)
+@ENABLE_DUAL_ABI_TRUE@am__objects_6 = sso_string.lo
 @ENABLE_EXTERN_TEMPLATE_TRUE@am__objects_7 = $(am__objects_6) \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-fstream-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-sstream-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-string-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-string-io-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-wstring-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-wstring-io-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cxx11-locale-inst.lo \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cxx11-wlocale-inst.lo \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	ext11-inst.lo fstream-inst.lo \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	ios-inst.lo iostream-inst.lo \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	istream-inst.lo locale-inst.lo \
@@ -469,14 +470,10 @@ host_sources = \
 host_sources_extra = \
 	basic_file.cc
 
-@ENABLE_DUAL_ABI_FALSE@cxx11_abi_sources = 
-@ENABLE_DUAL_ABI_TRUE@cxx11_abi_sources = \
-@ENABLE_DUAL_ABI_TRUE@	cow-locale_init.cc \
+@ENABLE_DUAL_ABI_FALSE@dual_abi_sources = 
+@ENABLE_DUAL_ABI_TRUE@dual_abi_sources = \
 @ENABLE_DUAL_ABI_TRUE@	cow-shim_facets.cc \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-hash_tr1.cc \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-ios_failure.cc \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-shim_facets.cc \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-stdexcept.cc
+@ENABLE_DUAL_ABI_TRUE@	cxx11-shim_facets.cc
 
 sources_freestanding = \
 	limits.cc \
@@ -487,8 +484,12 @@ sources = \
 	chrono.cc \
 	codecvt.cc \
 	condition_variable.cc \
+	cow-locale_init.cc \
 	cow-stdexcept.cc \
 	ctype.cc \
+	cxx11-hash_tr1.cc \
+	cxx11-ios_failure.cc \
+	cxx11-stdexcept.cc \
 	debug.cc \
 	functexcept.cc \
 	functional.cc \
@@ -507,20 +508,12 @@ sources = \
 	snprintf_lite.cc \
 	system_error.cc \
 	thread.cc \
-	${cxx11_abi_sources} \
+	${dual_abi_sources} \
 	${host_sources} \
 	${host_sources_extra}
 
 @ENABLE_DUAL_ABI_FALSE@extra_string_inst_sources = 
 @ENABLE_DUAL_ABI_TRUE@extra_string_inst_sources = \
-@ENABLE_DUAL_ABI_TRUE@	cow-fstream-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cow-sstream-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cow-string-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cow-string-io-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cow-wstring-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cow-wstring-io-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-locale-inst.cc \
-@ENABLE_DUAL_ABI_TRUE@	cxx11-wlocale-inst.cc \
 @ENABLE_DUAL_ABI_TRUE@	sso_string.cc
 
 # XTEMPLATE_FLAGS =
@@ -529,6 +522,14 @@ sources = \
 # XTEMPLATE_FLAGS = -fno-implicit-templates
 @ENABLE_EXTERN_TEMPLATE_TRUE@inst_sources = \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	$(extra_string_inst_sources) \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-fstream-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-sstream-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-string-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-string-io-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-wstring-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cow-wstring-io-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cxx11-locale-inst.cc \
+@ENABLE_EXTERN_TEMPLATE_TRUE@	cxx11-wlocale-inst.cc \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	ext11-inst.cc \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	fstream-inst.cc \
 @ENABLE_EXTERN_TEMPLATE_TRUE@	ios-inst.cc \

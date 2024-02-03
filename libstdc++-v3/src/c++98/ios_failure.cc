@@ -29,22 +29,24 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
 #include <ios>
 
-#if _GLIBCXX_USE_DUAL_ABI && __cpp_rtti
-#include <cxxabi.h>
-#include <typeinfo>
-#endif
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
+# if _GLIBCXX_USE_DUAL_ABI && __cpp_rtti
+#  include <cxxabi.h>
+#  include <typeinfo>
+# endif
 
-#ifdef _GLIBCXX_USE_NLS
-# include <libintl.h>
-# define _(msgid)   gettext (msgid)
-#else
-# define _(msgid)   (msgid)
-#endif
+# ifdef _GLIBCXX_USE_NLS
+#  include <libintl.h>
+#  define _(msgid)   gettext (msgid)
+# else
+#  define _(msgid)   (msgid)
+# endif
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   ios_base::failure::failure(const string& __str) throw()
   : _M_msg(__str) { }
 
@@ -54,6 +56,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   const char*
   ios_base::failure::what() const throw()
   { return _M_msg.c_str(); }
+#endif
 
 #if _GLIBCXX_USE_DUAL_ABI
   // When the dual ABI is enabled __throw_ios_failure() is defined in
@@ -82,7 +85,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   }
 #endif // __cpp_rtti
 
-#else // ! _GLIBCXX_USE_DUAL_ABI
+#elif ! _GLIBCXX_USE_CXX11_ABI
 
   void
   __throw_ios_failure(const char* __s __attribute__((unused)))
@@ -92,7 +95,9 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   __throw_ios_failure(const char* str, int)
   { __throw_ios_failure(str); }
 
-#endif // _GLIBCXX_USE_DUAL_ABI
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+
+#endif // ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI

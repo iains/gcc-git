@@ -43,11 +43,52 @@ _txnal_runtime_error_get_msg(void* e);
 
 // All exception classes still use the classic COW std::string.
 #define _GLIBCXX_USE_CXX11_ABI 0
-#define _GLIBCXX_DEFINE_STDEXCEPT_COPY_OPS 1
-#define __cow_string __cow_stringxxx
+#include <string>
+
+#if _GLIBCXX_USE_DUAL_ABI || _GLIBCXX_USE_CXX11_ABI
+# if _GLIBCXX_USE_CXX11_ABI
+#  include <bits/cow_string.h>
+# endif
+
+namespace std _GLIBCXX_VISIBILITY(default)
+{
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+
+# if _GLIBCXX_USE_CXX11_ABI
+  typedef std::__std_cow_string<char, std::char_traits<char>,
+				std::allocator<char>> cowstr;
+# else
+  typedef std::string cowstr;
+# endif
+
+  // Redefine __cow_string so that we can define and export its members
+  // in terms of the COW std::string.
+  struct __cow_string
+  {
+    union {
+      const char* _M_p;
+      char _M_bytes[sizeof(_M_p)];
+      cowstr _M_str;
+    };
+
+    __cow_string();
+    __cow_string(const std::string& s);
+    __cow_string(const char*);
+    __cow_string(const char*, size_t);
+    __cow_string(const __cow_string&) noexcept;
+    __cow_string& operator=(const __cow_string&) noexcept;
+    ~__cow_string();
+    __cow_string(__cow_string&&) noexcept;
+    __cow_string& operator=(__cow_string&&) noexcept;
+    const char* c_str() const noexcept;
+  };
+_GLIBCXX_END_NAMESPACE_VERSION
+}
+#endif
+
+#define _GLIBCXX_DEFINE_STDEXCEPT_INSTANTIATIONS 1
 #include <stdexcept>
 #include <system_error>
-#undef __cow_string
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -114,30 +155,16 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   // Converting constructor from COW std::string to SSO string.
   __sso_string::__sso_string(const string& s)
   : __sso_string(s.c_str(), s.length()) { }
+#endif
 
-  // Redefine __cow_string so that we can define and export its members
-  // in terms of the COW std::string.
-  struct __cow_string
-  {
-    union {
-      const char* _M_p;
-      char _M_bytes[sizeof(_M_p)];
-      std::string _M_str;
-    };
-
-    __cow_string();
-    __cow_string(const std::string& s);
-    __cow_string(const char*, size_t n);
-    __cow_string(const __cow_string&) noexcept;
-    __cow_string& operator=(const __cow_string&) noexcept;
-    ~__cow_string();
-    __cow_string(__cow_string&&) noexcept;
-    __cow_string& operator=(__cow_string&&) noexcept;
-  };
-
+#if _GLIBCXX_USE_DUAL_ABI || _GLIBCXX_USE_CXX11_ABI
   __cow_string::__cow_string() : _M_str() { }
 
+#if !_GLIBCXX_USE_CXX11_ABI
   __cow_string::__cow_string(const std::string& s) : _M_str(s) { }
+#endif
+
+  __cow_string::__cow_string(const char* s) : _M_str(s) { }
 
   __cow_string::__cow_string(const char* s, size_t n) : _M_str(s, n) { }
 
@@ -151,7 +178,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     return *this;
   }
 
-  __cow_string::~__cow_string() { _M_str.~basic_string(); }
+  __cow_string::~__cow_string() { _M_str.~cowstr(); }
 
   __cow_string::__cow_string(__cow_string&& s) noexcept
   : _M_str(std::move(s._M_str)) { }
@@ -163,12 +190,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     return *this;
   }
 
-  static_assert(sizeof(__cow_string) == sizeof(std::string),
-                "sizeof(std::string) has changed");
-  static_assert(alignof(__cow_string) == alignof(std::string),
-                "alignof(std::string) has changed");
-#endif
+  const char*
+  __cow_string::c_str() const noexcept
+  { return _M_str.c_str(); }
 
+  static_assert(sizeof(__cow_string) == sizeof(cowstr),
+                "sizeof(std::string) has changed");
+  static_assert(alignof(__cow_string) == alignof(cowstr),
+                "alignof(std::string) has changed");
+#endif // _GLIBCXX_USE_CXX11_ABI
+
+#if ! _GLIBCXX_USE_CXX11_ABI
   // Return error_category::message() as an SSO string
   __sso_string
   error_category::_M_message(int i) const
@@ -176,10 +208,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     string msg = this->message(i);
     return {msg.c_str(), msg.length()};
   }
+#endif
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
 
+#if ! _GLIBCXX_USE_CXX11_ABI
 // Support for the Transactional Memory TS (N4514).
 //
 // logic_error and runtime_error both carry a message in the form of a COW
@@ -463,3 +497,4 @@ CTORDTOR(15underflow_error, std::underflow_error, runtime_error)
 
 #endif  // _GLIBCXX_USE_C99_STDINT
 #endif  // _GLIBCXX_USE_WEAK_REF
+#endif  // ! _GLIBCXX_USE_CXX11_ABI

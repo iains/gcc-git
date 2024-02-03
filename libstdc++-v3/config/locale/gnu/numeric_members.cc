@@ -39,7 +39,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   extern char __narrow_multibyte_chars(const char* s, __locale_t cloc);
 
 // This file might be compiled twice, but we only want to define this once.
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   char
   __narrow_multibyte_chars(const char* s, __locale_t cloc)
   {
@@ -84,7 +84,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       }
     return '\0';
   }
-#endif
+#endif // ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
 
   template<>
     void

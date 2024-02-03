@@ -157,10 +157,9 @@ am__objects_2 = compatibility.lo compatibility-debug_list.lo \
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-chrono.lo \
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-condvar.lo \
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-thread-c++0x.lo
-@ENABLE_DUAL_ABI_TRUE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@am__objects_4 = compatibility-ldbl-alt128-cxx11.lo
-@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@am__objects_5 =  \
-@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	compatibility-ldbl-alt128.lo \
-@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	$(am__objects_4)
+@ENABLE_DUAL_ABI_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@am__objects_4 = compatibility-ldbl-alt128-cxx11.lo
+@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@am__objects_5 = compatibility-ldbl-alt128.lo \
+@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	$(am__objects_4)
 am__objects_6 = $(am__objects_3) $(am__objects_5)
 @GLIBCXX_HOSTED_TRUE@am_libstdc___la_OBJECTS = $(am__objects_2) \
 @GLIBCXX_HOSTED_TRUE@	$(am__objects_6)
@@ -512,14 +511,15 @@ SUBDIRS = c++98 c++11 c++17 c++20 c++23 c++26 \
 
 @GLIBCXX_LDBL_COMPAT_FALSE@ldbl_compat_sources = 
 @GLIBCXX_LDBL_COMPAT_TRUE@ldbl_compat_sources = compatibility-ldbl.cc
-@ENABLE_DUAL_ABI_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_cxx11_sources = 
-@ENABLE_DUAL_ABI_TRUE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_cxx11_sources = \
-@ENABLE_DUAL_ABI_TRUE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	compatibility-ldbl-alt128-cxx11.cc
+@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_FALSE@ldbl_alt128_compat_sources = 
+@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_sources = \
+@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	compatibility-ldbl-alt128.cc \
+@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	${ldbl_alt128_compat_cxx11_sources}
 
-@GLIBCXX_LDBL_ALT128_COMPAT_FALSE@ldbl_alt128_compat_sources = 
-@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_sources = \
-@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	compatibility-ldbl-alt128.cc \
-@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	${ldbl_alt128_compat_cxx11_sources}
+@ENABLE_SYMVERS_GNU_NAMESPACE_TRUE@ldbl_alt128_compat_sources = 
+@ENABLE_DUAL_ABI_FALSE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_cxx11_sources = 
+@ENABLE_DUAL_ABI_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@ldbl_alt128_compat_cxx11_sources = \
+@ENABLE_DUAL_ABI_TRUE@@ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@@GLIBCXX_LDBL_ALT128_COMPAT_TRUE@	compatibility-ldbl-alt128-cxx11.cc
 
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@cxx0x_compat_sources = \
 @ENABLE_SYMVERS_GNU_NAMESPACE_FALSE@	compatibility-atomic-c++0x.cc \

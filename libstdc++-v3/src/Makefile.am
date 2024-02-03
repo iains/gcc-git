@@ -92,6 +92,9 @@ else
 ldbl_compat_sources =
 endif
 
+if ENABLE_SYMVERS_GNU_NAMESPACE
+ldbl_alt128_compat_sources =
+else
 if GLIBCXX_LDBL_ALT128_COMPAT
 if ENABLE_DUAL_ABI
 ldbl_alt128_compat_cxx11_sources = \
@@ -104,6 +107,7 @@ ldbl_alt128_compat_sources = \
 	${ldbl_alt128_compat_cxx11_sources}
 else
 ldbl_alt128_compat_sources =
+endif
 endif
 
 if ENABLE_SYMVERS_GNU_NAMESPACE

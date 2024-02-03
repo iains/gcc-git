@@ -51266,13 +51266,18 @@ fi
 
 
   if test x$enable_symvers = xgnu-versioned-namespace; then
-    # gnu-versioned-namespace is incompatible with the dual ABI.
-    enable_libstdcxx_dual_abi="no"
-  fi
-  if test x"$enable_libstdcxx_dual_abi" != xyes; then
+    # gnu-versioned-namespace is incompatible with the dual ABI...
     { $as_echo "$as_me:${as_lineno-$LINENO}: dual ABI is disabled" >&5
 $as_echo "$as_me: dual ABI is disabled" >&6;}
-    default_libstdcxx_abi="gcc4-compatible"
+    enable_libstdcxx_dual_abi="no"
+    # ... and use the cxx11 one.
+    default_libstdcxx_abi="new"
+  else
+    if test x"$enable_libstdcxx_dual_abi" != xyes; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: dual ABI is disabled" >&5
+$as_echo "$as_me: dual ABI is disabled" >&6;}
+      default_libstdcxx_abi="gcc4-compatible"
+    fi
   fi
 
 

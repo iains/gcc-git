@@ -28,6 +28,7 @@
 
 #include "hash-long-double-tr1-aux.cc"
 
+#if ! _GLIBCXX_USE_CXX11_ABI
 namespace std _GLIBCXX_VISIBILITY(default)
 {
   namespace tr1
@@ -57,3 +58,4 @@ namespace std _GLIBCXX_VISIBILITY(default)
 #endif
   }
 }
+#endif // ! _GLIBCXX_USE_CXX11_ABI

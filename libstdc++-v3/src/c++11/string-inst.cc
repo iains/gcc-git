@@ -35,6 +35,12 @@
 # define _GLIBCXX_USE_CXX11_ABI 1
 #endif
 
+#if _GLIBCXX_USE_CXX11_ABI
+# define _GLIBCXX_DEFINING_CXX11_ABI_INSTANTIATIONS 1
+#else
+# define _GLIBCXX_DEFINING_CXX11_ABI_INSTANTIATIONS 0
+#endif
+
 // Prevent the basic_string(const _CharT*, const _Alloc&) and
 // basic_string(size_type, _CharT, const _Alloc&) constructors from being
 // replaced by constrained function templates, so that we instantiate the
@@ -45,6 +51,29 @@
 
 #include <string>
 
+#if _GLIBCXX_USE_DUAL_ABI || _GLIBCXX_USE_CXX11_ABI
+#include <stdexcept>
+
+#if _GLIBCXX_USE_CXX11_ABI
+# include <bits/cow_string.h>
+typedef std::__std_cow_string<char, std::char_traits<char>,
+			      std::allocator<char>> cowstr;
+#else
+typedef std::string cowstr;
+#endif
+
+static_assert(sizeof(std::__cow_string) == sizeof(cowstr),
+	      "sizeof(std::string) has changed");
+static_assert(alignof(std::__cow_string) == alignof(cowstr),
+	      "alignof(std::string) has changed");
+#endif // _GLIBCXX_USE_DUAL_ABI || _GLIBCXX_USE_CXX11_ABI
+
+#if _GLIBCXX_USE_CXX11_ABI && ! _GLIBCXX_DEFINING_CXX11_ABI_INSTANTIATIONS
+# define _GLIBCXX_DEFINING_COW_STRING_INSTANTIATIONS 1
+# include <bits/cow_string.h>
+# define basic_string __std_cow_string
+#endif
+
 // Instantiation configuration.
 #ifndef C
 # define C char
@@ -54,12 +83,14 @@ namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
-  typedef basic_string<C> S;
+typedef basic_string<C, std::char_traits<C>, std::allocator<C>> S;
 
-  template class basic_string<C>;
+  template class basic_string<C, std::char_traits<C>, std::allocator<C>>;
+#if ! _GLIBCXX_DEFINING_COW_STRING_INSTANTIATIONS
   template S operator+(const C*, const S&);
   template S operator+(C, const S&);
   template S operator+(const S&, const S&);
+#endif
 
   // Only one template keyword allowed here.
   // See core issue #46 (NAD)
@@ -73,7 +104,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
   template
     S::basic_string(S::iterator, S::iterator, const allocator<C>&);
 
-#if _GLIBCXX_USE_CXX11_ABI
+#if _GLIBCXX_USE_CXX11_ABI && ! _GLIBCXX_DEFINING_COW_STRING_INSTANTIATIONS
   template
     void
     S::_M_construct(S::iterator, S::iterator, forward_iterator_tag);
@@ -91,7 +122,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     void
     S::_M_construct(const C*, const C*, forward_iterator_tag);
 
-#else // !_GLIBCXX_USE_CXX11_ABI
+#else // ! _GLIBCXX_USE_CXX11_ABI || _GLIBCXX_DEFINING_COW_STRING_INSTANTIATIONS
 
   template
     C*
@@ -111,6 +142,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
 
+#if ! _GLIBCXX_DEFINING_COW_STRING_INSTANTIATIONS
 namespace __gnu_cxx _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -121,3 +153,4 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+#endif

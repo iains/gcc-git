@@ -27,8 +27,8 @@
 //
 
 #define _GLIBCXX_USE_CXX11_ABI 0
-#include "sstream-inst.cc"
+#include <bits/c++config.h>
 
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
+#if ! _GLIBCXX_USE_CXX11_ABI
+# include "sstream-inst.cc"
 #endif

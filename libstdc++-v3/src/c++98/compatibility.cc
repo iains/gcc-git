@@ -25,7 +25,8 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
 #include <bits/c++config.h>
 
-#if defined(_GLIBCXX_SYMVER_GNU) && defined(_GLIBCXX_SHARED) \
+#if ! _GLIBCXX_USE_CXX11_ABI \
+    && defined(_GLIBCXX_SYMVER_GNU) && defined(_GLIBCXX_SHARED)	\
     && defined(_GLIBCXX_HAVE_AS_SYMVER_DIRECTIVE)\
     && defined(_GLIBCXX_HAVE_SYMVER_SYMBOL_RENAMING_RUNTIME_SUPPORT)
 #define istreambuf_iterator istreambuf_iteratorXX
@@ -220,7 +221,8 @@ _GLIBCXX_END_NAMESPACE_VERSION
 
 // NB: These symbols renames should go into the shared library only,
 // and only those shared libraries that support versioning.
-#if defined(_GLIBCXX_SYMVER_GNU) && defined(_GLIBCXX_SHARED) \
+#if ! _GLIBCXX_USE_CXX11_ABI \
+    && defined(_GLIBCXX_SYMVER_GNU) && defined(_GLIBCXX_SHARED)	\
     && defined(_GLIBCXX_HAVE_AS_SYMVER_DIRECTIVE) \
     && defined(_GLIBCXX_HAVE_SYMVER_SYMBOL_RENAMING_RUNTIME_SUPPORT)
 
@@ -525,7 +527,7 @@ _GLIBCXX_MATHL_WRAPPER1 (tan, GLIBCXX_3.4);
 #endif
 #endif // _GLIBCXX_LONG_DOUBLE_COMPAT
 
-#endif
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
 #ifdef _GLIBCXX_LONG_DOUBLE_COMPAT
 extern void *_ZTVN10__cxxabiv123__fundamental_type_infoE[];

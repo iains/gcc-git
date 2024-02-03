@@ -25,9 +25,7 @@
 #define _GLIBCXX_USE_CXX11_ABI 1
 #include <string>
 
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
-#endif
+#if _GLIBCXX_USE_CXX11_ABI
 
 #include <tr1/functional>
 namespace std _GLIBCXX_VISIBILITY(default)
@@ -57,3 +55,5 @@ namespace std _GLIBCXX_VISIBILITY(default)
 #endif
   }
 }
+
+#endif // _GLIBCXX_USE_CXX11_ABI

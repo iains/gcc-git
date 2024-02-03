@@ -24,10 +24,7 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
 #include <locale>
 
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
-#endif
-
+#if ! _GLIBCXX_USE_CXX11_ABI
 namespace std _GLIBCXX_VISIBILITY(default)
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -166,6 +163,7 @@ namespace
 #endif
   }
 
+#if _GLIBCXX_USE_DUAL_ABI
 // TODO should be in another file
   string
   locale::name() const
@@ -191,6 +189,8 @@ namespace
       }
     return __ret;
   }
+#endif
 
 _GLIBCXX_END_NAMESPACE_VERSION
 }
+#endif // ! _GLIBCXX_USE_CXX11_ABI

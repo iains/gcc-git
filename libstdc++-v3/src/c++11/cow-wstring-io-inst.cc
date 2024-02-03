@@ -29,13 +29,10 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
 #include <bits/c++config.h>
 
+#if ! _GLIBCXX_USE_CXX11_ABI
 #ifdef _GLIBCXX_USE_WCHAR_T
 #include <ostream>
 #include <istream>
-
-#if ! _GLIBCXX_USE_DUAL_ABI
-# error This file should not be compiled for this configuration.
-#endif
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -60,4 +57,5 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
+#endif
 #endif

@@ -35,8 +35,17 @@
 # define _GLIBCXX_USE_CXX11_ABI 0
 #endif
 
-#include <locale>
+#if _GLIBCXX_USE_CXX11_ABI
+# define _GLIBCXX_BUILD_CXX11_ABI 1
+#else
+# define _GLIBCXX_BUILD_CXX11_ABI 0
+#endif
 
+#include <bits/c++config.h>
+
+#if _GLIBCXX_BUILD_CXX11_ABI == _GLIBCXX_USE_CXX11_ABI
+
+#include <locale>
 // Instantiation configuration.
 #ifndef C
 # define C char
@@ -52,7 +61,7 @@ namespace std _GLIBCXX_VISIBILITY(default)
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   // moneypunct, money_get, and money_put
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   template struct __moneypunct_cache<C, false>;
   template struct __moneypunct_cache<C, true>;
 #endif
@@ -64,7 +73,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CXX11
 _GLIBCXX_END_NAMESPACE_CXX11
 
   // numpunct, numpunct_byname, num_get, and num_put
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   template struct __numpunct_cache<C>;
 #endif
 _GLIBCXX_BEGIN_NAMESPACE_CXX11
@@ -73,7 +82,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CXX11
 _GLIBCXX_END_NAMESPACE_CXX11
 
   // time_get and time_put
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   template class __timepunct<C>;
   template struct __timepunct_cache<C>;
   template class time_put<C, ostreambuf_iterator<C> >;
@@ -97,13 +106,13 @@ _GLIBCXX_END_NAMESPACE_CXX11
   ctype_byname<C>::ctype_byname(const string& __s, size_t __refs)
   : ctype_byname(__s.c_str(), __refs) { }
 
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   inline template class __ctype_abstract_base<C>;
   template class ctype_byname<C>;
 #endif
 
   // codecvt
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   inline template class __codecvt_abstract_base<C, char, mbstate_t>;
   template class codecvt_byname<C, char, mbstate_t>;
 #else
@@ -118,7 +127,7 @@ _GLIBCXX_BEGIN_NAMESPACE_CXX11
 _GLIBCXX_END_NAMESPACE_CXX11
 
 // use_facet and has_facet instantiations
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
 INSTANTIATE_FACET_ACCESSORS(ctype<C>);
 INSTANTIATE_FACET_ACCESSORS(codecvt<C, char, mbstate_t>);
 #endif
@@ -127,14 +136,14 @@ INSTANTIATE_FACET_ACCESSORS(numpunct<C>);
 INSTANTIATE_FACET_ACCESSORS(moneypunct<C, false>);
 // No explicit instantiation of has_facet<moneypunct<C, true>> for some reason.
 INSTANTIATE_USE_FACET      (moneypunct<C, true>);
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
 INSTANTIATE_FACET_ACCESSORS(__timepunct<C>);
 INSTANTIATE_FACET_ACCESSORS(time_put<C>);
 #endif
 INSTANTIATE_FACET_ACCESSORS(time_get<C>);
 INSTANTIATE_FACET_ACCESSORS(messages<C>);
 
-#if ! _GLIBCXX_USE_CXX11_ABI
+#if ! _GLIBCXX_USE_CXX11_ABI || ! _GLIBCXX_USE_DUAL_ABI
   // locale functions.
   template
     C*
@@ -163,3 +172,5 @@ _GLIBCXX_END_NAMESPACE_VERSION
 #if defined _GLIBCXX_LONG_DOUBLE_COMPAT && ! _GLIBCXX_USE_CXX11_ABI
 #include "compatibility-ldbl-facets-aliases.h"
 #endif // _GLIBCXX_LONG_DOUBLE_COMPAT
+
+#endif //  _GLIBCXX_BUILD_CXX11_ABI == _GLIBCXX_USE_CXX11_ABI

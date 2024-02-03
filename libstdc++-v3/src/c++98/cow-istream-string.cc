@@ -27,4 +27,8 @@
 //
 
 #define _GLIBCXX_USE_CXX11_ABI 0
-#include "istream-string.cc"
+#include <bits/c++config.h>
+
+#if ! _GLIBCXX_USE_CXX11_ABI
+# include "istream-string.cc"
+#endif

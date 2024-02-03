@@ -32,9 +32,11 @@
 #ifndef _COW_STRING_H
 #define _COW_STRING_H 1
 
-#if ! _GLIBCXX_USE_CXX11_ABI
-
 #include <ext/atomicity.h> // _Atomic_word, __is_single_threaded
+
+#if _GLIBCXX_USE_CXX11_ABI
+# define basic_string __std_cow_string
+#endif
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -827,6 +829,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       end() const _GLIBCXX_NOEXCEPT
       { return const_iterator(_M_data() + this->size()); }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  Returns a read/write reverse iterator that points to the last
        *  character in the %string.  Iteration is done in reverse element
@@ -898,6 +901,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       crend() const noexcept
       { return const_reverse_iterator(this->begin()); }
 #endif
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
     public:
       // Capacity:
@@ -925,6 +929,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       max_size() const _GLIBCXX_NOEXCEPT
       { return _Rep::_S_max_size; }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  @brief  Resizes the %string to the specified number of characters.
        *  @param  __n  Number of characters the %string should contain.
@@ -1004,6 +1009,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	__resize_and_overwrite(size_type __n, _Operation __op);
 #endif
 
+#endif // ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  Returns the total number of characters that the %string can hold
        *  before needing to allocate more memory.
@@ -1012,6 +1018,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       capacity() const _GLIBCXX_NOEXCEPT
       { return _M_rep()->_M_capacity; }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  @brief  Attempt to preallocate enough memory for specified number of
        *          characters.
@@ -1060,6 +1067,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       clear()
       { _M_mutate(0, this->size(), 0); }
 #endif
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
       /**
        *  Returns true if the %string is empty.  Equivalent to
@@ -1069,6 +1077,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       empty() const _GLIBCXX_NOEXCEPT
       { return this->size() == 0; }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       // Element access:
       /**
        *  @brief  Subscript access to the data contained in the %string.
@@ -1379,6 +1388,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	traits_type::assign(_M_data()[this->size()], __c);
 	_M_rep()->_M_set_length_and_sharable(__len);
       }
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
       /**
        *  @brief  Set value to contents of another string.
@@ -1523,6 +1533,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	}
 #endif // C++17
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  @brief  Insert multiple characters.
        *  @param __p  Iterator referencing location in string to insert at.
@@ -2141,6 +2152,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	  return this->replace(__i1 - begin(), __i2 - __i1, __sv);
 	}
 #endif // C++17
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
     private:
       template<class _Integer>
@@ -2212,6 +2224,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
     public:
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  @brief  Copy substring into C string.
        *  @param __s  C string to copy value into.
@@ -2226,6 +2239,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       */
       size_type
       copy(_CharT* __s, size_type __n, size_type __pos = 0) const;
+#endif
 
       /**
        *  @brief  Swap contents with another string.
@@ -2283,6 +2297,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       get_allocator() const _GLIBCXX_NOEXCEPT
       { return _M_dataplus; }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
       /**
        *  @brief  Find position of a C substring.
        *  @param __s  C string to locate.
@@ -3088,6 +3103,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       contains(const _CharT* __x) const noexcept
       { return __sv_type(this->data(), this->size()).contains(__x); }
 #endif // C++23
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
 # ifdef _GLIBCXX_TM_TS_INTERNAL
       friend void
@@ -3291,6 +3307,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	}
      }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   template<typename _CharT, typename _Traits, typename _Alloc>
     basic_string<_CharT, _Traits, _Alloc>&
     basic_string<_CharT, _Traits, _Alloc>::
@@ -3454,6 +3471,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	   return _M_replace_safe(__pos, __n1, __tmp._M_data(), __n2);
 	 }
      }
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 
   template<typename _CharT, typename _Traits, typename _Alloc>
     void
@@ -3515,6 +3533,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _M_rep()->_M_set_length_and_sharable(__new_size);
     }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   template<typename _CharT, typename _Traits, typename _Alloc>
     void
     basic_string<_CharT, _Traits, _Alloc>::
@@ -3540,6 +3559,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       _M_rep()->_M_dispose(__a);
       _M_data(__tmp);
     }
+#endif
 
   template<typename _CharT, typename _Traits, typename _Alloc>
     void
@@ -3663,6 +3683,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       return __r->_M_refdata();
     }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   template<typename _CharT, typename _Traits, typename _Alloc>
     void
     basic_string<_CharT, _Traits, _Alloc>::
@@ -3676,6 +3697,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 	this->erase(__n);
       // else nothing (in particular, avoid calling _M_mutate() unnecessarily.)
     }
+#endif
 
   template<typename _CharT, typename _Traits, typename _Alloc>
     template<typename _InputIterator>
@@ -3716,6 +3738,7 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
       return *this;
     }
 
+#if ! _GLIBCXX_USE_CXX11_ABI
   template<typename _CharT, typename _Traits, typename _Alloc>
     void
     basic_string<_CharT, _Traits, _Alloc>::
@@ -3797,8 +3820,11 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     }
 #endif // C++11
 
-
+#endif // ! _GLIBCXX_USE_CXX11_ABI
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
-#endif  // ! _GLIBCXX_USE_CXX11_ABI
+
+#if _GLIBCXX_USE_CXX11_ABI
+# undef basic_string
+#endif
 #endif  // _COW_STRING_H

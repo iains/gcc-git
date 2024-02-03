@@ -86,12 +86,8 @@ host_sources_extra = \
 c++locale.cc: ${glibcxx_srcdir}/$(CLOCALE_CC)
 	$(LN_S) ${glibcxx_srcdir}/$(CLOCALE_CC) ./$@ || true
 
-if ENABLE_DUAL_ABI
-cxx11_abi_sources = \
-	cow-istream-string.cc
-else
-cxx11_abi_sources =
-endif
+basic_file.cc: ${glibcxx_srcdir}/$(BASIC_FILE_CC)
+	$(LN_S) ${glibcxx_srcdir}/$(BASIC_FILE_CC) ./$@ || true
 
 if ENABLE_EXTERN_TEMPLATE
 # XTEMPLATE_FLAGS = -fno-implicit-templates
@@ -114,6 +110,7 @@ sources = \
 	mt_allocator.cc \
 	codecvt.cc \
 	complex_io.cc \
+	cow-istream-string.cc \
 	globals_io.cc \
 	hash_tr1.cc \
 	hashtable_tr1.cc \
@@ -136,7 +133,6 @@ sources = \
 	istream-string.cc \
 	streambuf.cc \
 	valarray.cc \
-	${cxx11_abi_sources} \
 	${host_sources} \
 	${host_sources_extra} \
 	${inst_sources} \
