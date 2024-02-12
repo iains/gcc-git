@@ -288,6 +288,10 @@ proc gm2_link_flags { paths } {
     if [istarget "powerpc-*-*"] {
        lappend flags "-mabi=ieeelongdouble"
     }
+    set target_wants_B_option 0
+    if { [istarget *-*-darwin9* ] || [istarget *-*-darwin\[12\]* ] } {
+      set target_wants_B_option 1
+    }
     if { $gccpath == "" } {
       global tool_root_dir
 
@@ -297,22 +301,25 @@ proc gm2_link_flags { paths } {
           append ld_library_path ":${libstdcpp}"
       }
     } else {
-	if [file exists "${gccpath}/lib/libstdc++.a"] {
-	    append ld_library_path ":${gccpath}/lib"
-	}
-	if [file exists "${gccpath}/libstdc++/libstdc++.a"] {
-	    append flags "-L${gccpath}/libstdc++ "
-	    append ld_library_path ":${gccpath}/libstdc++"
-	}
-	if [file exists "${gccpath}/libstdc++-v3/src/.libs/libstdc++.a"] {
-	    append flags " -L${gccpath}/libstdc++-v3/src/.libs "
-	    append ld_library_path ":${gccpath}/libstdc++-v3/src/.libs"
-	}
+      if { [file exists "${gccpath}/libstdc++-v3/src/.libs/libstdc++.a"] ||
+	  [file exists "${gccpath}/libstdc++-v3/src/.libs/libstdc++.${shlib_ext}"] } {
+		if { $target_wants_B_option } {
+		    append flags " -B${gccpath}/libstdc++-v3/src/.libs "
+		} else {
+		    append flags " -L${gccpath}/libstdc++-v3/src/.libs "
+		}
+		append ld_library_path ":${gccpath}/libstdc++-v3/src/.libs"
+      }
+
+	#if [file exists "${gccpath}/libstdc++-v3/src/.libs/libstdc++.a"] {
+	#    append flags " -L${gccpath}/libstdc++-v3/src/.libs "
+	#    append ld_library_path ":${gccpath}/libstdc++-v3/src/.libs"
+	#}
 	# Look for libstdc++.${shlib_ext}.
-	if [file exists "${gccpath}/libstdc++-v3/src/.libs/libstdc++.${shlib_ext}"] {
-	    append flags " -L${gccpath}/libstdc++-v3/src/.libs "
-	    append ld_library_path ":${gccpath}/libstdc++-v3/src/.libs"
-	}
+	#if [file exists "${gccpath}/libstdc++-v3/src/.libs/libstdc++.${shlib_ext}"] {
+	#    append flags " -L${gccpath}/libstdc++-v3/src/.libs "
+	#    append ld_library_path ":${gccpath}/libstdc++-v3/src/.libs"
+	#}
 
 	# puts stderr "${gm2_link_libraries}  before foreach"
 	foreach d [list {*}${gm2_link_libraries}] {
