@@ -2561,7 +2561,6 @@ struct susp_frame_data
   unsigned cond_number;		 /* Which replaced condition in the fn.  */
   /* Temporary values for one statement or expression being analyzed.  */
   hash_set<tree> captured_temps; /* The suspend captured these temps.  */
-  vec<tree, va_gc> *to_replace;  /* The VAR decls to replace.  */
   hash_set<tree> *truth_aoif_to_expand; /* The set of TRUTH exprs to expand.  */
   unsigned saw_awaits;		 /* Count of awaits in this statement  */
   bool captures_temporary;	 /* This expr captures temps by ref.  */
@@ -4472,10 +4471,9 @@ morph_fn_to_coro (tree orig, tree *resumer, tree *destroyer)
      vars) they will get added to the coro frame along with other locals.  */
   susp_frame_data body_aw_points
     = {&field_list, handle_type, fs_label, NULL, NULL, 0, 0,
-       hash_set<tree> (), NULL, NULL, 0, false, false, false};
+       hash_set<tree> (), NULL, 0, false, false, false};
   body_aw_points.block_stack = make_tree_vector ();
   body_aw_points.bind_stack = make_tree_vector ();
-  body_aw_points.to_replace = make_tree_vector ();
   cp_walk_tree (&fnbody, await_statement_walker, &body_aw_points, NULL);
 
   /* 4. Now make space for local vars, this is conservative again, and we
