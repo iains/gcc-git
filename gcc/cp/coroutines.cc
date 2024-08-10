@@ -34,6 +34,209 @@ along with GCC; see the file COPYING3.  If not see
 #include "hash-map.h"
 #include "coroutines.h"
 
+/* ================= Debug. ================= */
+
+#include "langhooks.h"
+#include "langhooks-def.h"  /* For decl_printable_name  */
+#include "cxx-pretty-print.h"
+
+extern void debug_tree (tree);
+
+DEBUG_FUNCTION void
+coro_dump_frame (tree fr)
+{
+  gcc_checking_assert (TREE_CODE (fr) == RECORD_TYPE);
+  if (DECL_NAME (TYPE_NAME (fr)))
+    fprintf (stderr, "%s {\n", IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (fr))));
+  else
+    fprintf (stderr, "huh {\n");
+
+  tree tmp = TYPE_FIELDS (fr);
+  while (tmp)
+    {
+      /* Avoid to print recursively the structure.  */
+      /* FIXME : Not implemented correctly...,
+	 what about the case when we have a cycle in the contain graph? ...
+	 Maybe this could be solved by looking at the scope in which the
+	 structure was declared.  */
+      if (TREE_TYPE (tmp) != fr
+	  && (TREE_CODE (TREE_TYPE (tmp)) != POINTER_TYPE
+	     || TREE_TYPE (TREE_TYPE (tmp)) != fr))
+	{
+	  const char *ty;
+	  if (TYPE_NAME (TREE_TYPE (tmp)))
+	    ty = IDENTIFIER_POINTER (DECL_NAME (TYPE_NAME (TREE_TYPE (tmp))));
+	  else
+	    ty = "<unnamed>";
+	  fprintf (stderr, "%s %s\n", ty,
+		   IDENTIFIER_POINTER (DECL_NAME (tmp)));
+	}
+      tmp = DECL_CHAIN (tmp);
+    }
+  fprintf (stderr, "}\n");
+}
+
+static void
+dump_record_type (cxx_pretty_printer *pp, tree typ)
+{
+  //debug_tree (typ);
+  bool indent = true;
+  pp->type_id (typ);
+  pp_newline_and_indent (pp, 2);
+  pp_string (pp, " {");
+
+  for (tree tmp = TYPE_FIELDS (typ); tmp; tmp = DECL_CHAIN (tmp))
+    {
+      /* Avoid to print recursively the structure.  */
+      /* FIXME : Not implemented correctly...,
+	 what about the case when we have a cycle in the contain graph? ...
+	 Maybe this could be solved by looking at the scope in which the
+	 structure was declared.  */
+      if (TREE_TYPE (tmp) != typ)
+	{
+	  if (indent)
+	    {
+	      pp_newline_and_indent (pp, 2);
+	      indent = false;
+	    }
+	  else
+	    pp_newline_and_indent (pp, 0);
+
+	  switch (TREE_CODE (tmp))
+	    {
+	    case USING_DECL:
+	      pp->statement (tmp); // print using stmt.
+	      break;
+	    case VAR_DECL:
+	    case CONST_DECL:
+	    case TYPE_DECL:
+	      pp->declaration (tmp);
+	      break;
+	    case FIELD_DECL:
+	      if (TREE_TYPE (tmp))
+		pp->type_id (TREE_TYPE (tmp));
+	      else
+		pp_string (pp, "??? ");
+	      pp->direct_declarator (tmp);
+	      break;
+	    case TEMPLATE_DECL:
+	      pp->declaration (tmp);
+	      break;
+	    case FUNCTION_DECL:
+	      pp->declarator (tmp);
+	      break;
+	    default:
+	      debug_tree (tmp);
+	      break;
+	    }
+	}
+    }
+  pp_newline_and_indent (pp, -2);
+  pp_string (pp, "}");
+  pp_newline_and_indent (pp, -2);
+}
+
+static FILE *dmp_str = NULL;
+int coro_dump_id;
+dump_flags_t flags;
+
+static void
+coro_maybe_dump_initial_function (tree fndecl)
+{
+  if (!dmp_str)
+    return;
+
+  bool lambda_p = LAMBDA_TYPE_P (DECL_CONTEXT (fndecl));
+  fprintf (dmp_str, "%s %s original :",
+	   (lambda_p ? "Lambda" : "Function"),
+	    lang_hooks.decl_printable_name (fndecl, 2));
+
+  cxx_pretty_printer pp;
+  pp.set_output_stream (dmp_str);
+  pp.flags = flags;
+
+  bool do_comma = false;
+  for (tree arg = DECL_ARGUMENTS (fndecl); arg != NULL; arg = DECL_CHAIN (arg))
+    {
+      if (do_comma)
+	pp_comma (&pp);
+      else
+	do_comma = true;
+      pp_newline_and_indent (&pp, 0);
+      pp.expression (arg);
+      tree ty = TREE_TYPE (arg);
+      while (POINTER_TYPE_P (ty))
+	{
+	  if (TREE_CODE (ty) == POINTER_TYPE)
+	    pp_star (&pp);
+	  if (TREE_CODE (ty) == REFERENCE_TYPE)
+	    pp_ampersand (&pp);
+	  ty = TREE_TYPE (ty);
+	}
+
+      if (TREE_CODE (ty) == RECORD_TYPE)
+	dump_record_type (&pp, ty);
+    }
+  pp_newline_and_flush (&pp);
+
+  pp.declaration (fndecl);
+  pp_newline_and_flush (&pp);
+}
+
+static void
+coro_maybe_dump_ramp (tree ramp)
+{
+  if (!dmp_str)
+    return;
+
+  cxx_pretty_printer pp;
+  pp.set_output_stream (dmp_str);
+  pp.flags = flags;
+
+  pp_string (&pp, "RAMP");
+  pp_newline_and_indent (&pp, 0);
+  pp.declaration (ramp);
+  pp_newline_and_flush (&pp);
+}
+
+static void
+coro_maybe_dump_transformed_functions (tree actor, tree destroy)
+{
+  if (!dmp_str)
+    return;
+
+  cxx_pretty_printer pp;
+  pp.set_output_stream (dmp_str);
+  pp.flags = flags;
+
+  if (!actor || actor == error_mark_node)
+    {
+      pp_string (&pp, "Transform failed");
+      pp_newline_and_flush (&pp);
+      return;
+    }
+
+  tree frame_type = TREE_TYPE (DECL_ARGUMENTS (actor));
+  if (POINTER_TYPE_P (frame_type))
+      frame_type = TREE_TYPE (frame_type);
+  pp_string (&pp, "FRAME type decl");
+  pp_newline_and_indent (&pp, 0);
+  dump_record_type (&pp, frame_type);
+  pp_newline_and_flush (&pp);
+
+  pp_string (&pp, "ACTOR/RESUMER:");
+  pp_newline_and_indent (&pp, 0);
+  pp.declaration (actor);
+  pp_newline_and_flush (&pp);
+
+  pp_string (&pp, "DESTROYER:");
+  pp_newline_and_indent (&pp, 0);
+  pp.declaration (destroy);
+  pp_newline_and_flush (&pp);
+}
+
+/* ================= END Debug. ================= */
+
 static bool coro_promise_type_found_p (tree, location_t);
 
 /* GCC C++ coroutines implementation.
@@ -5226,6 +5429,10 @@ cp_coroutine_transform::~cp_coroutine_transform ()
 void
 cp_coroutine_transform::apply_transforms ()
 {
+  if (dmp_str == NULL)
+    dmp_str = dump_begin (coro_dump_id, &flags);
+
+  coro_maybe_dump_initial_function (orig_fn_decl);
 
   coroutine_body
     = split_coroutine_body_from_ramp (orig_fn_decl);
@@ -5273,6 +5480,7 @@ cp_coroutine_transform::apply_transforms ()
   frame_type = finish_struct (frame_type, NULL_TREE);
 
   valid_coroutine = build_ramp_function ();
+  coro_maybe_dump_ramp (orig_fn_decl);
 }
 
 /* Having analysed and collected the necessary data we are now in a position
@@ -5291,6 +5499,8 @@ cp_coroutine_transform::finish_transforms ()
 
   current_function_decl = destroyer;
   build_destroy_fn (fn_start, frame_type, destroyer, resumer, inline_p);
+
+  coro_maybe_dump_transformed_functions (resumer, destroyer);
 }
 
 #include "gt-cp-coroutines.h"
