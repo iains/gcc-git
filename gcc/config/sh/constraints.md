@@ -45,8 +45,10 @@
 ;; H: Floating point 1
 ;; Q: pc relative load operand
 ;; Rxx: reserved for exotic register classes.
+;;  Rab: address base register
+;;  Rai: address index register
 ;; Sxx: extra memory constraints
-;;  Sua: unaligned memory address
+;;  Sua: simple or post-inc address (for unaligned load)
 ;;  Sbv: QImode address without displacement
 ;;  Sbw: QImode address with 12 bit displacement
 ;;  Snd: address without displacement
@@ -260,16 +262,36 @@
 	    (match_test "~ival == 64")
 	    (match_test "~ival == 128"))))
 
+;; FIXME: LRA and reload behavior differs in memory constraint handling.
+;;        For LRA memory address constraints need to narrow the register type
+;;        restrictions.  It seems  the address RTX validation is done slightly
+;;        differently.  Remove the non-LRA paths eventually.
+(define_constraint "Rab"
+  "@internal address base register constraint"
+  (ior (and (match_test "sh_lra_p ()")
+	    (match_test "MAYBE_BASE_REGISTER_RTX_P (op, false)"))
+       (and (match_test "!sh_lra_p ()")
+	    (match_code "reg"))))
+
+(define_constraint "Rai"
+  "@internal address index register constraint"
+  (ior (and (match_test "sh_lra_p ()")
+	    (match_test "MAYBE_INDEX_REGISTER_RTX_P (op, false)"))
+       (and (match_test "!sh_lra_p ()")
+	    (match_code "reg"))))
+
 (define_memory_constraint "Sua"
-  "@internal"
-  (and (match_test "memory_operand (op, GET_MODE (op))")
-       (match_test "GET_CODE (XEXP (op, 0)) != PLUS")))
+  "A memory reference that allows simple register or post-inc addressing."
+  (and (match_code "mem")
+       (ior (match_test "satisfies_constraint_Rab (XEXP (op, 0))")
+	    (and (match_code "post_inc" "0")
+	    (match_test "satisfies_constraint_Rab (XEXP (XEXP (op, 0), 0))")))))
 
 (define_memory_constraint "Sdd"
   "A memory reference that uses displacement addressing."
   (and (match_code "mem")
        (match_code "plus" "0")
-       (match_code "reg" "00")
+       (match_test "satisfies_constraint_Rab (XEXP (XEXP (op, 0), 0))")
        (match_code "const_int" "01")))
 
 (define_memory_constraint "Snd"
@@ -281,19 +303,28 @@
   "A memory reference that uses index addressing."
   (and (match_code "mem")
        (match_code "plus" "0")
-       (match_code "reg" "00")
-       (match_code "reg" "01")))
+       (ior (and (match_test "satisfies_constraint_Rab (XEXP (XEXP (op, 0), 0))")
+		 (match_test "satisfies_constraint_Rai (XEXP (XEXP (op, 0), 1))"))
+	    (and (match_test "satisfies_constraint_Rab (XEXP (XEXP (op, 0), 1))")
+		 (match_test "satisfies_constraint_Rai (XEXP (XEXP (op, 0), 0))")))))
 
 (define_memory_constraint "Ssd"
   "A memory reference that excludes index and displacement addressing."
-  (and (match_code "mem")
-       (match_test "! satisfies_constraint_Sid (op)")
-       (match_test "! satisfies_constraint_Sdd (op)")))
+  (ior (and (match_code "mem")
+	    (match_test "! sh_lra_p ()")
+	    (match_test "! satisfies_constraint_Sid (op)")
+	    (match_test "! satisfies_constraint_Sdd (op)"))
+       (and (match_code "mem")
+	    (match_test "sh_lra_p ()")
+	    (ior (match_test "satisfies_constraint_Rab (XEXP (op, 0))")
+		 (and (ior (match_code "pre_dec" "0") (match_code "post_inc" "0"))
+		 (match_test "satisfies_constraint_Rab (XEXP (XEXP (op, 0), 0))"))))))
 
 (define_memory_constraint "Sbv"
   "A memory reference, as used in SH2A bclr.b, bset.b, etc."
-  (and (match_test "MEM_P (op) && GET_MODE (op) == QImode")
-       (match_test "REG_P (XEXP (op, 0))")))
+  (and (match_code "mem")
+       (match_test "GET_MODE (op) == QImode")
+       (match_test "satisfies_constraint_Rab (XEXP (op, 0))")))
 
 (define_memory_constraint "Sbw"
   "A memory reference, as used in SH2A bclr.b, bset.b, etc."
@@ -304,13 +335,17 @@
 (define_memory_constraint "Sra"
   "A memory reference that uses simple register addressing."
   (and (match_code "mem")
-       (match_code "reg" "0")))
+       (match_test "satisfies_constraint_Rab (XEXP (op, 0))")))
+
+(define_memory_constraint "Sgb"
+  "A memory renference that uses GBR addressing."
+  (match_test "gbr_address_mem (op, GET_MODE (op))"))
 
 (define_memory_constraint "Ara"
   "A memory reference that uses simple register addressing suitable for
    gusa atomic operations."
   (and (match_code "mem")
-       (match_code "reg" "0")
+       (match_test "satisfies_constraint_Rab (XEXP (op, 0))")
        (match_test "REGNO (XEXP (op, 0)) != SP_REG")))
 
 (define_memory_constraint "Add"
@@ -319,6 +354,6 @@
   (and (match_code "mem")
        (match_test "GET_MODE (op) == SImode")
        (match_code "plus" "0")
-       (match_code "reg" "00")
+       (match_test "satisfies_constraint_Rab (XEXP (XEXP (op, 0), 0))")
        (match_code "const_int" "01")
        (match_test "REGNO (XEXP (XEXP (op, 0), 0)) != SP_REG")))
