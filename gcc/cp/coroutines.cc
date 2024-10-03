@@ -1967,6 +1967,11 @@ expand_one_await_expression (tree *expr, tree *await_expr, void *d)
 
   /* Use the await_ready() call to test if we need to suspend.  */
   tree ready_cond = TREE_VEC_ELT (awaiter_calls, 0); /* await_ready().  */
+  /* We are about to pass this suspend point.  */
+  tree susp_idx = build_int_cst (short_unsigned_type_node, data->index);
+  tree r = cp_build_init_expr (data->resume_idx, susp_idx);
+  finish_expr_stmt (r);
+
   /* Convert to bool, if necessary.  */
   if (TREE_CODE (TREE_TYPE (ready_cond)) != BOOLEAN_TYPE)
     ready_cond = cp_convert (boolean_type_node, ready_cond,
@@ -1976,10 +1981,6 @@ expand_one_await_expression (tree *expr, tree *await_expr, void *d)
      cases where the ready condition is constant.  */
   ready_cond = invert_truthvalue_loc (loc, ready_cond);
   finish_if_stmt_cond (ready_cond, susp_if);
-
-  tree susp_idx = build_int_cst (short_unsigned_type_node, data->index);
-  tree r = cp_build_init_expr (data->resume_idx, susp_idx);
-  finish_expr_stmt (r);
 
   /* Find out what we have to do with the awaiter's suspend method.
      [expr.await]
