@@ -73,11 +73,15 @@ int lang_specific_extra_outfiles = 0;
 #define COBOL_LIBRARY "gcobol"
 #endif
 
+#define SPEC_FILE "libgcobol.spec"
+
 /* The original argument list and related info is copied here.  */
 static const struct cl_decoded_option *original_options;
 
 /* The new argument list will be built here.  */
 static std::vector<cl_decoded_option>new_opt;
+
+static bool need_libgcobol = true;
 
 // #define NOISY 1
 
@@ -195,13 +199,12 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
 
   // These flags indicate whether we need various libraries
 
-  bool need_libgcobol   = true;
   bool need_libmath     = (MATH_LIBRARY[0] != '\0');
   bool need_libdl       = (DL_LIBRARY[0] != '\0');
   bool need_libstdc     = (STDCPP_LIBRARY[0] != '\0');
   // bool need_libquadmath = (QUADMATH_LIBRARY[0] != '\0');
-  bool need_rdynamic    = true;
-  bool need_allow_multiple_definition = true;
+  bool need_rdynamic    = false;
+  bool need_allow_multiple_definition = false;
 
   // Separate flags for a couple of static libraries
   bool static_libgcobol  = false;
@@ -300,9 +303,17 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
         saw_OPT_PIC = true;
         break;
 
-      case OPT_c:
+	case OPT_c:
         // With this option, no libraries need be loaded
         saw_OPT_c = true;
+        // FALLTHROUGH
+      case OPT_nostdlib:
+      case OPT_nodefaultlibs:
+      case OPT_r:
+      case OPT_S:
+      case OPT_fsyntax_only:
+      case OPT_E:
+        // With these options, no libraries need be loaded
         need_libgcobol   = false;
         need_libmath     = false;
         need_libdl       = false;
@@ -321,21 +332,6 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
           {
           need_allow_multiple_definition = false;
           }
-        break;
-
-      case OPT_nostdlib:
-      case OPT_nodefaultlibs:
-      case OPT_r:
-      case OPT_S:
-      case OPT_fsyntax_only:
-      case OPT_E:
-        // With these options, no libraries need be loaded
-        need_libgcobol   = false;
-        need_libmath     = false;
-        need_libdl       = false;
-        need_libstdc     = false;
-        // need_libquadmath = false;
-        need_rdynamic    = false;
         break;
 
       case OPT_static_libgcobol:
@@ -596,7 +592,7 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
     {
     add_arg_lib(MATH_LIBRARY, static_in_general);
     }
-  if( need_libdl   )
+  if( need_libdl )
     {
     add_arg_lib(DL_LIBRARY, static_in_general);
     }
@@ -658,14 +654,12 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
   *in_decoded_options = new_options;
   }
 
-/*
- * Called before linking.
- * Returns 0 on success and -1 on failure.
- * Unused.
- */
+/* Called before linking.  Returns 0 on success and -1 on failure.  */
 int
-lang_specific_pre_link( void )
-    {
-    return 0;
-    }
+lang_specific_pre_link (void)
+{
+  if (need_libgcobol)
+    do_spec ("%:include(libgcobol.spec)");
 
+  return 0;
+}
