@@ -41,6 +41,9 @@
 #include <unordered_map>
 
 #include "config.h"
+#if !defined (IN_GCC)
+# include "libgcobol-fp.h"
+#endif
 
 #include "ec.h"
 #include "io.h"
