@@ -38,6 +38,8 @@
 #include <locale.h>
 #include <iconv.h>
 
+#include "config.h"
+
 #include "ec.h"
 #include "common-defs.h"
 #include "io.h"

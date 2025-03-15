@@ -27,6 +27,7 @@ gcc_version := $(shell @get_gcc_base_ver@ $(top_srcdir)/../gcc/BASE-VER)
 
 if BUILD_LIBGCOBOL
 toolexeclib_LTLIBRARIES  = libgcobol.la
+toolexeclib_DATA = libgcobol.spec
 endif
 
 ##
@@ -43,17 +44,17 @@ libgcobol_la_SOURCES =				\
 	libgcobol.cc				\
 	valconv.cc
 
-libgcobol_la_LINK = $(LIBTOOL) --mode=link --tag=CXX $(CXX)	\
-		-o libgcobol$(libsuffix).la			\
-		-Wc,-shared-libgcc				\
-		-version-info $(LIBGCOBOL_VERSION)		\
-		-lstdc++					\
-		$(LTLDFLAGS) $(LTLIBICONV) $(LIBM)
+libgcobol_la_LINK = $(CXXLINK) $(libgcobol_la_LDFLAGS)
+version_arg =
+libgcobol_la_LDFLAGS = -version-info $(LIBGCOBOL_VERSION) \
+	$(LTLDFLAGS) $(LIBQUADLIB) $(LTLIBICONV) \
+	$(extra_darwin_ldflags_libgcobol) $(LIBM) \
+	$(version_arg)
 
 WARN_CFLAGS = -W -Wall -Wwrite-strings
 
 # not defined: DEFS, MAX_ERRORS, LTLDFLAGS
-ALL_CXXFLAGS = -I. -I$(srcdir) $(AM_CPPFLAGS) $(DEFS)		\
+ALL_CXXFLAGS = -I. -I$(srcdir) $(AM_CPPFLAGS) $(DEFS) $(LIBQUADINCLUDE) \
 	$(XCFLAGS) $(AM_CXXFLAGS) $(WARN_CFLAGS) $(MAX_ERRORS)	\
 	-DIN_GCC -DIN_TARGET_LIBS -fno-strict-aliasing
 

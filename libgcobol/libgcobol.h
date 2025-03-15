@@ -35,6 +35,25 @@
 #include <map>
 #include <vector>
 
+/* This is messy, but it allows inclusion of the library code in the
+   FE without having to repeat the libquadmath configure there, since
+   we only need to specify the correct type in the interfaces.  */
+#ifndef GCOB_FP128
+# if __LDBL_MANT_DIG__ == 113 && __LDBL_MIN_EXP__ == -16381
+// long double is ieee754 128b.
+#   define GCOB_FP128 long double
+# elif __FLT128_MANT_DIG__ == 113 && __FLT128_MIN_EXP__ == -16381 \
+      && defined(USE_IEC_60559) 
+// We have libc/libm ieee754 128b.
+#  define GCOB_FP128 _Float128
+# elif __FLT128_MANT_DIG__ == 113 && __FLT128_MIN_EXP__ == -16381
+// We are using libquadmath.
+#  define GCOB_FP128 __float128
+# else
+#  error "(at present) libgcobol requires a ieee754 floating type"
+# endif
+#endif
+
 #define MIN_FIELD_BLOCK_SIZE (16)
 
 // RUNTIME structures *must* match the ones created in structs.c and initialized
@@ -207,7 +226,7 @@ extern "C" void __gg__int128_to_field(cblc_field_t   *tgt,
                                       enum cbl_round_t  rounded,
                                       int            *compute_error);
 extern "C" void __gg__float128_to_field(cblc_field_t   *tgt,
-                                        _Float128       value,
+                                        GCOB_FP128       value,
                                         enum cbl_round_t  rounded,
                                       int            *compute_error);
 extern "C" void __gg__int128_to_qualified_field(cblc_field_t   *tgt,
@@ -219,7 +238,7 @@ extern "C" void __gg__int128_to_qualified_field(cblc_field_t   *tgt,
                                 int            *compute_error);
 extern "C" void __gg__float128_to_qualified_field(cblc_field_t   *tgt,
                                   size_t          tgt_offset,
-                                  _Float128       value,
+                                  GCOB_FP128       value,
                                   enum cbl_round_t  rounded,
                                   int            *compute_error);
 
@@ -231,7 +250,7 @@ extern "C" char __gg__get_decimal_point();
 extern "C" char * __gg__get_default_currency_string();
 
 extern "C" void __gg__clock_gettime(clockid_t clk_id, struct timespec *tp);
-extern "C" _Float128 __gg__float128_from_location(cblc_field_t *var,
+extern "C" GCOB_FP128 __gg__float128_from_location(cblc_field_t *var,
                                                   unsigned char *location);
 extern "C" void __gg__adjust_dest_size(cblc_field_t *dest, size_t ncount);
 #define MINIMUM_ALLOCATION_SIZE 16
@@ -244,7 +263,7 @@ extern "C" __int128 __gg__binary_value_from_qualified_field(int        *rdigits,
                                                             cblc_field_t *var,
                                                             size_t     offset,
                                                             size_t     size);
-extern "C"  _Float128 __gg__float128_from_qualified_field(cblc_field_t *field,
+extern "C"  GCOB_FP128 __gg__float128_from_qualified_field(cblc_field_t *field,
                                                           size_t offset,
                                                           size_t size);
 extern "C"  __int128 __gg__integer_from_qualified_field(cblc_field_t *var,

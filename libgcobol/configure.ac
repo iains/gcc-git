@@ -216,6 +216,7 @@ AM_CONDITIONAL([ENABLE_DARWIN_AT_RPATH], [test x$enable_darwin_at_rpath = xyes])
 AC_SUBST(enable_shared)
 AC_SUBST(enable_static)
 
+
 if test "${multilib}" = "yes"; then
   multilib_arg="--enable-multilib"
 else
@@ -235,13 +236,6 @@ AC_PROG_CC
 m4_rename_force([real_PRECIOUS],[_AC_ARG_VAR_PRECIOUS])
 
 AC_SUBST(CFLAGS)
-
-CC_FOR_BUILD=${CC_FOR_BUILD:-gcc}
-AC_SUBST(CC_FOR_BUILD)
-
-AC_SEARCH_LIBS([malloc], [c])
-AC_SEARCH_LIBS([cosf], [m])
-AC_SEARCH_LIBS([clock_gettime], [rt])
 
 # Add dependencies for libgcobol.spec file
 SPEC_LIBGCOBOL_DEPS="$LIBS"
@@ -270,9 +264,49 @@ AC_SUBST(extra_darwin_ldflags_libgcobol)
 # For iconv support.
 AM_ICONV
 
+AC_CHECK_HEADERS_ONCE(floatingpoint.h ieeefp.h fenv.h fptrap.h \
+complex.h stdlib.h)
+
+# Some functions we check to figure out if the libc Float128 support
+# is adequate.
+
+# These are C23.
+AC_CHECK_FUNCS_ONCE(strfromf32 strfromf64)
+
+# These are GLIBC
+AC_CHECK_FUNCS_ONCE(strtof128 strfromf128)
+GCC_CHECK_MATH_FUNC([cacosf128])
+GCC_CHECK_MATH_FUNC([sinf128])
+
+have_iec_60559_libc_support=no
+if test "x$ac_cv_func_strtof128$ac_cv_func_strfromf128" = xyesyes \
+   && test "x$gcc_cv_math_func_sinf128$gcc_cv_math_func_cacosf128" = xyesyes; then
+  have_iec_60559_libc_support=yes
+fi
+
+# Check whether libquadmath should be used
+AC_ARG_ENABLE(libquadmath-support,
+AS_HELP_STRING([--disable-libquadmath-support],
+  [disable libquadmath support for libgcobol]),
+ENABLE_LIBQUADMATH_SUPPORT=$enableval,
+if test "x$have_iec_60559_libc_support" = xyes; then
+  ENABLE_LIBQUADMATH_SUPPORT=default
+else
+  ENABLE_LIBQUADMATH_SUPPORT=yes
+fi)
+enable_libquadmath_support=
+if test "${ENABLE_LIBQUADMATH_SUPPORT}" = "no" ; then
+  enable_libquadmath_support=no
+elif test "${ENABLE_LIBQUADMATH_SUPPORT}" = "default" ; then
+  enable_libquadmath_support=default
+fi
+LIBGCOBOL_CHECK_FLOAT128
+
 AC_CONFIG_SRCDIR([Makefile.am])
-AC_CONFIG_FILES([Makefile])
-####AC_CONFIG_FILES(libgcobol.spec)
+AC_CONFIG_FILES([
+Makefile
+libgcobol.spec
+])
 
 AC_MSG_NOTICE([libgcobol has been configured.])
 
