@@ -195,6 +195,9 @@ case $host in
 esac
 AC_SUBST(extra_ldflags_libgcobol)
 
+# These are GLIBC
+AC_CHECK_FUNCS_ONCE(random_r srandom_r initstate_r setstate_r)
+
 if test "${multilib}" = "yes"; then
   multilib_arg="--enable-multilib"
 else
