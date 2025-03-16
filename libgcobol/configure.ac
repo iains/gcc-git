@@ -278,6 +278,9 @@ AC_CHECK_FUNCS_ONCE(strtof128 strfromf128)
 GCC_CHECK_MATH_FUNC([cacosf128])
 GCC_CHECK_MATH_FUNC([sinf128])
 
+# These are GLIBC
+AC_CHECK_FUNCS_ONCE(random_r srandom_r initstate_r setstate_r)
+
 have_iec_60559_libc_support=no
 if test "x$ac_cv_func_strtof128$ac_cv_func_strfromf128" = xyesyes \
    && test "x$gcc_cv_math_func_sinf128$gcc_cv_math_func_cacosf128" = xyesyes; then
