@@ -6971,9 +6971,10 @@ section_kw:     SECTION
                 {
                   if( $1 ) {
 		    if( *$1 == '-' ) {
-		      error_msg(@1, "SECTION segment %s is negative", $1);
+		      error_msg(@1, "SECTION segment '%s' is negative", $1);
                     } else {
-                      cbl_unimplementedw("SECTION segment %s was ignored", $1);
+                      //cbl_unimplementedw("SECTION segment '%s' was ignored", $1);
+                      error_msg(@1, "SECTION segment '%s' was ignored", $1);
                     }
 		  }
                 }
