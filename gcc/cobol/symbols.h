@@ -48,19 +48,17 @@
 
 #define PICTURE_MAX 64
 
-#if ! (__HAVE_FLOAT128 && __GLIBC_USE (IEC_60559_TYPES_EXT))
-static_assert( sizeof(output) == sizeof(long double), "long doubles?" );
+#if !defined (HAVE_STRTOF128)
+# if __SIZEOF_LONG_DOUBLE__ == 16
 
 static inline _Float128
-strtof128 (const char *__restrict __nptr, char **__restrict __endptr) {
-  return strtold(nptr, endptr);
+strtof128(const char *__restrict __nptr, char **__restrict __endptr) {
+  return strtold(__nptr, __endptr);
 }
 
-static inline int
-strfromf128 (char *restrict string, size_t size,
-            const char *restrict format, _Float128 value) {
-  return  strfroml(str, n, format, fp);
-}
+# else
+#  error "We do not have support for a 128 long double"
+# endif
 #endif
 
 extern const char *numed_message;

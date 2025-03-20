@@ -2099,6 +2099,12 @@
 #endif
 
 
+/* Define to 1 if you have the `strtof128' function. */
+#ifndef USED_FOR_TARGET
+#undef HAVE_STRTOF128
+#endif
+
+
 /* Define if <sys/times.h> defines struct tms. */
 #ifndef USED_FOR_TARGET
 #undef HAVE_STRUCT_TMS
