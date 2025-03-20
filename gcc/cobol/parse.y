@@ -831,7 +831,7 @@
     bool boolean;
     int number;
     char *string;
-    _Float128 float128;  // Hope springs eternal: 28 Mar 2023
+    REAL_VALUE_TYPE float128;  // Hope springs eternal: 28 Mar 2023
     literal_t literal;
     cbl_field_attr_t field_attr;
     ec_type_t ec_type;
@@ -1333,19 +1333,25 @@
       return strlen(lit.data) == lit.len? lit.data : NULL;
   }
 
-  static inline char * string_of( _Float128 cce ) {
-      static const char empty[] = "", format[] = "%.32E";
+  static inline char * string_of( const REAL_VALUE_TYPE &cce ) {
+      //static const char empty[] = "", format[] = "%.32E";
       char output[64];
-      int len = strfromf128 (output, sizeof(output), format, cce);
-      if( sizeof(output) < size_t(len) ) {
-          dbgmsg("string_of: value requires %d digits (of %zu)",
-		len, sizeof(output));
-          return xstrdup(empty);
-      }
+      //int len = strfromf128 (output, sizeof(output), format, cce);
+      real_to_decimal (output, &cce, sizeof (output), 32, 0);
+      // ???  real_to_decimal asserts that output is large enough
+      //if( sizeof(output) < size_t(len) ) {
+      //    dbgmsg("string_of: value requires %d digits (of %zu)",
+      //	len, sizeof(output));
+      //    return xstrdup(empty);
+      //}
 
       char decimal = symbol_decimal_point();
       std::replace(output, output + strlen(output), '.', decimal);
       return xstrdup(output);
+  }
+
+  static inline char * string_of( tree cce ) {
+      return string_of (TREE_REAL_CST (cce));
   }
 
   cbl_field_t *
@@ -3104,7 +3110,8 @@ field:          cdf
 
                   // Format data.initial per picture
                   if( 0 == pristine_values.count(field.data.initial) ) {
-                    if( field.data.digits > 0 && field.data.value_of() != 0.0 ) {
+                    if( field.data.digits > 0
+			&& !real_zerop (field.data.value_of()) ) {
                       char *initial;
                       int rdigits = field.data.rdigits < 0?
                                     1 : field.data.rdigits + 1;
@@ -3151,7 +3158,8 @@ occurs_clause:  OCCURS cardinal_lb             indexed
 		  }
                   cbl_occurs_t *occurs = &current_field()->occurs;
                   occurs->bounds.lower =
-                  occurs->bounds.upper = $name->data.value_of();
+                  occurs->bounds.upper =
+		   real_to_integer (TREE_REAL_CST_PTR ($name->data.value_of()));
 		}
                 ;
 cardinal_lb:    cardinal times {
@@ -3305,9 +3313,12 @@ data_descr:     data_descr1
                 ;
 
 const_value:    cce_expr
-        |       BYTE_LENGTH of name { $$ = $name->data.capacity; }
-        |       LENGTH      of name { $$ = $name->data.capacity; }
-        |       LENGTH_OF   of name { $$ = $name->data.capacity; }
+        |       BYTE_LENGTH of name { real_from_integer (&$$, VOIDmode,
+                                               $name->data.capacity, SIGNED); }
+        |       LENGTH      of name { real_from_integer (&$$, VOIDmode,
+                                               $name->data.capacity, SIGNED); }
+        |       LENGTH_OF   of name { real_from_integer (&$$, VOIDmode,
+                                               $name->data.capacity, SIGNED); }
                 ;
 
 value78:        literalism
@@ -3320,7 +3331,7 @@ value78:        literalism
         |       const_value
                 {
                   cbl_field_data_t data = {};
-		  data = $1;
+		  data = build_real (float128_type_node, $1);
                   $$ = new cbl_field_data_t(data);
                 }
         |       true_false
@@ -3349,10 +3360,10 @@ data_descr1:    level_name
                   field.attr |= constant_e;
                   if( $is_global ) field.attr |= global_e;
                   field.type = FldLiteralN;
-                  field.data = $const_value;
+		  field.data = build_real (float128_type_node, $const_value);
                   field.data.initial = string_of($const_value);
 
-                  if( !cdf_value(field.name, static_cast<int64_t>($const_value)) ) {
+                  if( !cdf_value(field.name, real_to_integer (&$const_value)) ) {
                     error_msg(@1, "%s was defined by CDF", field.name);
                   }
                 }
@@ -3412,7 +3423,7 @@ data_descr1:    level_name
                     field.type = FldLiteralN;
                     field.data.initial = string_of(field.data.value_of());
                     if( !cdf_value(field.name,
-                                   static_cast<int64_t>(field.data.value_of())) ) {
+                                   real_to_integer(TREE_REAL_CST_PTR (field.data.value_of()))) ) {
                       yywarn("%s was defined by CDF", field.name);
                     }
                   }
@@ -4126,7 +4137,11 @@ count:          %empty           { $$ = 0; }
 		  if( e ) { // verify not floating point with nonzero fraction
 		    auto field = cbl_field_of(e);
 		    assert(is_literal(field));
-		    if( field->data.value_of() != size_t(field->data.value_of()) ) {
+		    REAL_VALUE_TYPE vi;
+		    HOST_WIDE_INT vii = real_to_integer (TREE_REAL_CST_PTR (field->data.value_of()));
+		    real_from_integer (&vi, VOIDmode, vii, SIGNED);
+		    if( !real_identical (TREE_REAL_CST_PTR (field->data.value_of()),
+				         &vi) ) {
 		      nmsg++;
 		      error_msg(@NAME, "invalid PICTURE count '(%s)'",
 				field->data.initial );
@@ -4315,10 +4330,11 @@ value_clause:   VALUE all LITERAL[lit] {
         |       VALUE all cce_expr[value] {
                   cbl_field_t *field = current_field();
                   auto orig_str = original_number();
-                  auto orig_val = numstr2i(orig_str, decimal_e);
+		  REAL_VALUE_TYPE orig_val;
+		  real_from_string (&orig_val, orig_str);
                   char *initial = NULL;
 
-                  if( orig_val == $value ) {
+                  if( real_identical (&orig_val, &$value) ) {
                     initial = orig_str;
                     pristine_values.insert(initial);
                   } else {
@@ -4330,7 +4346,7 @@ value_clause:   VALUE all LITERAL[lit] {
                   std::replace(initial, initial + strlen(initial), '.', decimal);
 
                   field->data.initial = initial;
-                  field->data = $value;
+                  field->data = build_real (float128_type_node, $value);
 
                   if( $all ) field_value_all(field);
                 }
@@ -5241,7 +5257,8 @@ allocate:       ALLOCATE expr[size] CHARACTERS initialized RETURNING scalar[retu
                 {
                   statement_begin(@1, ALLOCATE);
                   if( $size->field->type == FldLiteralN ) {
-                    if( $size->field->data.value_of() <= 0 ) {
+                    if( real_isneg (TREE_REAL_CST_PTR ($size->field->data.value_of()))
+		        || real_iszero (TREE_REAL_CST_PTR ($size->field->data.value_of())) ) {
                       error_msg(@size, "size must be greater than 0");
                       YYERROR;
                     }
@@ -6658,10 +6675,18 @@ move_tgt:	scalar[tgt] {
 		  const auto& field(*$1);
 		  static char buf[32];
 		  const char *value_str( name_of($literal) );
-		  if( is_numeric($1) &&
-		      float(field.data.value_of()) == int(field.data.value_of()) ) {
-		    sprintf(buf, "%d", int(field.data.value_of()));
-		    value_str = buf;
+		  if( is_numeric($1) )
+		  {
+		    REAL_VALUE_TYPE val = TREE_REAL_CST (field.data.value_of());
+		    int ival = (int)real_to_integer (&val);
+		    val = real_value_truncate (TYPE_MODE (float_type_node),
+					       val);
+		    REAL_VALUE_TYPE rival;
+		    real_from_integer (&rival, VOIDmode, ival, SIGNED);
+		    if( real_identical (&val, &rival) ) {
+		      sprintf(buf, "%d", ival);
+		      value_str = buf;
+		    }
 		  }
 		  auto litcon = field.name[0] == '_'? "literal" : "constant";
 		  error_msg(@literal, "%s is a %s", value_str, litcon);
@@ -6885,27 +6910,19 @@ num_value:      scalar // might actually be a string
 /*              ; */
 
 cce_expr:       cce_factor
-        |       cce_expr '+' cce_expr { $$ = $1 + $3; }
-        |       cce_expr '-' cce_expr { $$ = $1 - $3; }
-        |       cce_expr '*' cce_expr { $$ = $1 * $3; }
-        |       cce_expr '/' cce_expr { $$ = $1 / $3; }
+        |       cce_expr '+' cce_expr { real_arithmetic (&$$, PLUS_EXPR, &$1, &$3); }
+        |       cce_expr '-' cce_expr { real_arithmetic (&$$, MINUS_EXPR, &$1, &$3); }
+        |       cce_expr '*' cce_expr { real_arithmetic (&$$, MULT_EXPR, &$1, &$3); }
+        |       cce_expr '/' cce_expr { real_arithmetic (&$$, RDIV_EXPR, &$1, &$3); }
         |                '+' cce_expr %prec NEG { $$ =  $2; }
-        |                '-' cce_expr %prec NEG { $$ = -$2; }
+        |                '-' cce_expr %prec NEG { $$ = real_value_negate (&$2); }
         |                '(' cce_expr ')'  { $$ = $2; }
         ;
 
 cce_factor:     NUMSTR {
-                 /*
-                  * As of March 2023, glibc printf does not deal with
-                  * __int128_t.  The below assertion is not required.  It
-                  * serves only remind us we're far short of the precision
-                  * required by ISO.
-                  */
-                  static_assert( sizeof($$) == sizeof(_Float128),
-                                 "quadmath?" );
-                  static_assert( sizeof($$) == 16,
-                                 "long doubles?" );
-                  $$ = numstr2i($1.string, $1.radix);
+                  /* ???  real_from_string does not allow arbitrary radix.  */
+                  // $$ = numstr2i($1.string, $1.radix);
+		  real_from_string (&$$, $1.string);
                 }
                 ;
 
@@ -12861,7 +12878,7 @@ literal_refmod_valid( YYLTYPE loc, const cbl_refer_t& r ) {
   if( ! is_literal(refmod.from->field) ) {
     if( ! refmod.len ) return true;
     if( ! is_literal(refmod.len->field) ) return true;
-    auto edge = refmod.len->field->data.value_of();
+    auto edge = real_to_integer (TREE_REAL_CST_PTR (refmod.len->field->data.value_of()));
     if( 0 < edge ) {
       if( --edge < r.field->data.capacity ) return true;
     }
@@ -12875,13 +12892,14 @@ literal_refmod_valid( YYLTYPE loc, const cbl_refer_t& r ) {
     return false;
   }
 
-  if( refmod.from->field->data.value_of() > 0 ) {
-    auto edge = refmod.from->field->data.value_of();
+  auto edge = real_to_integer (TREE_REAL_CST_PTR (refmod.from->field->data.value_of()));
+  if( edge > 0 ) {
     if( --edge < r.field->data.capacity ) {
       if( ! refmod.len ) return true;
       if( ! is_literal(refmod.len->field) ) return true;
-      if( refmod.len->field->data.value_of() > 0 ) {
-	edge += refmod.len->field->data.value_of();
+      auto len = real_to_integer (TREE_REAL_CST_PTR (refmod.len->field->data.value_of()));
+      if( len > 0 ) {
+	edge += len;
 	if( --edge < r.field->data.capacity ) return true;
       }
       // len < 0 or not: 0 < from + len <= capacity
@@ -12889,8 +12907,8 @@ literal_refmod_valid( YYLTYPE loc, const cbl_refer_t& r ) {
       error_msg(loc, "%s(%zu:%zu) out of bounds, "
 		"size is %u",
 		r.field->name,
-		size_t(refmod.from->field->data.value_of()),
-		size_t(refmod.len->field->data.value_of()),
+		size_t(real_to_integer (TREE_REAL_CST_PTR (refmod.from->field->data.value_of()))),
+		size_t(len),
 		static_cast<unsigned int>(r.field->data.capacity) );
       return false;
     }

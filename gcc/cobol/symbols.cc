@@ -4510,15 +4510,20 @@ cbl_occurs_t::subscript_ok( const cbl_field_t *subscript ) const {
   // It must be a number.
   if( subscript->type != FldLiteralN ) return false;
 
-  auto sub = subscript->data.value_of();
+  // ???  This only gets us int64_t
+  auto sub = real_to_integer (TREE_REAL_CST_PTR (subscript->data.value_of()));
+  REAL_VALUE_TYPE csub;
+  real_from_integer (&csub, VOIDmode, sub, SIGNED);
 
-  if( sub < 1 || sub != size_t(sub) ) {
+  if( sub < 1
+      || !real_identical (&csub,
+			  TREE_REAL_CST_PTR (subscript->data.value_of())) ) {
     return false; // zero/fraction invalid
   }
   if( bounds.fixed_size() ) {
-    return sub <= bounds.upper;
+    return (size_t)sub <= bounds.upper;
   }
-  return bounds.lower <= sub && sub <= bounds.upper;
+  return bounds.lower <= (size_t)sub && (size_t)sub <= bounds.upper;
 }
 
 cbl_file_key_t::

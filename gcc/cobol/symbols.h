@@ -265,9 +265,9 @@ struct cbl_field_data_t {
       val88_t() : false_value(NULL), domain(NULL) {}
     } val88;
     struct cbl_upsi_mask_t *upsi_mask;
-    _Float128 value;
+    tree value;
 
-    explicit etc_t( double v = 0.0 ) : value(v) {}
+    explicit etc_t( tree v = build_zero_cst (float128_type_node)) : value(v) {}
   } etc;
 
   cbl_field_data_t( uint32_t memsize=0,  uint32_t capacity=0 )
@@ -278,7 +278,7 @@ struct cbl_field_data_t {
     , initial(0)
     , picture(0)
     , etc_type(value_e)
-    , etc(0)
+    , etc()
   {}
 
   cbl_field_data_t( uint32_t memsize,  uint32_t capacity,
@@ -292,7 +292,7 @@ struct cbl_field_data_t {
     , initial(initial)
     , picture(picture)
     , etc_type(value_e)
-    , etc(0)
+    , etc()
   {}
 
   cbl_field_data_t( const cbl_field_data_t& that ) {
@@ -323,14 +323,14 @@ struct cbl_field_data_t {
     etc_type = upsi_e;
     return etc.upsi_mask = mask;
   }
-  _Float128 value_of() const {
+  tree value_of() const {
     if( etc_type != value_e ) {
       dbgmsg("%s:%d: type is %s", __func__, __LINE__, etc_type_str());
     }
 ////    assert(etc_type == value_e);
     return etc.value;
   } 
-  _Float128& operator=( _Float128 v) {
+  tree& operator=( tree v) {
     etc_type = value_e;
     return etc.value = v;
   } 
@@ -358,12 +358,17 @@ struct cbl_field_data_t {
 
     char *pend = NULL;
     
-    etc.value = strtof128(input.c_str(), &pend);
+    strtof128(input.c_str(), &pend);
 
     if( pend != input.c_str() + len ) {
       dbgmsg("%s: error: could not interpret '%s' of '%s' as a number",
              __func__, pend, initial);
     }
+
+    REAL_VALUE_TYPE r;
+    real_from_string (&r, input.c_str());
+    r = real_value_truncate (TYPE_MODE (float128_type_node), r);
+    etc.value = build_real (float128_type_node, r);
     return *this;
   }
   cbl_field_data_t& valify( const char *input ) {
@@ -556,7 +561,7 @@ struct cbl_field_t {
 
     if( ! (is_typedef || that.type == FldClass) ) {
       data.initial = NULL;
-      data = _Float128(0.0);
+      data = build_zero_cst (float128_type_node);
     }
     return *this;
   }
