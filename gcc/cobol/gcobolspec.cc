@@ -198,8 +198,8 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
   bool need_libdl       = (DL_LIBRARY[0] != '\0');
   bool need_libstdc     = (STDCPP_LIBRARY[0] != '\0');
   // bool need_libquadmath = (QUADMATH_LIBRARY[0] != '\0');
-  bool need_rdynamic    = true;
-  bool need_allow_multiple_definition = true;
+  bool need_rdynamic    = false;
+  bool need_allow_multiple_definition = false;
 
   // Separate flags for a couple of static libraries
   bool static_libgcobol  = false;
@@ -298,9 +298,17 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
         saw_OPT_PIC = true;
         break;
 
-      case OPT_c:
+	case OPT_c:
         // With this option, no libraries need be loaded
         saw_OPT_c = true;
+        // FALLTHROUGH
+      case OPT_nostdlib:
+      case OPT_nodefaultlibs:
+      case OPT_r:
+      case OPT_S:
+      case OPT_fsyntax_only:
+      case OPT_E:
+        // With these options, no libraries need be loaded
         need_libgcobol   = false;
         need_libdl       = false;
         need_libstdc     = false;
@@ -318,20 +326,6 @@ lang_specific_driver (struct cl_decoded_option **in_decoded_options,
           {
           need_allow_multiple_definition = false;
           }
-        break;
-
-      case OPT_nostdlib:
-      case OPT_nodefaultlibs:
-      case OPT_r:
-      case OPT_S:
-      case OPT_fsyntax_only:
-      case OPT_E:
-        // With these options, no libraries need be loaded
-        need_libgcobol   = false;
-        need_libdl       = false;
-        need_libstdc     = false;
-        // need_libquadmath = false;
-        need_rdynamic    = false;
         break;
 
       case OPT_static_libgcobol:
