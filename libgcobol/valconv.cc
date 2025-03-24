@@ -35,6 +35,8 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include "config.h"
+
 #include "ec.h"
 #include "common-defs.h"
 #include "charmaps.h"

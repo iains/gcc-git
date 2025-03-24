@@ -40,6 +40,8 @@
 #include <algorithm>
 #include <unordered_map>
 
+#include "config.h"
+
 #include "ec.h"
 #include "io.h"
 #include "common-defs.h"
