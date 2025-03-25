@@ -198,6 +198,9 @@ AC_SUBST(extra_ldflags_libgcobol)
 # These are GLIBC
 AC_CHECK_FUNCS_ONCE(random_r srandom_r initstate_r setstate_r)
 
+# These are C23, and might not be available in libc.
+AC_CHECK_FUNCS_ONCE(strfromf32 strfromf64)
+
 if test "${multilib}" = "yes"; then
   multilib_arg="--enable-multilib"
 else
