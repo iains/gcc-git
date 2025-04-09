@@ -54,20 +54,19 @@
 #include "libgcobol.h"
 #include "charmaps.h"
 
-
-#if !defined (HAVE_STRTOF128)
-# if USE_QUADMATH
-#  define strtof128 strtoflt128
-# else
-#  error "no available string to float 128"
-# endif
-#endif
-
 #pragma GCC diagnostic ignored "-Wformat-truncation"
 
 #define JD_OF_1601_01_02 2305812.5
 
-#define WEIRD_TRANSCENDENT_RETURN_VALUE (0.0Q)
+#if defined (GCOB_FP128_LD)
+# define WEIRD_TRANSCENDENT_RETURN_VALUE (0.0L)
+#elif defined (GCOB_FP128_F128)
+# define WEIRD_TRANSCENDENT_RETURN_VALUE (0.0F128)
+#elif defined (GCOB_FP128_Q)
+# define WEIRD_TRANSCENDENT_RETURN_VALUE (0.0Q)
+#else
+# define WEIRD_TRANSCENDENT_RETURN_VALUE (0.0)
+#endif
 #define NO_RDIGITS (0)
 
 struct cobol_tm

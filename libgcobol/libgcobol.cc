@@ -93,20 +93,6 @@ strfromf64 (char *s, size_t n, const char *f, double v)
 # endif
 #endif
 
-#if !defined (HAVE_STRFROMF128)
-# if !USE_QUADMATH
-#  error "no available float 128 to string"
-# endif
-#endif
-
-#if !defined (HAVE_STRTOF128)
-# if USE_QUADMATH
-#  define strtof128 strtoflt128
-# else
-#  error "no available string to float 128"
-# endif
-#endif
-
 // This couldn't be defined in symbols.h because it conflicts with a LEVEL66
 // in parse.h
 #define LEVEL66 (66)
@@ -3265,8 +3251,14 @@ format_for_display_internal(char **dest,
           // on a 16-bit boundary.
           GCOB_FP128 floatval;
           memcpy(&floatval, actual_location, 16);
-#if !defined (HAVE_STRFROMF128) && USE_QUADMATH
+#if !defined (HAVE_STRFROMF128)
+# if defined (GCOB_FP128_LD)
+          snprintf(ach, sizeof(ach), "%.36LE", floatval);
+# elif defined (USE_QUADMATH)
           quadmath_snprintf(ach, sizeof(ach), "%.36QE", floatval);
+# else
+#  error "no supported print for 128b floats"
+# endif
 #else
           strfromf128(ach, sizeof(ach), "%.36E", floatval);
 #endif
@@ -3291,9 +3283,16 @@ format_for_display_internal(char **dest,
 
               int precision = 36 - exp;
               char achFormat[24];
-#if !defined (HAVE_STRFROMF128) && USE_QUADMATH
+#if !defined (HAVE_STRFROMF128)
+# if defined (GCOB_FP128_LD)
+              sprintf(achFormat, "%%.%dLf", precision);
+              snprintf(ach, sizeof(ach), achFormat, floatval);
+# elif defined (USE_QUADMATH)
               sprintf(achFormat, "%%.%dQf", precision);
               quadmath_snprintf(ach, sizeof(ach), achFormat, floatval);
+# else
+#  error "no supported print for 128b floats"
+# endif
 #else
               sprintf(achFormat, "%%.%df", precision);
               strfromf128(ach, sizeof(ach), achFormat, floatval);

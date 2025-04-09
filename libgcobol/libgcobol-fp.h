@@ -25,17 +25,20 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 
 #if __LDBL_MANT_DIG__ == 113 && __LDBL_MIN_EXP__ == -16381
 // Use long double, l suffix on calls, l or L suffix in literals
+# define GCOB_FP128_LD
 # define GCOB_FP128 long double
 # define GCOB_FP128_LITERAL(lit) (lit ## l)
 # define FP128_FUNC(funcname) funcname ## l
 #elif __FLT128_MANT_DIG__ == 113 && __FLT128_MIN_EXP__ == -16381 \
      && defined(USE_IEC_60559)
 // Use _Float128, f128 suffix on calls, f128 or F128 suffix on literals
+# define GCOB_FP128_F128
 # define GCOB_FP128 _Float128
 # define GCOB_FP128_LITERAL(lit) (lit ## f128)
 # define FP128_FUNC(funcname) funcname ## f128
 #elif __FLT128_MANT_DIG__ == 113 && __FLT128_MIN_EXP__ == -16381
 // Use __float128, q suffix on calls, q or Q suffix on literals
+# define GCOB_FP128_Q
 # define GCOB_FP128 __float128
 # define GCOB_FP128_LITERAL(lit) (lit ## q)
 # define FP128_FUNC(funcname) funcname ## q
@@ -47,4 +50,20 @@ see the files COPYING3 and COPYING.RUNTIME respectively.  If not, see
 /* We will assume that unless we found the 128 to/from string and some
    representative trig functions, we need libquadmath to support those.  */
 # include "quadmath.h"
+#endif
+
+#if !defined (HAVE_STRTOF128)
+# if USE_QUADMATH
+#  define strtof128 strtoflt128
+# elif defined (GCOB_FP128_LD)
+#  define strtof128 strtold
+# else
+#  error "no available string to float 128"
+# endif
+#endif
+
+#if !defined (HAVE_STRFROMF128)
+# if ! defined (USE_QUADMATH) && !defined (GCOB_FP128_LD)
+#  error "no available float 128 to string"
+# endif
 #endif
