@@ -15,27 +15,42 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that invoke_default_contract_violation_handler works as expected
-// { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
+// Check that a case of contract violation handler throwing an exception works as expected for
+// nothrow overload.
+// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=ignore" }
 // { dg-do run { target c++2a } }
 
 #include <contracts>
-#include <testsuite_hooks.h>
+#include <exception>
+#include <cstdlib>
 
-bool custom_called = false;
+struct MyException{};
+
+// Test that there is an active exception when we reach the terminate handler.
+void my_term()
+{
+  try { throw; }
+  catch(MyException) { std::exit(0); }
+}
 
 
 void handle_contract_violation(const std::contracts::contract_violation& v)
 {
   invoke_default_contract_violation_handler(v);
-  custom_called = true;
+  throw MyException{};
 }
-
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  f(0);
-  VERIFY(custom_called);
+  std::set_terminate (my_term);
+  try {
+      std::contracts::handle_observed_contract_violation(std::nothrow, "test comment");
+  }
+  catch(...)
+  {
+  }
+  // We should not get here
+  return 1;
 }
-// { dg-output "contract violation in function void f.int. at .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function.*main.* at .*:47: test comment.*" }
+// { dg-output "assertion_kind: manual, semantic: observe, mode: unspecified, terminating: no" }
