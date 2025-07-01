@@ -2442,6 +2442,9 @@ build_contract_violation_p2900_ctor (tree contract)
     {
       uint16_t kind = get_contract_assertion_kind (contract);
       assertion_kind = build_int_cst (uint16_type_node, kind);
+      // D3290R3 makes detection mode unspecified.
+      if (kind == CAK_MANUAL || kind == CAK_CASSERT)
+	detection_mode = CDM_UNSPECIFIED;
     }
   else
     can_be_const = false;

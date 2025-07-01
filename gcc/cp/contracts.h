@@ -213,6 +213,8 @@ enum contract_assertion_kind : uint16_t {
   CAK_PRE = 1 ,
   CAK_POST = 2 ,
   CAK_ASSERT = 3,
+  CAK_MANUAL = 4,
+  CAK_CASSERT = 5,
 };
 
 /* Per P2900R14 + D3290R3 + extensions.  */

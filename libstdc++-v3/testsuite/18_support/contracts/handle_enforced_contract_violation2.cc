@@ -15,58 +15,35 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that default contract violation is not invoked if not explicitly invoked
+// Check that a case of contract violation handler throwing an exception works as expected
+// Semantic chosen is a non terminating one.
 // { dg-options "-g0 -fcontracts -fcontracts-nonattr -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
 #include <contracts>
+#include <exception>
 #include <testsuite_hooks.h>
-#include <iostream>
-#include <sstream>
 
-
-struct checking_buf
-  : public std::streambuf
-{
-  bool written = false;
-
-  checking_buf() = default;
-
-  virtual int_type
-  overflow(int_type)
-  {
-    written = true;
-    return int_type();
-  }
-
-  std::streamsize xsputn(const char* s, std::streamsize count)
-  {
-    written = true;
-    return count;
-  }
-
-};
-
-
-bool custom_called = false;
-
+struct MyException{};
 
 void handle_contract_violation(const std::contracts::contract_violation& v)
 {
-  custom_called = true;
+  invoke_default_contract_violation_handler(v);
+  throw MyException{};
 }
 
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  auto save_buf = std::cerr.rdbuf();
-  checking_buf buf;
-  std::cerr.rdbuf(&buf);
-
-  f(0);
-  std::cerr.rdbuf(save_buf);
-  VERIFY(buf.written == 0);
-  return 0;
+  bool exception_thrown = false;
+  try {
+      std::contracts::handle_enforced_contract_violation("test comment");
+  }
+  catch(MyException)
+  {
+      exception_thrown = true;
+  }
+  VERIFY( exception_thrown == true);
 }
-
+// { dg-output "contract violation in function.*main.* at .*:40: test comment.*" }
+// { dg-output "assertion_kind: manual, semantic: enforce, mode: unspecified, terminating: yes" }

@@ -1,5 +1,3 @@
-// Copyright (C) 2025 Free Software Foundation, Inc.
-//
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
 // terms of the GNU General Public License as published by the
@@ -15,27 +13,34 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that invoke_default_contract_violation_handler works as expected
+// Check that a case when neither ASSERT_USES_CONTRACTS nor NDEBUG are defined
+// behaves correctly (i.e. falls back to the libc assert).
+// Semantic chosen is a non terminating one.
 // { dg-options "-g0 -fcontracts -fcontracts-nonattr -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
-#include <contracts>
-#include <testsuite_hooks.h>
+#include <exception>
+#include <cstdlib>
+#include <cassert>
+#include <csignal>
 
-bool custom_called = false;
-
-
-void handle_contract_violation(const std::contracts::contract_violation& v)
+void my_term(int)
 {
-  invoke_default_contract_violation_handler(v);
-  custom_called = true;
+  std::exit(0);
 }
-
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  f(0);
-  VERIFY(custom_called);
+  signal(SIGABRT, my_term);
+
+  int i = 3;
+  assert(i == 4);
+  // We should not get here
+  return 1;
 }
-// { dg-output "contract violation in function void f.int. at .*(\n|\r\n|\r)" }
+
+// Since we are now seeing the output of the libc 'assert' macro, this will
+// (in general) depend on the OS/libc being tested.
+
+// { dg-output "int main.*: Assertion .*i == 4.* failed.*" { target { ! *-*-darwin* } }  }
+// { dg-output "Assertion failed: .i == 4., function main," { target *-*-darwin*  }  }

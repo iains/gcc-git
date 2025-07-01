@@ -15,58 +15,27 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that default contract violation is not invoked if not explicitly invoked
+// Check that a case with user provided contract violation handler works as expected
+// Semantic chosen is a non terminating one.
 // { dg-options "-g0 -fcontracts -fcontracts-nonattr -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
 #include <contracts>
-#include <testsuite_hooks.h>
-#include <iostream>
-#include <sstream>
+#include <exception>
+#include <cstdlib>
 
-
-struct checking_buf
-  : public std::streambuf
+void my_term()
 {
-  bool written = false;
-
-  checking_buf() = default;
-
-  virtual int_type
-  overflow(int_type)
-  {
-    written = true;
-    return int_type();
-  }
-
-  std::streamsize xsputn(const char* s, std::streamsize count)
-  {
-    written = true;
-    return count;
-  }
-
-};
-
-
-bool custom_called = false;
-
-
-void handle_contract_violation(const std::contracts::contract_violation& v)
-{
-  custom_called = true;
+  std::exit(0);
 }
 
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  auto save_buf = std::cerr.rdbuf();
-  checking_buf buf;
-  std::cerr.rdbuf(&buf);
+  std::set_terminate (my_term);
 
-  f(0);
-  std::cerr.rdbuf(save_buf);
-  VERIFY(buf.written == 0);
-  return 0;
+  std::contracts::handle_quick_enforced_contract_violation("test comment");
+  // We should not get here
+  return 1;
 }
 

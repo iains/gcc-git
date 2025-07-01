@@ -1,5 +1,3 @@
-// Copyright (C) 2025 Free Software Foundation, Inc.
-//
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
 // terms of the GNU General Public License as published by the
@@ -15,58 +13,32 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that default contract violation is not invoked if not explicitly invoked
+// Check that a case when assert.h header is included works as expected
+// Semantic chosen is a non terminating one.
 // { dg-options "-g0 -fcontracts -fcontracts-nonattr -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
-#include <contracts>
-#include <testsuite_hooks.h>
-#include <iostream>
-#include <sstream>
+#include <exception>
+#include <cstdlib>
+#define ASSERT_USES_CONTRACTS
+#include <assert.h>
 
 
-struct checking_buf
-  : public std::streambuf
+void my_term()
 {
-  bool written = false;
-
-  checking_buf() = default;
-
-  virtual int_type
-  overflow(int_type)
-  {
-    written = true;
-    return int_type();
-  }
-
-  std::streamsize xsputn(const char* s, std::streamsize count)
-  {
-    written = true;
-    return count;
-  }
-
-};
-
-
-bool custom_called = false;
-
-
-void handle_contract_violation(const std::contracts::contract_violation& v)
-{
-  custom_called = true;
+  std::exit(0);
 }
 
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  auto save_buf = std::cerr.rdbuf();
-  checking_buf buf;
-  std::cerr.rdbuf(&buf);
+  std::set_terminate (my_term);
 
-  f(0);
-  std::cerr.rdbuf(save_buf);
-  VERIFY(buf.written == 0);
-  return 0;
+  int i = 3;
+  assert(i == 4);
+  // We should not get here
+  return 1;
 }
+// { dg-output "contract violation in function.*main.* at .*:38: i == 4.*" }
+// { dg-output "assertion_kind: cassert, semantic: enforce, mode: unspecified, terminating: yes" }
 

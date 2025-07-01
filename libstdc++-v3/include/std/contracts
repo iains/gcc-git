@@ -34,7 +34,8 @@
 
 #include <source_location>
 #include <cstdint>
-#include <bits/exception_ptr.h>
+#include <exception> // std::terminate, exception_ptr
+#include <new> // std::nothrow_t
 
 namespace std _GLIBCXX_VISIBILITY(default)
 {
@@ -42,6 +43,38 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 namespace contracts
 {
+  // From D3290R3
+
+  [[noreturn]] void handle_enforced_contract_violation(
+      const char*,
+      const std::source_location &__location = std::source_location::current());
+
+  [[noreturn]] void handle_enforced_contract_violation(
+      const std::nothrow_t&,
+      const char*,
+      const std::source_location &__location = std::source_location::current()) noexcept;
+
+  void handle_observed_contract_violation(
+      const char*,
+      const std::source_location &__location = std::source_location::current());
+
+  void handle_observed_contract_violation(
+      const std::nothrow_t&,
+      const char*,
+      const std::source_location &__location = std::source_location::current()) noexcept;
+
+  [[noreturn]] void __handle_assert_contract_violation(
+      const char*,
+      const std::source_location &__location = std::source_location::current()) noexcept;
+
+  [[noreturn]]
+  inline void handle_quick_enforced_contract_violation(
+    const char*,
+    const std::source_location &__location = std::source_location::current()) noexcept
+  {
+    std::terminate();
+  }
+
   // From P2900R14 + D3290R3
 
   enum class assertion_kind : uint16_t {
@@ -87,6 +120,47 @@ namespace contracts
     const void* _M_src_loc_ptr;
     void *_M_current_except_obj;
     __vendor_ext* _M_ext;
+
+    contract_violation(evaluation_semantic __semantic,
+		       assertion_kind __kind,
+		       const std::source_location &__location,
+		       const char* __comment)
+      : _M_version(0),
+	_M_assertion_kind(__kind),
+	_M_evaluation_semantic(__semantic),
+	_M_detection_mode(detection_mode::unspecified),
+	_M_comment(__comment),
+	_M_src_loc_ptr(__location._M_impl),
+	_M_current_except_obj(nullptr),
+	_M_ext(nullptr)
+    {}
+
+    friend void handle_enforced_contract_violation(
+	const char*,
+	const std::source_location &);
+
+    friend void handle_enforced_contract_violation(
+	const std::nothrow_t&,
+	const char*,
+	const std::source_location &) noexcept;
+
+    friend void handle_observed_contract_violation(
+	const char*,
+	const std::source_location &);
+
+    friend void handle_observed_contract_violation(
+	const std::nothrow_t&,
+	const char*,
+	const std::source_location &) noexcept;
+
+    friend void handle_quick_enforced_contract_violation(
+	const char*,
+	const std::source_location &) noexcept;
+
+    friend void __handle_assert_contract_violation(
+	const char*,
+	const std::source_location &) noexcept;
+
 
   public:
     // cannot be copied or moved or assigned to

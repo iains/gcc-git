@@ -1,5 +1,3 @@
-// Copyright (C) 2025 Free Software Foundation, Inc.
-//
 // This file is part of the GNU ISO C++ Library.  This library is free
 // software; you can redistribute it and/or modify it under the
 // terms of the GNU General Public License as published by the
@@ -15,27 +13,21 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that invoke_default_contract_violation_handler works as expected
+// Check that a case when NDEBUG is defined and ASSERT_USES_CONTRACTS isn't behaves correctly.
+// Semantic chosen is a non terminating one.
 // { dg-options "-g0 -fcontracts -fcontracts-nonattr -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
-#include <contracts>
-#include <testsuite_hooks.h>
+#define NDEBUG
+#include <exception>
+#include <cstdlib>
+#include <cassert>
 
-bool custom_called = false;
-
-
-void handle_contract_violation(const std::contracts::contract_violation& v)
-{
-  invoke_default_contract_violation_handler(v);
-  custom_called = true;
-}
-
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  f(0);
-  VERIFY(custom_called);
+  int i = 3;
+  assert(i == 4);
 }
-// { dg-output "contract violation in function void f.int. at .*(\n|\r\n|\r)" }
+
+
