@@ -66,7 +66,7 @@ int main()
 
   f(0);
   std::cerr.rdbuf(save_buf);
-  VERIFY(!buf.written);
+  VERIFY(buf.written == 0);
   return 0;
 }
 

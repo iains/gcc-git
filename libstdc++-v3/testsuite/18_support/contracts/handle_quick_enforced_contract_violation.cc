@@ -15,27 +15,55 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that invoke_default_contract_violation_handler works as expected
-// { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
+// Check that handle_observed_contract_violation works as expected.
+// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
 #include <contracts>
+#include <exception>
+#include <cstdlib>
 #include <testsuite_hooks.h>
+#include <iostream>
+#include <sstream>
 
-bool custom_called = false;
 
-
-void handle_contract_violation(const std::contracts::contract_violation& v)
+struct checking_buf
+  : public std::streambuf
 {
-  invoke_default_contract_violation_handler(v);
-  custom_called = true;
+  bool written = false;
+
+  checking_buf() = default;
+
+  virtual int_type
+  overflow(int_type)
+  {
+    written = true;
+    return int_type();
+  }
+
+  std::streamsize xsputn(const char* s, std::streamsize count)
+  {
+    written = true;
+    return count;
+  }
+
+};
+
+checking_buf buf;
+
+void my_term()
+{
+  VERIFY(!buf.written);
+  std::exit(0);
 }
 
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  f(0);
-  VERIFY(custom_called);
+  std::set_terminate (my_term);
+  std::cerr.rdbuf(&buf);
+
+  std::contracts::handle_quick_enforced_contract_violation("test comment");
+  // We should not get here
+  return 1;
 }
-// { dg-output "contract violation in function void f.int. at .*(\n|\r\n|\r)" }

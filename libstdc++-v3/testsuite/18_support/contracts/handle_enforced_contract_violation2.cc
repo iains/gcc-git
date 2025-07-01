@@ -15,27 +15,35 @@
 // with this library; see the file COPYING3.  If not see
 // <http://www.gnu.org/licenses/>.
 
-// check that invoke_default_contract_violation_handler works as expected
-// { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
+// Check that a case of contract violation handler throwing an exception works as expected
+// Semantic chosen is a non terminating one.
+// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=observe" }
 // { dg-do run { target c++2a } }
 
 #include <contracts>
+#include <exception>
 #include <testsuite_hooks.h>
 
-bool custom_called = false;
-
+struct MyException{};
 
 void handle_contract_violation(const std::contracts::contract_violation& v)
 {
   invoke_default_contract_violation_handler(v);
-  custom_called = true;
+  throw MyException{};
 }
 
-void f(int i) pre (i>10) {};
 
 int main()
 {
-  f(0);
-  VERIFY(custom_called);
+  bool exception_thrown = false;
+  try {
+      std::contracts::handle_enforced_contract_violation("test comment");
+  }
+  catch(MyException)
+  {
+      exception_thrown = true;
+  }
+  VERIFY( exception_thrown == true);
 }
-// { dg-output "contract violation in function void f.int. at .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function.*main.* at .*:40: test comment.*" }
+// { dg-output "assertion_kind: manual, semantic: enforce, mode: unspecified, terminating: yes" }
