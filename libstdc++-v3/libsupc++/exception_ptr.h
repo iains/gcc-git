@@ -53,6 +53,11 @@ namespace std _GLIBCXX_VISIBILITY(default)
 {
   class type_info;
 
+  namespace contracts
+  {
+    class contract_violation;
+  }
+
   /**
    * @addtogroup exceptions
    * @{
@@ -217,6 +222,9 @@ namespace std _GLIBCXX_VISIBILITY(default)
       const class std::type_info*
       __cxa_exception_type() const _GLIBCXX_USE_NOEXCEPT
 	__attribute__ ((__pure__));
+
+      /* To enable use of the exception_ptr ctor from an object.  */
+      friend class std::contracts::contract_violation;
     };
 
     _GLIBCXX_EH_PTR_USED

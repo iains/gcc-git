@@ -654,6 +654,20 @@ namespace __cxxabiv1
   void
   __cxa_free_dependent_exception(__cxa_dependent_exception*) _GLIBCXX_NOTHROW;
 
+  // Helper for contracts.
+  // Get a pointer to the current exception object, but do not increase the
+  // reference count.
+  void *__cxa_current_exception_object() throw();
+
+  // Get a pointer to the current exception object and increase the reference
+  // count.
+  void *__cxa_current_primary_exception() throw();
+  void __cxa_increment_exception_refcount(void *);
+
+  // Decrement the exception ref count and free the exception resources if the
+  // count reaches 0.
+  void __cxa_decrement_exception_refcount(void *);
+
   } // extern "C"
 
   // A magic placeholder class that can be caught by reference

@@ -40,6 +40,65 @@
 #include <bits/exception_ptr.h>
 #include "unwind-cxx.h"
 
+namespace __cxxabiv1
+{
+extern "C"
+{
+  void
+  __cxa_increment_exception_refcount(void *thrown_object)
+  {
+    if (__builtin_expect(thrown_object != nullptr, true))
+      {
+	__cxa_refcounted_exception *eh
+	  = __get_refcounted_exception_header_from_obj (thrown_object);
+	__gnu_cxx::__eh_atomic_inc (&eh->referenceCount);
+      }
+  }
+
+  /* Release one reference to the exception and free it if we reach 0.  */
+  void
+  __cxa_decrement_exception_refcount(void *thrown_object)
+  {
+    if (__builtin_expect(thrown_object != nullptr, true))
+      {
+	__cxa_refcounted_exception *eh
+	  = __get_refcounted_exception_header_from_obj (thrown_object);
+	if (__gnu_cxx::__eh_atomic_dec (&eh->referenceCount))
+	  {
+	    if (eh->exc.exceptionDestructor)
+	      eh->exc.exceptionDestructor (thrown_object);
+	    __cxa_free_exception (thrown_object);
+	  }
+      }
+  }
+
+/* Get a pointer to the exception object at the top of the exception stack.  */
+void *__cxa_current_exception_object() throw()
+{
+  __cxa_eh_globals* globals = __cxa_get_globals_fast();
+  if (!globals)
+    return nullptr;
+  __cxa_exception* exception_header = globals->caughtExceptions;
+  if (!exception_header)
+    return nullptr; // Nothing to see here.
+  if (!__is_gxx_exception_class(exception_header->unwindHeader.exception_class))
+    return nullptr;
+  void* thrown_object = __get_object_from_ambiguous_exception(exception_header);
+  return thrown_object;
+}
+
+/* This implements the work for std::current_exception() and matches the
+   equivalent functionality in libc++abi.
+*/
+void *__cxa_current_primary_exception() throw()
+{
+  void* thrown_object = __cxa_current_exception_object ();
+  __cxa_increment_exception_refcount(thrown_object);
+  return thrown_object;
+}
+} // extern C
+} // __cxxabiv1
+
 using namespace __cxxabiv1;
 
 // Verify assumptions about member layout in exception types
@@ -97,19 +156,10 @@ std::__exception_ptr::exception_ptr::_M_release() noexcept
 {
   if (__builtin_expect(_M_exception_object != nullptr, true))
     {
-      __cxa_refcounted_exception *eh =
-	__get_refcounted_exception_header_from_obj (_M_exception_object);
-      if (__gnu_cxx::__eh_atomic_dec (&eh->referenceCount))
-        {
-	  if (eh->exc.exceptionDestructor)
-	    eh->exc.exceptionDestructor (_M_exception_object);
-
-          __cxa_free_exception (_M_exception_object);
-          _M_exception_object = nullptr;
-        }
+      __cxa_decrement_exception_refcount (_M_exception_object);
+      _M_exception_object = nullptr;
     }
 }
-
 
 void*
 std::__exception_ptr::exception_ptr::_M_get() const noexcept
@@ -234,6 +284,5 @@ std::__exception_ptr::exception_ptr::_M_exception_ptr_cast(const type_info& t)
     return ptr;
   return nullptr;
 }
-
 
 #undef _GLIBCXX_EH_PTR_COMPAT
