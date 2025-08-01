@@ -2929,6 +2929,14 @@ CXXABI_1.3.17 {
 } CXXABI_1.3.15;
 #endif
 
+CXXABI_1.3.18 {
+  global:
+    __cxa_current_exception_object;
+    __cxa_current_primary_exception;
+    __cxa_increment_exception_refcount;
+    __cxa_decrement_exception_refcount;
+};
+
 # Symbols in the support library (libsupc++) supporting transactional memory.
 CXXABI_TM_1 {
 
