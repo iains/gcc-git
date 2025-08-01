@@ -85,6 +85,7 @@ namespace contracts
     detection_mode _M_detection_mode;
     const char* _M_comment;
     const void* _M_src_loc_ptr;
+    void *_M_current_except_obj;
     __vendor_ext* _M_ext;
 
   public:
@@ -103,8 +104,8 @@ namespace contracts
     evaluation_exception () const noexcept
      {
       if (_M_detection_mode == std::contracts::detection_mode::evaluation_exception)
-	return std::current_exception ();
-      return nullptr;
+        return std::exception_ptr (_M_current_except_obj);
+      return std::exception_ptr ();
     }
     bool is_terminating () const noexcept {
       return _M_evaluation_semantic == std::contracts::evaluation_semantic::enforce

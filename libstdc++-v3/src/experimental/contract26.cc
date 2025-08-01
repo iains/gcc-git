@@ -123,8 +123,8 @@ void invoke_default_contract_violation_handler(const std::contracts::contract_vi
   return __handle_contract_violation(violation);
 }
 
-}
-}
+} // contracts
+} // std
 
 __attribute__ ((weak)) void
 handle_contract_violation (const std::contracts::contract_violation &violation)
