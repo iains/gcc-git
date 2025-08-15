@@ -83,6 +83,7 @@ proc dg-flags-pch { subdir test otherflags options suffix } {
     # unlikely to make any difference to PCH.
     foreach flags $options {
 	verbose "Testing $nshort, $otherflags $flags" 1
+        metadata_output "DG-TEST-PCH: $nshort $otherflags $flags"
 
 	if { $pch_unsupported != 0 \
 	     || ( $pch_unsupported_debug != 0 && [regexp " -g" " $flags"] ) } {
@@ -139,6 +140,7 @@ proc dg-flags-pch { subdir test otherflags options suffix } {
 		    dg-test -keep-output $test "$otherflags $flags -I. -Dwithout_PCH" ""
 		    remote_upload host "$bname.s"
 		    set tmp [ diff "$bname.s" "$bname.s-gch" ]
+		    metadata_output "DG-TEST-CMP-A: $nshort $otherflags $flags"
 		    if { $tmp == 0 } {
 			verbose -log "assembly file '$bname.s', '$bname.s-gch' comparison error"
 			fail "$nshort $otherflags $flags assembly comparison"

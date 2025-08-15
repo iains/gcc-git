@@ -729,6 +729,7 @@ proc lto-execute-1 { src1 sid } {
     set count 0
     foreach option $lto_option_list {
 	verbose "Testing $testcase, $option"
+        metadata_output "DG-TEST-LTO: $testcase $option $sid $src_list"
 
 	# There's a unique name for each executable we generate.
 	set execname "${execbase}-${count}1.exe"

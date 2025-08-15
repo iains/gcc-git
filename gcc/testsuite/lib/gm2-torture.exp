@@ -91,6 +91,7 @@ proc gm2-torture-compile { src option } {
     }
 
     # puts stderr "gm2-torture-compiler src = $src, option = $option\n"
+    metadata_output "DG-TEST-COMP: $src $option"
 
     # Run the compiler and analyze the results.
     set options ""
@@ -271,6 +272,7 @@ proc gm2-torture-execute { sources args success } {
 
 	remote_file build delete $execname;
 	verbose "Testing $testcase, $option" 1
+	metadata_output "DG-TEST-EXE: $testcase $option"
 
 	set options ""
 	lappend options "additional_flags=$option"
