@@ -236,7 +236,8 @@ proc gcc-dg-test-1 { target_compile prog do_what extra_tool_flags } {
     # Set up the compiler flags, based on what we're going to do.
 
     set options [list]
-
+    upvar 2 name name
+    clone_output "TEST: $name $do_what"
     switch $do_what {
 	"preprocess" {
 	    set compile_type "preprocess"
