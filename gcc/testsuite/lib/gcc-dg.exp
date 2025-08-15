@@ -236,35 +236,42 @@ proc gcc-dg-test-1 { target_compile prog do_what extra_tool_flags } {
     # Set up the compiler flags, based on what we're going to do.
 
     set options [list]
-
+    upvar 2 name name
     switch $do_what {
 	"preprocess" {
+	    metadata_output "DG-TEST-PREPROC: $name"
 	    set compile_type "preprocess"
 	    set output_file "[file rootname [file tail $prog]].i"
 	}
 	"compile" {
+	    metadata_output "DG-TEST-COMP-S: $name"
 	    set compile_type "assembly"
 	    set output_file "[file rootname [file tail $prog]].s"
 	}
 	"assemble" {
+	    metadata_output "DG-TEST-COMP-O: $name"
 	    set compile_type "object"
 	    set output_file "[file rootname [file tail $prog]].o"
 	}
 	"precompile" {
+	    metadata_output "DG-TEST-PRECOMP: $name"
 	    set compile_type "precompiled_header"
 	    set output_file "[file tail $prog].gch"
 	}
 	"link" {
+	    metadata_output "DG-TEST-LINK: $name"
 	    set compile_type "executable"
 	    set output_file "[file rootname [file tail $prog]].exe"
 	    # The following line is needed for targets like the i960 where
 	    # the default output file is b.out.  Sigh.
 	}
 	"repo" {
+	    metadata_output "DG-TEST-REPO: $name"
 	    set compile_type "object"
 	    set output_file "[file rootname [file tail $prog]].o"
 	}
 	"run" {
+	    metadata_output "DG-TEST-RUN: $name"
 	    set compile_type "executable"
 	    # FIXME: "./" is to cope with "." not being in $PATH.
 	    # Should this be handled elsewhere?
@@ -275,6 +282,7 @@ proc gcc-dg-test-1 { target_compile prog do_what extra_tool_flags } {
 	    catch { remote_file build delete $output_file }
 	}
 	"replay-sarif" {
+	    metadata_output "DG-TEST-RP-SARIF: $name"
 	    set compile_type "none"
 	    set output_file ""
 	}

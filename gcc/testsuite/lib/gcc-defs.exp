@@ -658,3 +658,20 @@ proc aarch64-with-arch-dg-options { arch code } {
     rename dg-options aarch64-arch-dg-options
     rename aarch64-old-dg-options dg-options
 }
+
+# Output metadata concerning test groupings and/or information that can be
+# used to qualify or describe fails.
+
+proc metadata_output { message } {
+    global sum_file
+    global all_flag
+
+    if { $sum_file != "" } {
+	puts $sum_file "$message"
+    }
+    if {$all_flag} {
+        send_user -- "$message\n"
+    } else {
+        send_log -- "$message\n"
+    }
+}

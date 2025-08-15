@@ -159,6 +159,7 @@ proc objc-torture-compile { src option } {
     }
 
     verbose "Testing $testcase, $option" 1
+    metadata_output "DG-TEST: $testcase $option compile"
 
     # Run the compiler and analyze the results.
     set options ""
@@ -242,7 +243,7 @@ proc objc-torture-execute { src args } {
 
 	remote_file build delete $execname
 	verbose "Testing $testcase, $option" 1
-
+        metadata_output "DG-TEST: $testcase $option execute"
 	set options ""
 	lappend options "additional_flags=-w $option"
 	if { $additional_flags != "" } {
