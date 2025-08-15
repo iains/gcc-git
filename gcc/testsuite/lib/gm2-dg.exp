@@ -64,7 +64,9 @@ proc gm2-dg-runtest { testcases flags default-extra-flags } {
 	# we cycle through the option list, otherwise we don't
 	if [expr [search_for $test "dg-do run"]] {
 	    set option_list $TORTURE_OPTIONS
+	    set what "execute"
 	} else {
+	    set what "compile"
 	    set option_list [list { -O -O2 } ]
 	}
 

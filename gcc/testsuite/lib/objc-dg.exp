@@ -68,6 +68,7 @@ proc objc-dg-runtest { testcases flags default-extra-flags } {
 	    # combine flags so that dg-skip & xfail will see the extras.
 	    set combined_flags "$flags $flags_t ${default-extra-flags}"
 	    verbose "Testing $nshort, $combined_flags" 1
+	    dg-warning $test $combined_flags
 	    dg-test $test $combined_flags ""
 	}
     }
