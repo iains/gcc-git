@@ -1961,6 +1961,14 @@ Enum(p2900_semantic) String(enforce) Value(3)
 EnumValue
 Enum(p2900_semantic) String(quick_enforce) Value(4)
 
+; Implementation-defined semantics have values >= 1000.
+
+EnumValue
+Enum(p2900_semantic) String(noexcept_enforce) Value(1001)
+
+EnumValue
+Enum(p2900_semantic) String(noexcept_observe) Value(1002)
+
 fcontract-evaluation-semantic=
 C++ Joined RejectNegative Enum(p2900_semantic) Var(flag_contract_evaluation_semantic) Init(3)
 -fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce|noexcept_enforce|noexcept_observe]	Select the contract evaluation semantic (defaults to enforce).

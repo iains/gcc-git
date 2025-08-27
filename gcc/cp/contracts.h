@@ -44,6 +44,8 @@ enum contract_level
    CCS_MAYBE  -> observe
    CCS_NEVER  -> enforce
    CCS_QUICK  -> quick_enforce
+   CCS_NOEXCEPT_ENFORCE -> noexcept_enforce
+   CCS_NOEXCEPT_OBSERVE -> noexcept_observe
 */
 
 enum contract_semantic
@@ -55,7 +57,9 @@ enum contract_semantic
   CCS_ENFORCE = CCS_NEVER,
   CCS_MAYBE = 4,
   CCS_OBSERVE = CCS_MAYBE,
-  CCS_QUICK = 5
+  CCS_QUICK = 5,
+  CCS_NOEXCEPT_ENFORCE,
+  CCS_NOEXCEPT_OBSERVE
 };
 
 /* True if the contract is unchecked.  */
@@ -218,6 +222,10 @@ enum contract_evaluation_semantic : uint16_t {
   CES_OBSERVE = 2,
   CES_ENFORCE = 3,
   CES_QUICK = 4,
+
+  /* Implementation-defined.  */
+  CES_NOEXCEPT_ENFORCE = 1001,
+  CES_NOEXCEPT_OBSERVE = 1002,
 };
 
 enum detection_mode : uint16_t {

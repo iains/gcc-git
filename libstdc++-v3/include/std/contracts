@@ -61,17 +61,14 @@ namespace contracts
     enforce = 3,
     quick_enforce = 4,
 
-    /* FIXME: Implementation−defined values should have a minimum value of 1000
-      but we cannot [currently] accommodate > 7.
-      Experimental only (no paper).  */
-    noexcept_enforce = 5,
-    noexcept_observe = 6,
-    force_quick = 7,
+    /* Implementation−defined values.
+       Experimental only (no paper).  */
+    noexcept_enforce = 1001,
+    noexcept_observe = 1002,
   };
 
   enum class detection_mode : uint16_t {
-    // From D3290R3
-    unspecified = 0,
+    unspecified = 0, // From D3290R3
     predicate_false = 1,
     evaluation_exception = 2,
 
