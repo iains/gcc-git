@@ -65,7 +65,10 @@ namespace contracts
     enforce = 3,
     quick_enforce = 4,
 
-    /* Implementation−defined values should have a minimum value of 1000.  */
+    /* Implementation−defined values.
+       Experimental only (no paper).  */
+    noexcept_enforce = 1001,
+    noexcept_observe = 1002,
   };
 
   enum class detection_mode : uint16_t {

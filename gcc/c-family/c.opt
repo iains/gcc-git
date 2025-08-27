@@ -1919,9 +1919,17 @@ Enum(contract_semantic) String(enforce) Value(3)
 EnumValue
 Enum(contract_semantic) String(quick_enforce) Value(4)
 
+; Implementation-defined semantics have values >= 1000.
+
+EnumValue
+Enum(contract_semantic) String(noexcept_enforce) Value(1001)
+
+EnumValue
+Enum(contract_semantic) String(noexcept_observe) Value(1002)
+
 fcontract-evaluation-semantic=
 C++ ObjC++ Joined RejectNegative Enum(contract_semantic) Var(flag_contract_evaluation_semantic) Init(3)
--fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce]	Select the contract evaluation semantic (defaults to enforce).
+-fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce|noexcept_enforce|noexcept_observe]	Select the contract evaluation semantic (defaults to enforce).
 
 fcontract-checks-outlined
 C++ ObjC++ Var(flag_contract_checks_outlined) Init(0)

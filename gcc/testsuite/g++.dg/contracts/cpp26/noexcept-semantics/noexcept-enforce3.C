@@ -1,0 +1,30 @@
+// { dg-do run { target c++26 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=noexcept_enforce " }
+#include <contracts>
+#include <exception>
+#include <cstdlib>
+
+// Test that noexcept_enforce behaves like enforce in the case that
+// nothing throws. A contract failure should still terminate in those
+// cases.
+
+void my_term()
+{
+  std::exit(0);
+}
+
+void handle_contract_violation(const std::contracts::contract_violation& violation)
+{
+}
+
+void f(int x) pre(x >= 0)
+{
+}
+
+int main()
+{
+  std::set_terminate (my_term);
+  f(-42);
+  // We should not get here
+  return 1;
+}
