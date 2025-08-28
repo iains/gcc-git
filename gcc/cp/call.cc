@@ -11581,7 +11581,7 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
     }
 
   if (VOID_TYPE_P (TREE_TYPE (fn)))
-    return fn;
+    return maybe_contract_wrap_call (fndecl, fn);
 
   /* 5.2.2/11: If a function call is a prvalue of object type: if the
      function call is either the operand of a decltype-specifier or the
@@ -11593,6 +11593,7 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
       fn = require_complete_type (fn, complain);
       if (fn == error_mark_node)
 	return error_mark_node;
+      fn = maybe_contract_wrap_call (fndecl, fn);
 
       if (MAYBE_CLASS_TYPE_P (TREE_TYPE (fn)))
 	{
@@ -11600,6 +11601,8 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
 	  maybe_warn_parm_abi (TREE_TYPE (fn), loc);
 	}
     }
+  else
+    fn = maybe_contract_wrap_call (fndecl, fn);
   return convert_from_reference (fn);
 }
 

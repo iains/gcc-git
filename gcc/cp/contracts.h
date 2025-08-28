@@ -153,6 +153,10 @@ enum detection_mode : uint16_t {
   (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
    CONTRACT_HELPER (NODE) == ldf_contract_post)
 
+#define DECL_IS_WRAPPER_FN_P(NODE) \
+  (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
+   DECL_CONTRACT_WRAPPER (NODE))
+
 /* contracts.cc */
 
 extern tree grok_contract			(tree, tree, tree, cp_expr, location_t);
@@ -191,16 +195,12 @@ extern void maybe_apply_function_contracts	(tree);
 extern void finish_function_contracts		(tree);
 extern void set_contract_functions		(tree, tree, tree);
 
+extern tree maybe_contract_wrap_call		(tree, tree);
+extern bool emit_contract_wrapper_func		(bool);
 extern void maybe_emit_violation_handler_wrappers (void);
 
 extern tree init_builtin_contract_violation_type (void);
 extern tree build_contract_check		(tree);
-
-inline void
-set_decl_contracts (tree decl, tree contract_attrs)
-{
-  set_fn_contract_specifiers (decl, contract_attrs);
-}
 
 /* Returns the const-ify flag of the node.  */
 
