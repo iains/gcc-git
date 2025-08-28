@@ -1997,6 +1997,19 @@ fcontracts-nonattr-definition-check=
 C++ Joined RejectNegative Enum(on_off) Var(flag_contracts_nonattr_definition_check) Init(1)
 -fcontracts-nonattr-definition-check=[on|off]	Enable or disable contract checks on the definition side for all functions (default on).
 
+Enum
+Name(contract_inheritance) Type(int)  UnknownError(unrecognized contract inheritance mode option %qs)
+
+EnumValue
+Enum(contract_inheritance) String(none) Value(0)
+
+EnumValue
+Enum(contract_inheritance) String(P2900R13) Value(1)
+
+fcontracts-on-virtual-functions=
+C++ Joined RejectNegative Enum(contract_inheritance) Var(flag_contracts_on_virtual_functions) Init(0)
+-fcontracts-on-virtual-functions=[none|P2900R13] Select how contracts are inherited for virtual functions
+
 fcoroutines
 C++ LTO Var(flag_coroutines)
 Enable C++ coroutines (experimental).
