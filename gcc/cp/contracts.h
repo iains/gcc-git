@@ -340,6 +340,10 @@ enum contract_inheritance
   (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
    CONTRACT_HELPER (NODE) == ldf_contract_post)
 
+#define DECL_IS_WRAPPER_FN_P(NODE) \
+  (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
+   DECL_CONTRACT_WRAPPER (NODE))
+
 /* contracts.cc */
 
 extern tree remove_contract_attributes		(tree);
@@ -385,6 +389,8 @@ extern void maybe_apply_function_contracts	(tree);
 extern void finish_function_contracts		(tree);
 extern void set_contract_functions		(tree, tree, tree);
 
+extern tree maybe_contract_wrap_call		(tree, tree);
+extern bool emit_contract_wrapper_func		(bool);
 extern void maybe_emit_violation_handler_wrappers (void);
 
 extern tree init_builtin_contract_violation_type (void);
