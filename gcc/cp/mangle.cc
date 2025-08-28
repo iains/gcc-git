@@ -829,6 +829,10 @@ write_mangled_name (const tree decl, bool top_level)
       write_encoding (mdecl);
     }
 
+  /* Identify helper functions for contracts support.  */
+  if (DECL_IS_WRAPPER_FN_P (decl))
+    write_string (JOIN_STR "contract_wrapper");
+
   if (pre)
     write_string (JOIN_STR "pre");
   else if (post)
