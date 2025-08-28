@@ -454,6 +454,22 @@ set_contract_const (tree t, bool constify)
   TREE_LANG_FLAG_4 (CONTRACT_CHECK (t)) = constify;
 }
 
+/* Returns whether the contract is inherited.  */
+
+inline bool
+get_contract_inherited (const_tree t)
+{
+  return TREE_LANG_FLAG_5 (CONTRACT_CHECK (t));
+}
+
+/* Mark the contract as inherited  */
+
+inline void
+set_contract_inherited (tree t, bool inherited)
+{
+  TREE_LANG_FLAG_5 (CONTRACT_CHECK (t)) = inherited;
+}
+
 /* Test if EXP is a contract const wrapper node.  */
 
 inline bool

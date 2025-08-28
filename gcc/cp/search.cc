@@ -2224,6 +2224,68 @@ check_final_overrider (tree overrider, tree basefn)
   return 1;
 }
 
+/* Given a class TYPE, and a virtual function decl FNDECL, check the direct
+   base classes for contracts.
+  */
+
+void
+check_override_contracts (tree fndecl)
+{
+
+  if (!flag_contracts || !flag_contracts_nonattr
+      || flag_contracts_on_virtual_functions != CONTRACTS_ON_VIRTUALS_P3653)
+    return;
+
+  /* A constructor for a class T does not override a function T
+   in a base class.  */
+  if (DECL_CONSTRUCTOR_P (fndecl))
+    return;
+
+  bool explicit_contracts = DECL_HAS_CONTRACTS_P (fndecl);
+  tree binfo = TYPE_BINFO (DECL_CONTEXT (fndecl));
+  tree base_binfo;
+
+  for (int i = 0; BINFO_BASE_ITERATE (binfo, i, base_binfo); ++i)
+    {
+      tree basetype = BINFO_TYPE (base_binfo);
+
+      if (!TYPE_POLYMORPHIC_P (basetype))
+	continue;
+
+      tree basefn = look_for_overrides_here (basetype, fndecl);
+      if (!basefn)
+	continue;
+
+      if (!explicit_contracts && DECL_HAS_CONTRACTS_P (basefn))
+	{
+	  /* We're inheriting basefn's contracts; create a copy of them but
+	   * replace references to their parms to our parms.  */
+	  tree base_contracts = copy_and_remap_contracts (fndecl, basefn,
+							  cmk_all);
+	  tree fn_contracts = flag_contracts_nonattr
+			      ? GET_FN_CONTRACT_SPECIFIERS (fndecl)
+			      : DECL_CONTRACT_ATTRS (fndecl);
+	  tree contracts = chainon (fn_contracts, base_contracts);
+
+	  if (flag_contracts_nonattr)
+	    SET_FN_CONTRACT_SPECIFIERS (fndecl, contracts);
+	  else
+	    set_decl_contracts (fndecl, contracts);
+
+	  if (suggest_explicit_contract)
+	    {
+	      warning_at (DECL_SOURCE_LOCATION (fndecl),
+			  suggest_explicit_contract,
+			  "Function implicitly inherits a contract");
+	      inform (DECL_SOURCE_LOCATION (basefn),
+		      "overridden function is %qD", basefn);
+	    }
+
+	  check_postconditions_in_redecl (basefn, fndecl);
+	}
+    }
+}
+
 /* Given a class TYPE, and a function decl FNDECL, look for
    virtual functions in TYPE's hierarchy which FNDECL overrides.
    We do not look in TYPE itself, only its bases.
