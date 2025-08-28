@@ -3253,7 +3253,8 @@ check_for_override (tree decl, tree ctype)
       if (DECL_DESTRUCTOR_P (decl))
 	TYPE_HAS_NONTRIVIAL_DESTRUCTOR (ctype) = true;
 
-      if (DECL_HAS_CONTRACTS_P(decl))
+      if (DECL_HAS_CONTRACTS_P(decl)
+	  && flag_contracts_on_virtual_functions == CONTRACTS_ON_VIRTUALS_NONE)
 	error_at (DECL_SOURCE_LOCATION(decl),
 		  "contracts cannot be added to virtual functions");
     }

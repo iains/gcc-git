@@ -65,6 +65,13 @@ enum detection_mode : uint16_t {
   CDM_EVAL_EXCEPTION = 2
 };
 
+/* Contract inheritance models (experimental).  */
+enum contract_inheritance
+{
+  CONTRACTS_ON_VIRTUALS_NONE = 0,
+  CONTRACTS_ON_VIRTUALS_P2900R13 = 1,
+  CONTRACTS_ON_VIRTUALS_P3653 = 2,
+};
 /* Contract evaluation_semantic */
 #define CONTRACT_EVALUATION_SEMANTIC(NODE) \
   (TREE_OPERAND (CONTRACT_CHECK (NODE), 0))

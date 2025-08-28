@@ -1663,8 +1663,9 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
 	  return;
 	}
       else
-	set_fn_contract_specifiers (
-	    srcdecl, copy_and_remap_contracts (srcdecl, destdecl));
+	set_fn_contract_specifiers (srcdecl,
+				    copy_and_remap_contracts (srcdecl, destdecl,
+							      cmk_all));
     }
 
   /* For deferred contracts, we currently copy the tokens from the redeclaration
@@ -1680,7 +1681,8 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
       tree tmp_arguments = DECL_ARGUMENTS (destdecl);
       DECL_ARGUMENTS (destdecl) = DECL_ARGUMENTS (srcdecl);
       set_fn_contract_specifiers (destdecl,
-				  copy_and_remap_contracts (destdecl, srcdecl));
+				  copy_and_remap_contracts (destdecl, srcdecl,
+							    cmk_all));
       DECL_ARGUMENTS (destdecl) = tmp_arguments;
     }
 
@@ -1689,16 +1691,22 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
 /* Checks if a contract check wrapper is needed for fndecl.  */
 
 static bool
-should_contract_wrap_call (bool do_pre, bool do_post)
+should_contract_wrap_call (bool do_pre, bool do_post, bool is_virt)
 {
   /* Only if the target function actually has any contracts.  */
   if (!do_pre && !do_post)
     return false;
 
+  /* We always wrap virtual function calls, and non-virtual calls when
+     client-side checking is enabled for all contracts.  */
+  if ((is_virt
+       && (flag_contracts_on_virtual_functions
+	   != CONTRACTS_ON_VIRTUALS_NONE))
+      || (flag_contract_client_check > 1))
+    return true;
 
-  return ((flag_contract_client_check > 1)
-	  || ((flag_contract_client_check > 0)
-	      && do_pre));
+  /* Otherwise, any function with pre-conditions when selected.  */
+  return ((flag_contract_client_check > 0) && do_pre);
 }
 
 /* Possibly replace call with a call to a wrapper function which
@@ -1719,9 +1727,11 @@ maybe_contract_wrap_call (tree fndecl, tree call)
 
   bool do_pre = has_active_preconditions (fndecl);
   bool do_post = has_active_postconditions (fndecl);
-
-  /* Check if we need a wrapper.  */
-  if (!should_contract_wrap_call (do_pre, do_post))
+  bool is_virtual = DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
+		    && DECL_VIRTUAL_P (fndecl);
+  /* Check if we need a wrapper (virtual functions and when the relevant
+     client-side checks are enabled).  */
+  if (!should_contract_wrap_call (do_pre, do_post, is_virtual))
     return call;
 
   /* Build the declaration of the wrapper, if we need to.  */
@@ -1756,12 +1766,19 @@ define_contract_wrapper_func (const tree& fndecl, const tree& wrapdecl, void*)
   /* FIXME: Maybe we should check if fndecl is still dependent?  */
 
   gcc_checking_assert(!DECL_HAS_CONTRACTS_P (wrapdecl));
-  /* We check postconditions if postcondition checks are enabled for clients.
-    We should not get here unless there are some checks to make.  */
-  bool check_post = flag_contract_client_check > 1;
+  bool is_virtual = DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
+		    && DECL_VIRTUAL_P (fndecl);
+  /* We check postconditions on virtual function calls or if postcondition
+     checks are enabled for clients.  We should not get here unless there
+     are some checks to make.  */
+  bool check_post
+    = (flag_contract_client_check > 1)
+      || (is_virtual
+	  && (flag_contracts_on_virtual_functions
+	      != CONTRACTS_ON_VIRTUALS_NONE));
   /* For wrappers on CDTORs we need to refer to the original contracts,
      when the wrapper is around a clone.  */
-  set_fn_contract_specifiers ( wrapdecl,
+  set_fn_contract_specifiers (wrapdecl,
 		      copy_and_remap_contracts (wrapdecl, DECL_ORIGIN (fndecl),
 						check_post? cmk_all : cmk_pre));
 
@@ -1772,12 +1789,29 @@ define_contract_wrapper_func (const tree& fndecl, const tree& wrapdecl, void*)
 
   vec<tree, va_gc> * args = build_arg_list (wrapdecl);
 
-  /* We do not support contracts on virtual functions yet. Client side wrapping is
-   not supported for cxx2a contracts. */
-  gcc_checking_assert (!DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
-		       || !DECL_VIRTUAL_P (fndecl));
+  /* If this is a virtual member function, look up the virtual table entry.  */
+  tree fn = fndecl;
+  if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl) && DECL_VIRTUAL_P (fndecl))
+    {
+      tree *class_ptr = args->begin();
+      gcc_checking_assert (class_ptr);
 
-  tree call = build_thunk_like_call (fndecl, args->length (), args->address ());
+      tree t;
+      tree binfo = lookup_base (TREE_TYPE (TREE_TYPE (*class_ptr)),
+				DECL_CONTEXT (fndecl),
+				ba_any, NULL, tf_warning_or_error);
+      gcc_checking_assert (binfo && binfo != error_mark_node);
+
+      *class_ptr = build_base_path (PLUS_EXPR, *class_ptr, binfo, 1,
+				tf_warning_or_error);
+      if (TREE_SIDE_EFFECTS (*class_ptr))
+	*class_ptr = save_expr (*class_ptr);
+      t = build_pointer_type (TREE_TYPE (fndecl));
+      fn = build_vfn_ref (*class_ptr, DECL_VINDEX (fndecl));
+      TREE_TYPE (fn) = t;
+    }
+
+  tree call = build_thunk_like_call (fn, args->length (), args->address ());
 
   finish_return_stmt (call);
 
