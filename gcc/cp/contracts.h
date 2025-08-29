@@ -196,6 +196,22 @@ extern void maybe_emit_violation_handler_wrappers (void);
 extern tree init_builtin_contract_violation_type (void);
 extern tree build_contract_check		(tree);
 
+/* Returns the const-ify flag of the node.  */
+
+inline bool
+get_contract_const (const_tree t)
+{
+  return TREE_LANG_FLAG_4 (CONTRACT_CHECK (t));
+}
+
+/* Sets the const-ify flag of the node.  */
+
+inline void
+set_contract_const (tree t, bool constify)
+{
+  TREE_LANG_FLAG_4 (CONTRACT_CHECK (t)) = constify;
+}
+
 /* Test if EXP is a contract const wrapper node.  */
 
 inline bool

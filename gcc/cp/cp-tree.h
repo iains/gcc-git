@@ -2083,6 +2083,7 @@ struct GTY(()) saved_scope {
   int x_processing_constraint;
   int suppress_location_wrappers;
   BOOL_BITFIELD x_processing_postcondition : 1;
+  BOOL_BITFIELD x_should_constify_contract : 1;
   BOOL_BITFIELD x_processing_explicit_instantiation : 1;
   BOOL_BITFIELD need_pop_function_context : 1;
   BOOL_BITFIELD x_processing_omp_trait_property_expr : 1;
@@ -2172,6 +2173,7 @@ extern GTY(()) struct saved_scope *scope_chain;
   (scope_chain->bindings->kind == sk_contract)
 
 #define processing_postcondition scope_chain->x_processing_postcondition
+#define should_constify_contract scope_chain->x_should_constify_contract
 
 /* Nonzero if we are matching contracts of two functions.  Depending on
    whether a decl has been genericized or not, PARM_DECL may be adjusted

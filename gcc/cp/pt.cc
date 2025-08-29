@@ -12216,7 +12216,10 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
      the expression as if inside a template to avoid spurious type errors.  */
   begin_scope (sk_contract, decl);
   bool old_pc = processing_postcondition;
+  bool old_const = should_constify_contract;
   processing_postcondition = POSTCONDITION_P (t);
+  /* Should we const-ify this condition?  */
+  should_constify_contract =  get_contract_const (t);
   if (auto_p)
     ++processing_template_decl;
   if (newvar)
@@ -12256,6 +12259,7 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
   if (auto_p)
     --processing_template_decl;
   processing_postcondition = old_pc;
+  should_constify_contract = old_const;
   gcc_checking_assert (scope_chain && scope_chain->bindings
 		       && scope_chain->bindings->kind == sk_contract);
   pop_bindings_and_leave_scope ();
@@ -23060,8 +23064,9 @@ tsubst_expr (tree t, tree args, tsubst_flags_t complain, tree in_decl)
 
 	check_param_in_postcondition (op, EXPR_LOCATION (t));
 
-	if (flag_contracts && processing_contract_condition)
-	    op = constify_contract_access (op);
+	if (flag_contracts && should_constify_contract
+	    && processing_contract_condition)
+	  op = constify_contract_access (op);
 
 	/* Otherwise, we're dealing with a wrapper to make a C++20 template
 	   parameter object const.  */

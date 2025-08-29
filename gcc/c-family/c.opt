@@ -1940,6 +1940,10 @@ C++ ObjC++ Var(flag_contracts_conservative_ipa) Init(1)
 -fcontracts-conservative-ipa	Do not allow certain optimisations between
 functions in contract assertions.
 
+fcontracts-disable-constification
+C++ ObjC++ RejectNegative Var(flag_contracts_noconst) Init(0)
+Disable the const-ification of entities appearing in a contract condition.
+
 Enum
 Name(client_contract_check) Type(int)  UnknownError(unrecognized client contract check option %qs)
 

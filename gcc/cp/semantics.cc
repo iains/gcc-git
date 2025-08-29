@@ -4887,7 +4887,8 @@ finish_id_expression_1 (tree id_expression,
 	  *non_integral_constant_expression_p = true;
 	}
 
-      if (flag_contracts && processing_contract_condition)
+      if (flag_contracts && should_constify_contract
+	  && processing_contract_condition)
 	r = constify_contract_access (r);
 
       return r;
@@ -5091,7 +5092,8 @@ finish_id_expression_1 (tree id_expression,
     }
 
   check_param_in_postcondition (decl, location);
-  if (flag_contracts && processing_contract_condition)
+  if (flag_contracts && should_constify_contract
+	&& processing_contract_condition)
     decl = constify_contract_access (decl);
 
   return cp_expr (decl, location);
