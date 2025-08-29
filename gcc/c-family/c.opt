@@ -1944,6 +1944,15 @@ fcontracts-disable-constification
 C++ ObjC++ RejectNegative Var(flag_contracts_noconst) Init(0)
 Disable the const-ification of entities appearing in a contract condition.
 
+fcontracts-mutable-keyword
+C++ ObjC++ Var(flag_contracts_mutable_keyword) Init(0)
+Enable the mutable keyword for contracts.
+
+fcontracts-const-keyword
+C++ ObjC++ Var(flag_contracts_const_keyword) Init(0)
+Enable the const keyword for contracts.  This also disables
+constification-by-default.
+
 Enum
 Name(client_contract_check) Type(int)  UnknownError(unrecognized client contract check option %qs)
 

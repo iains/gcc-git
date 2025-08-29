@@ -2987,6 +2987,20 @@ static tree cp_parser_yield_expression
 
 /* Contracts */
 
+/* Modifiers allowed after a keyword but before the opening parens for the
+   condition.  */
+struct contract_modifier {
+  unsigned error_p   : 1;
+  unsigned const_p   : 1;
+  unsigned mutable_p : 1;
+};
+
+static contract_modifier cp_parser_function_contract_modifier_opt
+  (cp_parser *);
+
+static bool cp_parser_should_constify_contract
+  (const contract_modifier&);
+
 static tree cp_parser_contract_assert
   (cp_parser *parser, cp_token *token);
 
@@ -33574,6 +33588,111 @@ void cp_parser_late_contracts (cp_parser *parser,
   update_fn_contract_specifiers (fndecl, new_contracts);
 }
 
+static contract_modifier
+cp_parser_function_contract_modifier_opt (cp_parser * parser)
+{
+
+  contract_modifier mod{};
+  location_t first_const = UNKNOWN_LOCATION;
+  location_t first_mutable = UNKNOWN_LOCATION;
+
+  for (cp_token *tok = cp_lexer_peek_token (parser->lexer); tok;
+       tok = cp_lexer_peek_token (parser->lexer))
+    {
+      if (tok->type != CPP_KEYWORD)
+	break;
+
+      if (tok->keyword == RID_CONST)
+	{
+	  if (!flag_contracts_const_keyword)
+	    {
+	      error_at (tok->location, "%qs contract modifier requires %qs",
+			"const", "-fcontracts-const-keyword");
+	      mod.error_p = true;
+	    }
+	  else if (mod.const_p)
+	    {
+	      error_at (first_const, "duplicate %qs contract modifiers",
+			"const");
+	      mod.error_p = true;
+	    }
+	  else
+	    {
+	      first_const = tok->location;
+	      mod.const_p = true;
+	    }
+	  cp_lexer_consume_token (parser->lexer);
+	  continue;
+	}
+      else if (tok->keyword == RID_MUTABLE)
+	{
+	  if (!flag_contracts_mutable_keyword)
+	    {
+	      error_at (tok->location, "%qs contract modifier requires %qs",
+			"mutable", "-fcontracts-mutable-keyword");
+	      mod.error_p = true;
+	    }
+	  else if (mod.mutable_p)
+	    {
+	      error_at (first_mutable, "duplicate %qs contract modifiers",
+			"mutable");
+	      mod.error_p = true;
+	    }
+	  else
+	    {
+	      first_mutable = tok->location;
+	      mod.mutable_p = true;
+	    }
+	  cp_lexer_consume_token (parser->lexer);
+	  continue;
+	}
+      else
+	break; /* Some other keyword.  */
+    }
+  if (mod.const_p && mod.mutable_p)
+    {
+      error_at (first_const, "contract modifiers cannot be both %qs and %qs",
+		"const", "mutable");
+      mod.error_p = true;
+    }
+  return mod;
+}
+
+/* Decide on whether this contract is const-ified, which depends on both
+   the global choice fcontracts-disable-constification (flag_contracts_noconst)
+   and local MODIFIER settings.
+
+   Precedence:
+     'const' keyword
+     'mutable' keyword
+     -fcontracts-disable-constification.  */
+
+static bool
+cp_parser_should_constify_contract (const contract_modifier& modifier)
+{
+  /* Start with the user's base choice.  */
+  bool should_constify = !flag_contracts_noconst;
+
+  /* We do not need to check for mutable/const conflicts that was done when
+     parsing the modifier.  */
+
+  /* Do we have an override that makes this mutable?  */
+  if (!modifier.error_p
+      && (modifier.mutable_p
+	  || (flag_contracts_const_keyword && !modifier.const_p)))
+    should_constify = false;
+
+  /* Do we have an override that makes this const?
+     This would apply when the base choice is 'no' but we have the const
+     keyword applied to this specific contract.  */
+  if (!modifier.error_p
+      && flag_contracts_const_keyword
+      && modifier.const_p)
+    should_constify = true;
+
+  return should_constify;
+}
+
 static tree
 cp_parser_contract_assert (cp_parser *parser, cp_token *token)
 {
@@ -33589,6 +33708,8 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
 
   token = cp_lexer_consume_token (parser->lexer);
   location_t loc = token->location;
+  contract_modifier modifier
+    = cp_parser_function_contract_modifier_opt (parser);
 
   location_t attrs_loc = cp_lexer_peek_token (parser->lexer)->location;
   tree std_attrs = cp_parser_std_attribute_spec_seq (parser);
@@ -33606,7 +33727,7 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
   auto suppression = make_temp_override (suppress_location_wrappers, 0);
 
   /* Do we have an override for const-ification?  */
-  bool should_constify = !flag_contracts_noconst;
+  bool should_constify = cp_parser_should_constify_contract (modifier);
 
   /* If we have a current class object, see if we need to consider
      it const when processing the contract condition.  */
@@ -33684,6 +33805,10 @@ cp_parser_function_contract_specifier (cp_parser *parser)
   location_t loc = token->location;
   bool postcondition_p = is_attribute_p ("post", contract_name);
 
+  /* Parse experimental modifiers on C++26 contracts.  */
+  contract_modifier modifier
+    = cp_parser_function_contract_modifier_opt (parser);
+
   location_t attrs_loc = cp_lexer_peek_token (parser->lexer)->location;
   tree std_attrs = cp_parser_std_attribute_spec_seq (parser);
   if (std_attrs)
@@ -33716,7 +33841,7 @@ cp_parser_function_contract_specifier (cp_parser *parser)
     cp_parser_require (parser, CPP_COLON, RT_COLON);
 
   /* Do we have an override for const-ification?  */
-  bool should_constify = !flag_contracts_noconst;
+  bool should_constify = cp_parser_should_constify_contract (modifier);
 
   tree contract;
   if (current_class_type &&
