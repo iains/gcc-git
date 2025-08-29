@@ -202,6 +202,22 @@ set_decl_contracts (tree decl, tree contract_attrs)
   set_fn_contract_specifiers (decl, contract_attrs);
 }
 
+/* Returns the const-ify flag of the node.  */
+
+inline bool
+get_contract_const (const_tree t)
+{
+  return TREE_LANG_FLAG_4 (CONTRACT_CHECK (t));
+}
+
+/* Sets the const-ify flag of the node.  */
+
+inline void
+set_contract_const (tree t, bool constify)
+{
+  TREE_LANG_FLAG_4 (CONTRACT_CHECK (t)) = constify;
+}
+
 /* Test if EXP is a contract const wrapper node.  */
 
 inline bool
