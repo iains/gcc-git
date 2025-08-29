@@ -1976,6 +1976,7 @@ struct GTY(()) saved_scope {
   int x_processing_constraint;
   int suppress_location_wrappers;
   BOOL_BITFIELD x_processing_postcondition : 1;
+  BOOL_BITFIELD x_should_constify_contract : 1;
   BOOL_BITFIELD x_processing_explicit_instantiation : 1;
   BOOL_BITFIELD need_pop_function_context : 1;
   BOOL_BITFIELD x_processing_omp_trait_property_expr : 1;
@@ -2062,6 +2063,7 @@ extern GTY(()) struct saved_scope *scope_chain;
   (scope_chain->bindings->kind == sk_contract)
 
 #define processing_postcondition scope_chain->x_processing_postcondition
+#define should_constify_contract scope_chain->x_should_constify_contract
 
 #define in_discarded_stmt scope_chain->discarded_stmt
 #define in_consteval_if_p scope_chain->consteval_if_p

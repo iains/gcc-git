@@ -3521,7 +3521,9 @@ rebuild_postconditions (tree fndecl)
 
       begin_scope (sk_contract, fndecl);
       bool old_pc = processing_postcondition;
+      bool old_const = should_constify_contract;
       processing_postcondition = true;
+      should_constify_contract = get_contract_const (contract);
       register_local_specialization (newvar, oldvar);
 
       condition = tsubst_expr (condition, make_tree_vec (0),
@@ -3531,6 +3533,7 @@ rebuild_postconditions (tree fndecl)
       POSTCONDITION_IDENTIFIER (contract) = newvar;
       CONTRACT_CONDITION (contract) = finish_contract_condition (condition);
       processing_postcondition = old_pc;
+      should_constify_contract = old_const;
       gcc_checking_assert (scope_chain && scope_chain->bindings
 			   && scope_chain->bindings->kind == sk_contract);
       pop_bindings_and_leave_scope ();

@@ -432,6 +432,22 @@ set_contract_semantic (tree t, contract_semantic semantic)
   TREE_LANG_FLAG_0 (t) = (semantic & 0x04) >> 2;
 }
 
+/* Returns the const-ify flag of the node.  */
+
+inline bool
+get_contract_const (const_tree t)
+{
+  return TREE_LANG_FLAG_4 (CONTRACT_CHECK (t));
+}
+
+/* Sets the const-ify flag of the node.  */
+
+inline void
+set_contract_const (tree t, bool constify)
+{
+  TREE_LANG_FLAG_4 (CONTRACT_CHECK (t)) = constify;
+}
+
 /* Test if EXP is a contract const wrapper node.  */
 
 inline bool
