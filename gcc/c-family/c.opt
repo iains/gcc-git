@@ -1969,6 +1969,10 @@ fcontracts-definition-check=
 C++ ObjC++ Joined RejectNegative Enum(on_off) Var(flag_contracts_definition_check) Init(1)
 -fcontracts-definition-check=[on|off]	Enable or disable contract checks on the definition side for all functions (default on).
 
+fcontracts-disable-predicate-exception-translation
+C++ ObjC++ RejectNegative Var(flag_contracts_disable_predicate_exception_translation) Init(0)
+Disable the translation of predicate exceptions to contract violations.
+
 fcoroutines
 C++ ObjC++ LTO Var(flag_coroutines)
 Enable C++ coroutines (experimental).
