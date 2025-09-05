@@ -2609,9 +2609,25 @@ build_contract_check_p2900 (tree contract)
 	return NULL_TREE;
     }
 
-  bool check_might_throw = flag_exceptions
-			   && !expr_noexcept_p (condition, tf_none);
+  bool predicate_needs_catch = flag_exceptions
+			       && !expr_noexcept_p (condition, tf_none);
 
+  /* Extension: catching predicate exceptions is disabled if
+     -fcontracts-disable-predicate-exception-translation is used
+     and the evaluation semantic isn't noexcept_enforce or
+     noexcept_observe.  */
+  if (flag_contracts_disable_predicate_exception_translation)
+    {
+      if (semantic != CES_NOEXCEPT_ENFORCE
+	  && semantic != CES_NOEXCEPT_OBSERVE)
+	predicate_needs_catch = false;
+      else
+	warning_at (loc, 1,
+		    "%<-fcontracts-disable-predicate-exception-translation%> "
+		    "ignored when the evaluation semantic is "
+		    "%<noexcept_enforce%> "
+		    "or %<noexcept_ignore%>");
+    }
   /* Build a read-only violation object, with the contract settings.  */
   /* Build a statement expression to hold a contract check, with the check
      potentially wrapped in a try-catch expr.  */
@@ -2636,7 +2652,7 @@ build_contract_check_p2900 (tree contract)
       viol_is_var = true;
     }
   /* So now do we need a try-catch?  */
-  if (check_might_throw)
+  if (predicate_needs_catch)
     {
       /* This will hold the computed condition.  */
       tree check_failed = build_decl (loc, VAR_DECL, NULL, boolean_type_node);

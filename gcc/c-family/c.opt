@@ -1916,6 +1916,10 @@ C++ Var(flag_contracts_nonattr_const_keyword) Init(0)
 Enable the const keyword for non-attribute syntax for contracts.
 This also disables constification-by-default.
 
+fcontracts-disable-predicate-exception-translation
+C++ RejectNegative Var(flag_contracts_disable_predicate_exception_translation) Init(0)
+Disable the translation of predicate exceptions to contract violations.
+
 fcontract-assumption-mode=
 C++ Joined RejectNegative
 -fcontract-assumption-mode=[on|off]	Enable or disable treating axiom level contracts as assumptions (default on).
@@ -1998,7 +2002,7 @@ EnumValue
 Enum(client_contract_check) String(all) Value(2)
 
 fcontracts-nonattr-client-check=
-C++ Joined RejectNegative Enum(client_contract_check) Var(flag_contract_nonattr_client_check) Init (0)
+C++ Joined RejectNegative Enum(client_contract_check) Var(flag_contract_nonattr_client_check) Init(0)
 -fcontracts-nonattr-client-check=[none|pre|all] Select which contracts will be checked on the client side for non virtual functions
 
 fcontracts-nonattr-definition-check=
