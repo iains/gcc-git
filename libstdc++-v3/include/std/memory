@@ -125,6 +125,7 @@
 #define __glibcxx_want_to_address
 #define __glibcxx_want_transparent_operators
 #define __glibcxx_want_smart_ptr_owner_equality
+#define __glibcxx_want_trivially_relocatable
 #include <bits/version.h>
 
 #if __cplusplus >= 201103L && __cplusplus <= 202002L && _GLIBCXX_HOSTED
@@ -173,6 +174,131 @@ get_pointer_safety() noexcept { return pointer_safety::relaxed; }
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace
 #endif // C++11 to C++20
+
+#ifdef __cpp_lib_trivially_relocatable
+namespace std _GLIBCXX_VISIBILITY(default)
+{
+_GLIBCXX_BEGIN_NAMESPACE_VERSION
+
+  template<typename _Tp>
+    [[__gnu__::__always_inline__]]
+    inline _Tp*
+    trivially_relocate(_Tp* __first, _Tp* __last, _Tp* __result) noexcept
+    {
+      static_assert(is_trivially_relocatable_v<_Tp> && !is_const_v<_Tp>);
+      if (__first == __result)
+	return __last;
+#if __has_builtin(__builtin_trivially_relocate)
+      __builtin_trivially_relocate(__result, __first, __last - __first);
+#else
+      __builtin_memmove(static_cast<void*>(__result),
+			static_cast<const void*>(__first),
+			(__last - __first) * sizeof(_Tp));
+#endif
+      return __result + (__last - __first);
+    }
+
+  template<typename _Tp>
+    constexpr _Tp*
+    relocate(_Tp* __first, _Tp* __last, _Tp* __result) noexcept
+    {
+      static_assert(is_nothrow_relocatable_v<_Tp> && !is_const_v<_Tp>);
+      if !consteval
+	{
+	  if constexpr (is_trivially_relocatable_v<_Tp>)
+	    return std::trivially_relocate(__first, __last, __result);
+	}
+      if (__first == __result)
+	return __last;
+      if (__first == __last)
+	return __result;
+
+      size_t __n = __last - __first;
+      if constexpr (is_move_constructible_v<_Tp>)
+	{
+	  if !consteval
+	    {
+	      // If there is no overlap, move everything first and then
+	      // destruct.
+	      if ((__UINTPTR_TYPE__)__last <= (__UINTPTR_TYPE__)__result
+		  || ((__UINTPTR_TYPE__)(__result + __n)
+		      <= (__UINTPTR_TYPE__)__first))
+		{
+		  __result = std::uninitialized_move(__first, __last,
+						     __result);
+		  std::destroy(__first, __last);
+		  return __result;
+		}
+	    }
+	}
+
+      bool __fwd = true;
+      if consteval
+	{
+	  // Use __builtin_constant_p to determine if __result and __first
+	  // point into the same object, if they don't, there is no overlap
+	  // and so either __fwd or !__fwd is fine.
+	  if (__builtin_constant_p (__result < __first)
+	      && __result > __first
+	      && __result < __last)
+	    __fwd = false;
+	}
+      else
+	{
+	  __fwd = ((__UINTPTR_TYPE__)__result - (__UINTPTR_TYPE__)__first
+		   >= (__UINTPTR_TYPE__)__last - (__UINTPTR_TYPE__)__first);
+	}
+      if (__fwd) [[likely]]
+	{
+	  for (; __first != __last; ++__first, ++__result)
+	    {
+	      if constexpr (is_array_v<_Tp>)
+#if __cpp_lib_start_lifetime_as >= 202207L
+		std::relocate(std::begin(*__first), std::end(*__first),
+			      *std::start_lifetime_as<_Tp>(__result));
+#else
+		std::relocate(std::begin(*__first), std::end(*__first),
+			      std::addressof(*__result)[0]);
+#endif
+	      else
+		{
+		  ::new(__result) _Tp(std::move(*__first));
+		  __first->~_Tp();
+		}
+	    }
+	  return __result;
+	}
+      else
+	{
+	  _Tp *__ret = __result + __n;
+	  for (__result = __ret; __last != __first; )
+	    {
+	      --__last;
+	      --__result;
+	      if constexpr (is_array_v<_Tp>)
+#if __cpp_lib_start_lifetime_as >= 202207L
+		std::relocate(std::begin(*__last), std::end(*__last),
+			      *std::start_lifetime_as<_Tp>(__result));
+#else
+		std::relocate(std::begin(*__last), std::end(*__last),
+			      std::addressof(*__result)[0]);
+#endif
+	      else
+		{
+		  ::new(__result) _Tp(std::move(*__last));
+		  __last->~_Tp();
+		}
+	    }
+	  return __ret;
+	}
+      // If at constand evaluation is_trivially_relocatable_v<_Tp>
+      // but not is_move_constructible_V<_Tp>, fail.
+      __builtin_unreachable();
+    }
+
+_GLIBCXX_END_NAMESPACE_VERSION
+} // namespace
+#endif
 
 #ifdef __cpp_lib_parallel_algorithm // C++ >= 17 && HOSTED
 // Parallel STL algorithms
