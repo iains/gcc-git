@@ -2586,4 +2586,14 @@
 #endif /* !defined(__cpp_lib_contracts) */
 #undef __glibcxx_want_contracts
 
+#if !defined(__cpp_lib_trivially_relocatable)
+# if (__cplusplus >  202302L) && (__cpp_trivial_relocatability >= 202502L)
+#  define __glibcxx_trivially_relocatable 202502L
+#  if defined(__glibcxx_want_all) || defined(__glibcxx_want_trivially_relocatable)
+#   define __cpp_lib_trivially_relocatable 202502L
+#  endif
+# endif
+#endif /* !defined(__cpp_lib_trivially_relocatable) */
+#undef __glibcxx_want_trivially_relocatable
+
 #undef __glibcxx_want_all
