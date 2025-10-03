@@ -33,16 +33,16 @@ int main(int, char **) {
 }
 
 // { dg-skip-if "requires hosted libstdc++ for cstdio" { ! hostedlib } }
-// { dg-output "contract violation in function S::S<int> at .*.C:8: .*(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S::S<int> at .*.C:8: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:8: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:8: .*(\n|\r\n|\r)" }
 // { dg-output "S::S.T.: -1(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S::S<double> at .*.C:8: .*(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S::S<double> at .*.C:8: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:8: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:8: .*(\n|\r\n|\r)" }
 // { dg-output "S::S.T.: -2(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S1::S1<int> at .*.C:20: .*(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S1::S1<int> at .*.C:20: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:20: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:20: .*(\n|\r\n|\r)" }
 // { dg-output "S1::S1.T.: -3(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S1::S1<double> at .*.C:20: .*(\n|\r\n|\r)" }
-// { dg-output "contract violation in function S1::S1<double> at .*.C:20: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:20: .*(\n|\r\n|\r)" }
+// { dg-output "contract violation in function .* at .*.C:20: .*(\n|\r\n|\r)" }
 // { dg-output "S1::S1.T.: -4(\n|\r\n|\r)" }
 

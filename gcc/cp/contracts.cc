@@ -520,7 +520,15 @@ build_contract_condition_function (tree fndecl, bool pre)
   if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl))
     TREE_TYPE (fn) = build_method_type (class_type, TREE_TYPE (fn));
 
-  DECL_NAME (fn) = copy_node (DECL_NAME (fn));
+  if (DECL_CONSTRUCTOR_P (fndecl) || DECL_DESTRUCTOR_P (fndecl))
+  {
+      /* If we're dealing with a cdtor, we need to give it a "normal"
+	 DECL_NAME so it doesn't trigger IDENTIFIER_CDTOR_P checks */
+      DECL_NAME (fn) = DECL_ASSEMBLER_NAME(fndecl);
+      DECL_CXX_DESTRUCTOR_P (fn) = DECL_CXX_CONSTRUCTOR_P (fn) = 0;
+  }
+  else
+    DECL_NAME (fn) = copy_node (DECL_NAME (fn));
   DECL_INITIAL (fn) = NULL_TREE;
   CONTRACT_HELPER (fn) = pre ? ldf_contract_pre : ldf_contract_post;
 
@@ -536,16 +544,6 @@ build_contract_condition_function (tree fndecl, bool pre)
       DECL_EXTERNAL (fn) = false;
       DECL_WEAK (fn) = false;
       DECL_COMDAT (fn) = false;
-
-      /* We may not have set the comdat group on the guarded function yet.
-	 If we haven't, we'll add this to the same group in comdat_linkage
-	 later.  Otherwise, add it to the same comdat group now.  */
-      if (DECL_ONE_ONLY (fndecl))
-	{
-	  symtab_node *n = symtab_node::get (fndecl);
-	  cgraph_node::get_create (fn)->add_to_same_comdat_group (n);
-	}
-
       DECL_INTERFACE_KNOWN (fn) = true;
     }
 
@@ -672,19 +670,6 @@ handle_contracts_p (tree fndecl)
 	  && !processing_template_decl
 	  && (CONTRACT_HELPER (fndecl) == ldf_contract_none)
 	  && contract_any_active_p (fndecl));
-}
-
-/* Should we break out FNDECL pre/post contracts into separate functions?
-   FIXME I'd like this to default to 0, but that will need an overhaul to the
-   return identifier handling to just refer to the RESULT_DECL.  */
-
-static bool
-outline_contracts_p (tree fndecl)
-{
-  bool cdtor = DECL_CONSTRUCTOR_P (fndecl) || DECL_DESTRUCTOR_P (fndecl);
-  if (flag_contracts_nonattr)
-    return flag_contract_checks_outlined && !cdtor;
-  return !cdtor;
 }
 
 /* Returns the parameter corresponding to the return value of a guarded
@@ -961,8 +946,9 @@ build_thunk_like_call (tree function, int n, tree *argarray)
 
   tree decl = get_callee_fndecl (function);
 
+  /* Set TREE_USED for the benefit of -Wunused.  */
   if (decl && !TREE_USED (decl))
-      mark_used (decl);
+    TREE_USED (decl) = true;
 
   CALL_FROM_THUNK_P (function) = true;
 
@@ -984,40 +970,6 @@ build_arg_list (tree fndecl)
   for (tree t = DECL_ARGUMENTS (fndecl); t; t = DECL_CHAIN (t))
     vec_safe_push (args, t);
   return args;
-}
-
-/* If we have a precondition function and it's valid, call it.  */
-
-static void
-add_pre_condition_fn_call (tree fndecl)
-{
-  /* If we're starting a guarded function with valid contracts, we need to
-     insert a call to the pre function.  */
-  gcc_checking_assert (DECL_PRE_FN (fndecl)
-		       && DECL_PRE_FN (fndecl) != error_mark_node);
-
-  releasing_vec args = build_arg_list (fndecl);
-  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl), args->length (),
-			    args->address ());
-
-  finish_expr_stmt (call);
-}
-
-/* Build and add a call to the post-condition checking function, when that
-   is in use.  */
-
-static void
-add_post_condition_fn_call (tree fndecl)
-{
-  gcc_checking_assert (DECL_POST_FN (fndecl)
-		       && DECL_POST_FN (fndecl) != error_mark_node);
-
-  releasing_vec args = build_arg_list (fndecl);
-  if (get_postcondition_result_parameter (fndecl))
-    vec_safe_push (args, DECL_RESULT (fndecl));
-  tree call = build_thunk_like_call (DECL_POST_FN (fndecl), args->length (),
-			    args->address ());
-  finish_expr_stmt (call);
 }
 
 static tree
@@ -1098,14 +1050,16 @@ copy_contracts (tree fndecl, contract_match_kind remap_kind = cmk_all)
 static void
 apply_preconditions (tree fndecl)
 {
-  if (outline_contracts_p (fndecl))
-    add_pre_condition_fn_call (fndecl);
-  else
-  {
-    tree contract_copy = copy_contracts (fndecl, cmk_pre);
-    for (; contract_copy; contract_copy = NEXT_CONTRACT_ATTR (contract_copy))
-      emit_contract_attr (contract_copy);
-  }
+  /* If we're starting a guarded function with valid contracts, we need to
+   insert a call to the pre function.  */
+  gcc_checking_assert(
+      DECL_PRE_FN (fndecl) && DECL_PRE_FN (fndecl) != error_mark_node);
+
+  releasing_vec args = build_arg_list (fndecl);
+  tree call = build_thunk_like_call (DECL_PRE_FN(fndecl), args->length (),
+				     args->address ());
+
+  finish_expr_stmt (call);
 }
 
 /* Add a call or a direct evaluation of the post checks.  */
@@ -1113,14 +1067,15 @@ apply_preconditions (tree fndecl)
 static void
 apply_postconditions (tree fndecl)
 {
-  if (outline_contracts_p (fndecl))
-    add_post_condition_fn_call (fndecl);
-  else
-    {
-      tree contract_copy = copy_contracts (fndecl, cmk_post);
-      for (; contract_copy; contract_copy = NEXT_CONTRACT_ATTR (contract_copy))
-	emit_contract_attr (contract_copy);
-    }
+  gcc_checking_assert(
+      DECL_POST_FN (fndecl) && DECL_POST_FN (fndecl) != error_mark_node);
+
+  releasing_vec args = build_arg_list (fndecl);
+  if (get_postcondition_result_parameter (fndecl))
+    vec_safe_push (args, DECL_RESULT(fndecl));
+  tree call = build_thunk_like_call (DECL_POST_FN(fndecl), args->length (),
+				     args->address ());
+  finish_expr_stmt (call);
 }
 
 
@@ -2414,16 +2369,6 @@ build_contract_check_p2900 (tree contract)
   if (condition == error_mark_node)
     return NULL_TREE;
 
-  /* When we are building a post condition in-line, we need to refer to the
-     actual function return, not the user's placeholder variable.  */
-  if (!flag_contract_checks_outlined && POSTCONDITION_P (contract))
-    {
-      remap_retval (current_function_decl, contract);
-      condition = CONTRACT_CONDITION (contract);
-      if (condition == error_mark_node)
-	return NULL_TREE;
-    }
-
   bool check_might_throw = flag_exceptions
 			   && !expr_noexcept_p (condition, tf_none);
 
@@ -2875,10 +2820,6 @@ start_function_contracts (tree fndecl)
 	      }
 	  }
 
-  /* For cdtors, we evaluate the contracts check inline.  */
-  if (!outline_contracts_p (fndecl))
-    return;
-
   /* Contracts may have just been added without a chance to parse them, though
      we still need the PRE_FN available to generate a call to it.  */
   /* Do we already have declarations generated ? */
@@ -3034,10 +2975,8 @@ finish_function_contracts (tree fndecl)
       || DECL_INITIAL (fndecl) == error_mark_node)
     return;
 
-  /* If there are no contracts here, or we're building them in-line then we
-     do not need to build the outlined functions.  */
-  if (!handle_contracts_p (fndecl)
-      || !outline_contracts_p (fndecl))
+  /* If there are no contracts here do not need to build the outlined functions.  */
+  if (!handle_contracts_p (fndecl))
     return;
 
   tree attr = flag_contracts_nonattr
