@@ -876,20 +876,6 @@ build_contract_handler_call (tree violation)
   finish_expr_stmt (call);
 }
 
-static tree build_contract_violation_cxx2a (tree);
-static tree build_contract_violation_p2900 (tree, bool);
-
-/* Return a VAR_DECL to pass to handle_contract_violation.  */
-
-static tree
-build_contract_violation (tree contract, bool is_const)
-{
-  if (flag_contracts_nonattr)
-    return build_contract_violation_p2900 (contract, is_const);
-
-  return build_contract_violation_cxx2a (contract);
-}
-
 /* Add the contract statement CONTRACT to the current block if valid.  */
 
 static bool
@@ -1583,7 +1569,7 @@ build_contract_check_cxx2a (tree contract)
   finish_if_stmt_cond (cond, if_stmt);
   if (semantic == CCS_NEVER || semantic == CCS_MAYBE)
     {
-      tree violation = build_contract_violation (contract, /*is_const*/true);
+      tree violation = build_contract_violation_cxx2a (contract);
       build_contract_handler_call (build_address (violation));
     }
 
@@ -2330,13 +2316,6 @@ build_contract_violation_p2900_var (tree ctor, tree contract)
   layout_decl (viol_, 0);
   DECL_INITIAL (viol_) = ctor;
   return viol_;
-}
-
-static tree
-build_contract_violation_p2900 (tree contract, bool is_const)
-{
-  tree ctor = build_contract_violation_p2900_ctor (contract);
-  return build_contract_violation_p2900_constant (ctor, contract, is_const);
 }
 
 /* Shared code between TU-local wrappers for the violation handler.  */
