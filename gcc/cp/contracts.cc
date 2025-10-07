@@ -1934,18 +1934,6 @@ cp_contract_assertion_p (const_tree attr)
 
 /* =========================== C++26 contracts ============================  */
 
-/* FIXME: add a design description.... */
-static tree
-contracts_fixup_cdtorname (tree idin)
-{
-  const char *n = IDENTIFIER_POINTER (idin);
-  size_t l = strlen (n);
-  char *nn = xasprintf ("%.*s_", (int)l-1, n);
-  tree nid = get_identifier (nn);
-  free (nn);
-  return nid;
-}
-
 /* Lookup a name in std::, or inject it.  */
 
 static tree
