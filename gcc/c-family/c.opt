@@ -1911,6 +1911,10 @@ fcontract-evaluation-semantic=
 C++ ObjC++ Joined RejectNegative Enum(contract_semantic) Var(flag_contract_evaluation_semantic) Init(3)
 -fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce]	Select the contract evaluation semantic (defaults to enforce).
 
+fcontract-checks-inlined
+C++ ObjC++ Var(flag_contract_checks_inlined) Init(0)
+-fcontract-checks-inlined	Build contract checks inlined into the function they are checking.
+
 fcontract-disable-optimized-checks
 C++ ObjC++ Var(flag_contract_disable_optimized_checks) Init(0)
 -fcontract-disable-optimized-checks	Disable optimisation of contract checks.

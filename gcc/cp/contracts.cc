@@ -205,6 +205,38 @@ remap_dummy_this (tree fndecl, tree *expr)
   walk_tree (expr, remap_dummy_this_1, fndecl, NULL);
 }
 
+/* Replace uses of user's placeholder var with the actual return value.  */
+
+struct replace_tree
+{
+  tree from, to;
+};
+
+static tree
+remap_retval_1 (tree *here, int *do_subtree, void *d)
+{
+  replace_tree *data = (replace_tree *) d;
+
+  if (*here == data->from)
+    {
+      *here = data->to;
+      *do_subtree = 0;
+    }
+  else
+    *do_subtree = 1;
+  return NULL_TREE;
+}
+
+static void
+remap_retval (tree fndecl, tree contract)
+{
+  struct replace_tree data;
+  data.from = POSTCONDITION_IDENTIFIER (contract);
+  gcc_checking_assert (DECL_RESULT (fndecl));
+  data.to = DECL_RESULT (fndecl);
+  walk_tree (&CONTRACT_CONDITION (contract), remap_retval_1, &data, NULL);
+}
+
 /* Contract matching.  */
 
 /* True if the contract is valid.  */
@@ -603,6 +635,14 @@ handle_contracts_p (tree fndecl)
 	  && contract_any_active_p (fndecl));
 }
 
+/* Should we break pre/post contracts into separate functions?  */
+
+static bool
+outline_contracts_p ()
+{
+  return !flag_contract_checks_inlined;
+}
+
 /* Returns the parameter corresponding to the return value of a guarded
    function FNDECL.  Returns NULL_TREE if FNDECL has no postconditions or
    is void.  */
@@ -803,6 +843,19 @@ emit_contract_statement (tree contract)
   return true;
 }
 
+/* Generate the statement for the given contract attribute by adding the
+   statement to the current block. Returns the next contract in the chain.  */
+
+static tree
+emit_contract_attr (tree attr)
+{
+  gcc_assert (TREE_CODE (attr) == TREE_LIST);
+
+  emit_contract_statement (CONTRACT_STATEMENT (attr));
+
+  return TREE_CHAIN (attr);
+}
+
 /* We're compiling the pre/postcondition function CONDFN; remap any FN
    attributes that match CODE and emit them.  */
 
@@ -846,9 +899,8 @@ build_thunk_like_call (tree function, int n, tree *argarray)
 
   tree decl = get_callee_fndecl (function);
 
-  /* Set TREE_USED for the benefit of -Wunused.  */
   if (decl && !TREE_USED (decl))
-    TREE_USED (decl) = true;
+      mark_used (decl);
 
   CALL_FROM_THUNK_P (function) = true;
 
@@ -872,14 +924,55 @@ build_arg_list (tree fndecl)
   return args;
 }
 
+/* If we have a precondition function and it's valid, call it.  */
+
+static void
+add_pre_condition_fn_call (tree fndecl)
+{
+  /* If we're starting a guarded function with valid contracts, we need to
+     insert a call to the pre function.  */
+  gcc_checking_assert (DECL_PRE_FN (fndecl)
+		       && DECL_PRE_FN (fndecl) != error_mark_node);
+
+  releasing_vec args = build_arg_list (fndecl);
+  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl), args->length (),
+			    args->address ());
+
+  finish_expr_stmt (call);
+}
+
+/* Build and add a call to the post-condition checking function, when that
+   is in use.  */
+
+static void
+add_post_condition_fn_call (tree fndecl)
+{
+  gcc_checking_assert (DECL_POST_FN (fndecl)
+		       && DECL_POST_FN (fndecl) != error_mark_node);
+
+  releasing_vec args = build_arg_list (fndecl);
+  if (get_postcondition_result_parameter (fndecl))
+    vec_safe_push (args, DECL_RESULT (fndecl));
+  tree call = build_thunk_like_call (DECL_POST_FN (fndecl), args->length (),
+			    args->address ());
+  finish_expr_stmt (call);
+}
+
 /* Copy all contracts from ATTR and apply them to FNDECL. */
 
 static tree
-copy_contracts_list (tree attr, tree fndecl)
+copy_contracts_list (tree attr, tree fndecl,
+		     contract_match_kind remap_kind = cmk_all)
 {
   tree last = NULL_TREE, contract_attrs = NULL_TREE;
   for (; attr; attr = NEXT_CONTRACT_ATTR (attr))
     {
+      if ((remap_kind == cmk_pre
+	   && (TREE_CODE (CONTRACT_STATEMENT (attr)) == POSTCONDITION_STMT))
+	  || (remap_kind == cmk_post
+	      && (TREE_CODE (CONTRACT_STATEMENT (attr)) == PRECONDITION_STMT)))
+	continue;
+
       tree c = copy_node (attr);
       TREE_VALUE (c) = build_tree_list (TREE_PURPOSE (TREE_VALUE (c)),
 					copy_node (CONTRACT_STATEMENT (c)));
@@ -924,21 +1017,33 @@ copy_contracts_list (tree attr, tree fndecl)
   return contract_attrs;
 }
 
+/* Returns a copy of FNDECL contracts. This is used when emiting a contract.
+ If we were to emit the original contract tree, any folding of the contract
+ condition would affect the original contract too. The original contract
+ tree needs to be preserved in case it is used to apply to a different
+ function (for inheritance or wrapping reasons). */
+
+static tree
+copy_contracts (tree fndecl, contract_match_kind remap_kind = cmk_all)
+{
+  tree attr = GET_FN_CONTRACT_SPECIFIERS (fndecl);
+  return copy_contracts_list (attr, fndecl, remap_kind);
+}
+
+
 /* Add a call or a direct evaluation of the pre checks.  */
 
 static void
 apply_preconditions (tree fndecl)
 {
-  /* If we're starting a guarded function with valid contracts, we need to
-   insert a call to the pre function.  */
-  gcc_checking_assert(
-      DECL_PRE_FN (fndecl) && DECL_PRE_FN (fndecl) != error_mark_node);
-
-  releasing_vec args = build_arg_list (fndecl);
-  tree call = build_thunk_like_call (DECL_PRE_FN(fndecl), args->length (),
-				     args->address ());
-
-  finish_expr_stmt (call);
+  if (outline_contracts_p ())
+    add_pre_condition_fn_call (fndecl);
+  else
+  {
+    tree contract_copy = copy_contracts (fndecl, cmk_pre);
+    for (; contract_copy; contract_copy = NEXT_CONTRACT_ATTR (contract_copy))
+      emit_contract_attr (contract_copy);
+  }
 }
 
 /* Add a call or a direct evaluation of the post checks.  */
@@ -946,18 +1051,15 @@ apply_preconditions (tree fndecl)
 static void
 apply_postconditions (tree fndecl)
 {
-  gcc_checking_assert(
-      DECL_POST_FN (fndecl) && DECL_POST_FN (fndecl) != error_mark_node);
-
-  releasing_vec args = build_arg_list (fndecl);
-  if (get_postcondition_result_parameter (fndecl))
-    vec_safe_push (args, DECL_RESULT(fndecl));
-  tree call = build_thunk_like_call (DECL_POST_FN(fndecl), args->length (),
-				     args->address ());
-  finish_expr_stmt (call);
+  if (outline_contracts_p ())
+    add_post_condition_fn_call (fndecl);
+  else
+    {
+      tree contract_copy = copy_contracts (fndecl, cmk_post);
+      for (; contract_copy; contract_copy = NEXT_CONTRACT_ATTR (contract_copy))
+	emit_contract_attr (contract_copy);
+    }
 }
-
-/* =========================== C++26 contracts ============================  */
 
 /* Lookup a name in std::, or inject it.  */
 
@@ -1458,6 +1560,16 @@ build_contract_check (tree contract)
   if (condition == error_mark_node)
     return NULL_TREE;
 
+  /* When we are building a post condition in-line, we need to refer to the
+     actual function return, not the user's placeholder variable.  */
+  if (flag_contract_checks_inlined && POSTCONDITION_P (contract))
+    {
+      remap_retval (current_function_decl, contract);
+      condition = CONTRACT_CONDITION (contract);
+      if (condition == error_mark_node)
+	return NULL_TREE;
+    }
+
   bool check_might_throw = flag_exceptions
 			   && !expr_noexcept_p (condition, tf_none);
 
@@ -1770,6 +1882,10 @@ start_function_contracts (tree fndecl)
 	    }
 	}
 
+  /* For cdtors, we evaluate the contracts check inline.  */
+  if (!outline_contracts_p ())
+    return;
+
   /* Contracts may have just been added without a chance to parse them, though
      we still need the PRE_FN available to generate a call to it.  */
   /* Do we already have declarations generated ? */
@@ -1916,8 +2032,10 @@ finish_function_contracts (tree fndecl)
       || DECL_INITIAL (fndecl) == error_mark_node)
     return;
 
-  /* If there are no contracts here do not need to build the outlined functions.  */
-  if (!handle_contracts_p (fndecl))
+  /* If there are no contracts here, or we're building them in-line then we
+     do not need to build the outlined functions.  */
+  if (!handle_contracts_p (fndecl)
+      || !outline_contracts_p ())
     return;
 
   tree attr = GET_FN_CONTRACT_SPECIFIERS (fndecl);
