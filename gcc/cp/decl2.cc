@@ -2378,16 +2378,6 @@ comdat_linkage (tree decl)
   if (flag_weak)
     {
       make_decl_one_only (decl, cxx_comdat_group (decl));
-      if (HAVE_COMDAT_GROUP
-	  && flag_contracts
-	  && (DECL_CONTRACT_ATTRS (decl) || GET_FN_CONTRACT_SPECIFIERS (decl)))
-	{
-	  symtab_node *n = symtab_node::get (decl);
-	  if (tree pre = DECL_PRE_FN (decl))
-	    cgraph_node::get_create (pre)->add_to_same_comdat_group (n);
-	  if (tree post = DECL_POST_FN (decl))
-	    cgraph_node::get_create (post)->add_to_same_comdat_group (n);
-	}
     }
   else if (TREE_CODE (decl) == FUNCTION_DECL
 	   || (VAR_P (decl) && DECL_ARTIFICIAL (decl)))
