@@ -216,38 +216,6 @@ remap_dummy_this (tree fndecl, tree *expr)
   walk_tree (expr, remap_dummy_this_1, fndecl, NULL);
 }
 
-/* Replace uses of user's placeholder var with the actual return value.  */
-
-struct replace_tree
-{
-  tree from, to;
-};
-
-static tree
-remap_retval_1 (tree *here, int *do_subtree, void *d)
-{
-  replace_tree *data = (replace_tree *) d;
-
-  if (*here == data->from)
-    {
-      *here = data->to;
-      *do_subtree = 0;
-    }
-  else
-    *do_subtree = 1;
-  return NULL_TREE;
-}
-
-static void
-remap_retval (tree fndecl, tree contract)
-{
-  struct replace_tree data;
-  data.from = POSTCONDITION_IDENTIFIER (contract);
-  gcc_checking_assert (DECL_RESULT (fndecl));
-  data.to = DECL_RESULT (fndecl);
-  walk_tree (&CONTRACT_CONDITION (contract), remap_retval_1, &data, NULL);
-}
-
 /* Contract matching.  */
 
 /* True if the contract is valid.  */
@@ -1014,22 +982,6 @@ copy_contracts_list (tree attr, tree fndecl,
     }
   return contract_attrs;
 }
-
-/* Returns a copy of FNDECL contracts. This is used when emiting a contract.
- If we were to emit the original contract tree, any folding of the contract
- condition would affect the original contract too. The original contract
- tree needs to be preserved in case it is used to apply to a different
- function (for inheritance or wrapping reasons). */
-
-static tree
-copy_contracts (tree fndecl, contract_match_kind remap_kind = cmk_all)
-{
-  tree attr = flag_contracts_nonattr
-	      ? GET_FN_CONTRACT_SPECIFIERS (fndecl)
-	      : DECL_CONTRACT_ATTRS (fndecl);
-  return copy_contracts_list (attr, fndecl, remap_kind);
-}
-
 
 /* Add a call or a direct evaluation of the pre checks.  */
 
