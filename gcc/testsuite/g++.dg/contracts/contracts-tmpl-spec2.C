@@ -382,27 +382,27 @@ int main(int, char**)
 // { dg-output {G3 partial int S(\n|\r\n|\r)} }
 // { dg-output {G3 full int C(\n|\r\n|\r)} }
 // { dg-output {G3 full int C(\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:173: t > 0(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<int, int>::G4 at .*:173: t > 0(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:174: s > 0(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<int, int>::G4 at .*:174: s > 0(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
 // { dg-output {G4 general T S(\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:175: x > 0(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<int, int>::G4 at .*:175: x > 0(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
 // { dg-output {G4 full double double(\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:206: a > 0(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<double, char>::G4 at .*:206: a > 0(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:207: b > 'b'(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<double, char>::G4 at .*:207: b > 'b'(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
 // { dg-output {G4 full double char(\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:208: x > 1(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<double, char>::G4 at .*:208: x > 1(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:187: t > 'c'(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<char, int>::G4 at .*:187: t > 'c'(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:188: s > 3(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<char, int>::G4 at .*:188: s > 3(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
 // { dg-output {G4 partial char S(\n|\r\n|\r)} }
-// { dg-output {contract violation in function .* at .*:189: x2 > 3(\n|\r\n|\r)} }
+// { dg-output {contract violation in function G4<char, int>::G4 at .*:189: x2 > 3(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
 // { dg-output {contract violation in function G5<int, int>::f<int> at .*:220: t > 0(\n|\r\n|\r)} }
 // { dg-output {\[continue:on\](\n|\r\n|\r)} }
