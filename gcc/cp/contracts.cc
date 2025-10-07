@@ -521,12 +521,12 @@ build_contract_condition_function (tree fndecl, bool pre)
     TREE_TYPE (fn) = build_method_type (class_type, TREE_TYPE (fn));
 
   if (DECL_CONSTRUCTOR_P (fndecl) || DECL_DESTRUCTOR_P (fndecl))
-  {
+    {
       /* If we're dealing with a cdtor, we need to give it a "normal"
 	 DECL_NAME so it doesn't trigger IDENTIFIER_CDTOR_P checks */
       DECL_NAME (fn) = DECL_ASSEMBLER_NAME(fndecl);
       DECL_CXX_DESTRUCTOR_P (fn) = DECL_CXX_CONSTRUCTOR_P (fn) = 0;
-  }
+    }
   else
     DECL_NAME (fn) = copy_node (DECL_NAME (fn));
   DECL_INITIAL (fn) = NULL_TREE;
