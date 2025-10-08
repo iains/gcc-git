@@ -380,12 +380,36 @@ set_postcondition_function (tree fndecl, tree post)
 /* tree that holds the internal representation source location _impl */
 static GTY(()) tree contracts_source_location_impl_type;
 
-static tree
+/* For a given pre or post condition function, find the checked function. */
+tree
 get_orig_for_outlined (tree fndecl)
 {
   gcc_checking_assert (fndecl);
   tree *result = hash_map_safe_get (orig_from_outlined, fndecl);
   return result ? *result : NULL_TREE;
+}
+
+/* For a given function decl name identifier, return identifier representing
+ the name of the contracts check. Using the same identifier is not possible
+ with functions with special meaning names (i.e. main and cdotrs). For
+ consitency reasons we use the same naming convention for all contract check
+ functions.
+ PRE specifies if we need an identifier for a pre or post contract check.
+ CDOTR specifies if the checked function is a cdtor.  */
+static tree
+contracts_fixup_name (tree idin, bool pre, bool cdtor)
+{
+  const char *fname = IDENTIFIER_POINTER (idin);
+  size_t len = strlen (fname);
+  /* Cdtor names have a space at the end. We need to remove that space
+     when forming the new identifier. */
+  char *nn = xasprintf ("%.*s%s",
+			cdtor ? (int)len-1 : int(len),
+			fname,
+			pre ? ".pre" : ".post");
+  tree newid = get_identifier (nn);
+  free (nn);
+  return newid;
 }
 
 /* Build a declaration for the pre- or postcondition of a guarded FNDECL.  */
@@ -488,19 +512,17 @@ build_contract_condition_function (tree fndecl, bool pre)
   if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl))
     TREE_TYPE (fn) = build_method_type (class_type, TREE_TYPE (fn));
 
-  if (DECL_CONSTRUCTOR_P (fndecl) || DECL_DESTRUCTOR_P (fndecl))
-    {
-      /* If we're dealing with a cdtor, we need to give it a "normal"
-	 DECL_NAME so it doesn't trigger IDENTIFIER_CDTOR_P checks */
-      DECL_NAME (fn) = DECL_ASSEMBLER_NAME(fndecl);
-      DECL_CXX_DESTRUCTOR_P (fn) = DECL_CXX_CONSTRUCTOR_P (fn) = 0;
-    }
-  else
-    DECL_NAME (fn) = copy_node (DECL_NAME (fn));
+  /* The contract check functions are never a cdtor */
+  DECL_CXX_DESTRUCTOR_P (fn) = DECL_CXX_CONSTRUCTOR_P (fn) = 0;
+
+  DECL_NAME (fn) = contracts_fixup_name (DECL_NAME(fndecl),
+					 pre,
+					 DECL_CXX_CONSTRUCTOR_P (fndecl)
+					 || DECL_CXX_DESTRUCTOR_P (fndecl));
+
   DECL_INITIAL (fn) = NULL_TREE;
   CONTRACT_HELPER (fn) = pre ? ldf_contract_pre : ldf_contract_post;
 
-  IDENTIFIER_VIRTUAL_P (DECL_NAME (fn)) = false;
   DECL_VIRTUAL_P (fn) = false;
 
   /* Make these functions internal if we can, i.e. if the guarded function is
@@ -1417,7 +1439,17 @@ static tree
 build_contract_violation_cxx2a (tree contract)
 {
   expanded_location loc = expand_location (EXPR_LOCATION (contract));
-  const char *function = fndecl_name (DECL_ORIGIN (current_function_decl));
+
+  tree decl = current_function_decl;
+  bool pre = DECL_IS_PRE_FN_P(decl);
+  bool post = DECL_IS_POST_FN_P(decl);
+
+  /* If we have a pre or post check, mangle the name of the checked
+   function. */
+  if (pre || post)
+    decl = get_orig_for_outlined (decl);
+
+  const char *function = fndecl_name (DECL_ORIGIN(decl));
   const char *level = get_contract_level_name (contract);
   const char *role = get_contract_role_name (contract);
 
