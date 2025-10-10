@@ -377,6 +377,8 @@ extern void defer_guarded_contract_match	(tree, tree, tree);
 
 extern tree get_precondition_function		(tree);
 extern tree get_postcondition_function		(tree);
+extern tree get_orig_for_outlined 		(tree);
+
 extern void start_function_contracts		(tree);
 extern void maybe_apply_function_contracts	(tree);
 extern void finish_function_contracts		(tree);
