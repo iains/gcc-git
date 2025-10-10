@@ -391,11 +391,11 @@ get_orig_for_outlined (tree fndecl)
 
 /* For a given function decl name identifier, return identifier representing
  the name of the contracts check. Using the same identifier is not possible
- with functions with special meaning names (i.e. main and cdotrs). For
- consitency reasons we use the same naming convention for all contract check
+ with functions with special meaning names (i.e. main and cdtors). For
+ consistency reasons we use the same naming convention for all contract check
  functions.
  PRE specifies if we need an identifier for a pre or post contract check.
- CDOTR specifies if the checked function is a cdtor.  */
+ CDTOR specifies if the checked function is a cdtor.  */
 static tree
 contracts_fixup_name (tree idin, bool pre, bool cdtor)
 {
