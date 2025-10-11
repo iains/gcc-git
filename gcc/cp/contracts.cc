@@ -2369,7 +2369,7 @@ get_p9600_contract_violation_fields ()
 /* Get constract_assertion_kind of the specified contract. Used when building
  P2900R7 contract_violation object.  */
 
-static int
+static contract_assertion_kind
 get_contract_assertion_kind (tree contract)
 {
   gcc_checking_assert (flag_contracts_nonattr);
@@ -2379,7 +2379,7 @@ get_contract_assertion_kind (tree contract)
       tree i = (TREE_CODE (s) == INTEGER_CST) ? s
 					      : DECL_INITIAL (STRIP_NOPS (s));
       gcc_checking_assert (!type_dependent_expression_p (s) && i);
-      return (uint16_t) tree_to_uhwi (i);
+      return (contract_assertion_kind) tree_to_uhwi (i);
     }
 
   switch (TREE_CODE (contract))
@@ -2387,8 +2387,7 @@ get_contract_assertion_kind (tree contract)
     case ASSERTION_STMT:	return CAK_ASSERT;
     case PRECONDITION_STMT:	return CAK_PRE;
     case POSTCONDITION_STMT:	return CAK_POST;
-    default:
-       break;
+    default: break;
   }
 
   gcc_unreachable ();
@@ -2440,7 +2439,7 @@ build_contract_violation_p2900_ctor (tree contract)
   tree assertion_kind = CONTRACT_ASSERTION_KIND (contract);
   if (!assertion_kind || really_constant_p (assertion_kind))
     {
-      uint16_t kind = get_contract_assertion_kind (contract);
+      contract_assertion_kind kind = get_contract_assertion_kind (contract);
       assertion_kind = build_int_cst (uint16_type_node, kind);
       // D3290R3 makes detection mode unspecified.
       if (kind == CAK_MANUAL || kind == CAK_CASSERT)
@@ -3973,13 +3972,23 @@ grok_contract (tree attribute, tree mode, tree result, cp_expr condition,
     return error_mark_node;
 
   tree_code code;
+  contract_assertion_kind kind = CAK_INVALID;
   if (is_attribute_p ("assert", attribute)
       || is_attribute_p ("contract_assert", attribute))
-    code = ASSERTION_STMT;
+    {
+      code = ASSERTION_STMT;
+      kind = CAK_ASSERT;
+    }
   else if (is_attribute_p ("pre", attribute))
-    code = PRECONDITION_STMT;
+    {
+      code = PRECONDITION_STMT;
+      kind = CAK_PRE;
+    }
   else if (is_attribute_p ("post", attribute))
-    code = POSTCONDITION_STMT;
+    {
+      code = POSTCONDITION_STMT;
+      kind = CAK_POST;
+    }
   else
     gcc_unreachable ();
 
@@ -3997,6 +4006,10 @@ grok_contract (tree attribute, tree mode, tree result, cp_expr condition,
       TREE_TYPE (contract) = void_type_node;
       SET_EXPR_LOCATION (contract, loc);
     }
+
+  /* Determine the assertion kind.  */
+  if (flag_contracts_nonattr)
+    CONTRACT_ASSERTION_KIND (contract) = build_int_cst (uint16_type_node, kind);
 
   /* Determine the evaluation semantic.  */
   if (flag_contracts_nonattr)
