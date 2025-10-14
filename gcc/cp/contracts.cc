@@ -444,7 +444,6 @@ build_contract_condition_function (tree fndecl, bool pre)
       = tree_cons (get_identifier ("optimize"),
 		   build_tree_list (NULL_TREE, build_string (3, "-O0")),
 		   NULL_TREE);
-
   /* Now parse and add any internal representation of these attrs to the
      decl.  */
   if (DECL_ATTRIBUTES (fn))
