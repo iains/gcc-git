@@ -60,7 +60,6 @@ along with GCC; see the file COPYING3.  If not see
 #include "opts.h"
 #include "langhooks-def.h"  /* For lhd_simulate_record_decl  */
 #include "coroutines.h"
-#include "contracts.h"
 #include "gcc-urlifier.h"
 #include "diagnostic-highlight-colors.h"
 #include "pretty-print-markup.h"
@@ -2526,8 +2525,6 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  = DECL_OVERLOADED_OPERATOR_CODE_RAW (olddecl);
       new_defines_function = DECL_INITIAL (newdecl) != NULL_TREE;
 
-      duplicate_contracts (newdecl, olddecl);
-
       /* Optionally warn about more than one declaration for the same
 	 name, but don't warn about a function declaration followed by a
 	 definition.  */
@@ -2604,13 +2601,6 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
       /* The new decl should not already have gathered any
 	 specializations.  */
       gcc_assert (!DECL_TEMPLATE_SPECIALIZATIONS (newdecl));
-
-      /* Make sure the contracts are equivalent.  */
-      duplicate_contracts (newdecl, olddecl);
-
-      /* Remove contracts from old_result so they aren't appended to
-	 old_result by the merge function.  */
-      remove_contract_attributes (old_result);
 
       DECL_ATTRIBUTES (old_result)
 	= (*targetm.merge_decl_attributes) (old_result, new_result);
@@ -3162,23 +3152,12 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	}
       if (! types_match || new_defines_function)
 	{
-	  /* These are the final DECL_ARGUMENTS that will be used within the
-	     body; update any references to old DECL_ARGUMENTS in the
-	     contracts, if present.  */
-	  if (tree contracts = DECL_CONTRACTS (newdecl))
-	    remap_contracts (olddecl, newdecl, contracts, true);
 
 	  /* These need to be copied so that the names are available.
 	     Note that if the types do match, we'll preserve inline
 	     info and other bits, but if not, we won't.  */
 	  DECL_ARGUMENTS (olddecl) = DECL_ARGUMENTS (newdecl);
 	  DECL_RESULT (olddecl) = DECL_RESULT (newdecl);
-
-	  /* In some cases, duplicate_contracts will remove contracts from
-	     OLDDECL, to avoid duplications. Sometimes, the contracts end up
-	     shared. If we removed them, re-add them.  */
-	  if (!DECL_CONTRACTS (olddecl))
-	    copy_contract_attributes (olddecl, newdecl);
 	}
       /* If redeclaring a builtin function, it stays built in
 	 if newdecl is a gnu_inline definition, or if newdecl is just
@@ -3222,38 +3201,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  /* Don't clear out the arguments if we're just redeclaring a
 	     function.  */
 	  if (DECL_ARGUMENTS (olddecl))
-	    {
-	      /* If we removed contracts from previous definition, re-attach
-		 them. Otherwise, rewrite the contracts so they match the
-		 parameters of the new declaration.  */
-	      if (DECL_INITIAL (olddecl)
-		  && DECL_CONTRACTS (newdecl)
-		  && !DECL_CONTRACTS (olddecl))
-		copy_contract_attributes (olddecl, newdecl);
-	      else
-		{
-		  /* Temporarily undo the re-contexting of parameters so we can
-		     actually remap parameters.  The inliner won't replace
-		     parameters if we don't do this.  */
-		  tree args = DECL_ARGUMENTS (newdecl);
-		  for (tree p = args; p; p = DECL_CHAIN (p))
-		    DECL_CONTEXT (p) = newdecl;
-
-		  /* Save new argument names for use in contracts parsing,
-		     unless we've already started parsing the body of olddecl
-		     (particular issues arise when newdecl is from a prior
-		     friend decl with no argument names, see
-		     modules/contracts-tpl-friend-1).  */
-		  if (tree contracts = DECL_CONTRACTS (olddecl))
-		    remap_contracts (newdecl, olddecl, contracts, true);
-
-		  /* And reverse this operation again. */
-		  for (tree p = args; p; p = DECL_CHAIN (p))
-		    DECL_CONTEXT (p) = olddecl;
-		}
-
 	      DECL_ARGUMENTS (newdecl) = DECL_ARGUMENTS (olddecl);
-	    }
 	}
     }
   else if (TREE_CODE (newdecl) == NAMESPACE_DECL)
@@ -5698,9 +5646,6 @@ cxx_init_decl_processing (void)
   if (flag_exceptions)
     init_exception_processing ();
 
-  if (flag_contracts)
-    init_terminate_fn ();
-
   if (modules_p ())
     init_modules (parse_in);
 
@@ -6363,12 +6308,6 @@ check_tag_decl (cp_decl_specifier_seq *declspecs,
 		"an attribute that appertains to a type-specifier is ignored");
     }
 
-  /* Diagnose invalid application of contracts, if any.  */
-  if (find_contract (declspecs->attributes))
-    diagnose_misapplied_contracts (declspecs->attributes);
-  else
-    diagnose_misapplied_contracts (declspecs->std_attributes);
-
   return declared_type;
 }
 
@@ -6665,14 +6604,9 @@ start_decl (const cp_declarator *declarator,
 	  /* Aliases are definitions. */
 	  && !alias)
 	{
-	  if (DECL_VIRTUAL_P (decl) || !flag_contracts)
-	    permerror (declarator->id_loc,
+	  permerror (declarator->id_loc,
 		       "declaration of %q#D outside of class is not definition",
 		       decl);
-	  else if (flag_contract_strict_declarations)
-	    warning_at (declarator->id_loc, OPT_fcontract_strict_declarations_,
-			"declaration of %q#D outside of class is not definition",
-			decl);
 	}
     }
 
@@ -12433,9 +12367,6 @@ grokfndecl (tree ctype,
       *attrlist = NULL_TREE;
     }
 
-  if (DECL_HAS_CONTRACTS_P (decl))
-    rebuild_postconditions (decl);
-
   /* Check main's type after attributes have been applied.  */
   if (ctype == NULL_TREE && DECL_MAIN_P (decl))
     {
@@ -14774,8 +14705,7 @@ grokdeclarator (const cp_declarator *declarator,
 	}
     }
 
-  if (declspecs->std_attributes
-      && !diagnose_misapplied_contracts (declspecs->std_attributes))
+  if (declspecs->std_attributes)
     {
       location_t attr_loc = declspecs->locations[ds_std_attribute];
       auto_diagnostic_group d;
@@ -14784,9 +14714,6 @@ grokdeclarator (const cp_declarator *declarator,
 	inform (attr_loc, "an attribute that appertains to a type-specifier "
 		"is ignored");
     }
-
-  if (attrlist)
-    diagnose_misapplied_contracts (*attrlist);
 
   /* Skip over build_memfn_type when a FUNCTION_DECL is an xobj memfn.  */
   bool is_xobj_member_function = false;
@@ -14826,12 +14753,6 @@ grokdeclarator (const cp_declarator *declarator,
 	}
 
       inner_declarator = declarator->declarator;
-
-      /* Check that contracts aren't misapplied.  */
-      if (tree contract_attr = find_contract (declarator->std_attributes))
-	if (declarator->kind != cdk_function
-	    || innermost_code != cdk_function)
-	  diagnose_misapplied_contracts (contract_attr);
 
       /* We don't want to warn in parameter context because we don't
 	 yet know if the parse will succeed, and this might turn out
@@ -15368,22 +15289,6 @@ grokdeclarator (const cp_declarator *declarator,
 		else
 		  returned_attrs = attr_chainon (returned_attrs, att);
 	      }
-
-	    /* Actually apply the contract attributes to the declaration.  */
-	    for (tree *p = &attrs; *p;)
-	      {
-		tree l = *p;
-		if (cxx_contract_attribute_p (l))
-		  {
-		    *p = TREE_CHAIN (l);
-		    /* Intentionally reverse order of contracts so they're
-		       reversed back into their lexical order.  */
-		    TREE_CHAIN (l) = NULL_TREE;
-		    returned_attrs = chainon (l, returned_attrs);
-		  }
-		else
-		  p = &TREE_CHAIN (l);
-	     }
 
 	    if (attrs)
 	      /* [dcl.fct]/2:
@@ -16425,8 +16330,7 @@ grokdeclarator (const cp_declarator *declarator,
 	       warn for standard attributes.  */
 	    if (attrlist
 		&& !funcdef_flag
-		&& cxx11_attribute_p (*attrlist)
-		&& !all_attributes_are_contracts_p (*attrlist))
+		&& cxx11_attribute_p (*attrlist))
 	      {
 		*attrlist = NULL_TREE;
 		auto_diagnostic_group d;
@@ -19806,8 +19710,6 @@ start_preparsed_function (tree decl1, tree attrs, int flags)
 
   store_parm_decls (current_function_parms);
 
-  start_function_contracts (decl1);
-
   if (!processing_template_decl
       && flag_lifetime_dse > 1
       && DECL_CONSTRUCTOR_P (decl1)
@@ -20200,9 +20102,6 @@ finish_function (bool inline_p)
   if (fndecl == NULL_TREE || fndecl == error_mark_node)
     return error_mark_node;
 
-  bool do_contracts = (DECL_HAS_CONTRACTS_P (fndecl)
-		       && !processing_template_decl);
-
   if (!DECL_OMP_DECLARE_REDUCTION_P (fndecl))
     finish_lambda_scope ();
 
@@ -20243,10 +20142,6 @@ finish_function (bool inline_p)
 	finish_eh_spec_block (TYPE_RAISES_EXCEPTIONS
 			      (TREE_TYPE (fndecl)),
 			      current_eh_spec_block);
-
-     /* If outlining succeeded, then add contracts handling if needed.  */
-     if (coroutine->cp_valid_coroutine () && do_contracts)
-	maybe_apply_function_contracts (fndecl);
     }
   else
   /* For a cloned function, we've already got all the code we need;
@@ -20262,10 +20157,6 @@ finish_function (bool inline_p)
 	finish_eh_spec_block (TYPE_RAISES_EXCEPTIONS
 			      (TREE_TYPE (current_function_decl)),
 			      current_eh_spec_block);
-
-     if (do_contracts)
-	maybe_apply_function_contracts (current_function_decl);
-
     }
 
   /* If we're saving up tree structure, tie off the function now.  */
@@ -20524,7 +20415,7 @@ finish_function (bool inline_p)
   /* Clean up.  */
   invoke_plugin_callbacks (PLUGIN_FINISH_PARSE_FUNCTION, fndecl);
 
-  /* Build outlined functions for coroutines and contracts.  */
+  /* Build outlined functions for coroutines.  */
 
   if (coroutine)
     {
@@ -20540,10 +20431,6 @@ finish_function (bool inline_p)
 	}
       delete coroutine;
     }
-
-  /* If we have used outlined contracts checking functions, build and emit
-     them here.  */
-  finish_function_contracts (fndecl);
 
   return fndecl;
 }
