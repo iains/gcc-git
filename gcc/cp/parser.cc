@@ -32094,6 +32094,12 @@ void cp_parser_late_contract_condition (cp_parser *parser,
   cp_token_cache *tokens = DEFPARSE_TOKENS (condition);
   cp_parser_push_lexer_for_tokens (parser, tokens);
 
+  /* If we have a current class object, we need to consider
+     it const when processing the contract condition.  */
+  tree current_class_ref_copy = current_class_ref;
+  if (flag_contracts && current_class_ref_copy)
+    current_class_ref = view_as_const (current_class_ref_copy);
+
   /* Parse the condition, ensuring that parameters or the return variable
      aren't flagged for use outside the body of a function.  */
   begin_scope (sk_contract, fn);
@@ -32196,6 +32202,12 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
   /* Enable location wrappers when parsing contracts.  */
   auto suppression = make_temp_override (suppress_location_wrappers, 0);
 
+  /* If we have a current class object, see if we need to consider
+     it const when processing the contract condition.  */
+  tree current_class_ref_copy = current_class_ref;
+  if (current_class_ref_copy)
+    current_class_ref = view_as_const (current_class_ref_copy);
+
   /* Parse the condition.  */
   begin_scope (sk_contract, current_function_decl);
   bool old_pc = processing_postcondition;
@@ -32208,6 +32220,9 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
 			    /*result*/NULL_TREE, condition, loc);
   processing_postcondition = old_pc;
   pop_bindings_and_leave_scope ();
+
+  /* Revert (any) constification of the current class object.  */
+  current_class_ref = current_class_ref_copy;
 
   parens.require_close (parser);
 
@@ -32326,6 +32341,12 @@ cp_parser_function_contract_specifier (cp_parser *parser)
       /* Enable location wrappers when parsing contracts.  */
       auto suppression = make_temp_override (suppress_location_wrappers, 0);
 
+      /* If we have a current class object, see if we need to consider
+       it const when processing the contract condition.  */
+      tree current_class_ref_copy = current_class_ref;
+      if (current_class_ref_copy)
+      current_class_ref = view_as_const (current_class_ref_copy);
+
       /* Parse the condition, ensuring that parameters or the return variable
        aren't flagged for use outside the body of a function.  */
       begin_scope (sk_contract, current_function_decl);
@@ -32348,6 +32369,9 @@ cp_parser_function_contract_specifier (cp_parser *parser)
       gcc_checking_assert (scope_chain && scope_chain->bindings
 			   && scope_chain->bindings->kind == sk_contract);
       pop_bindings_and_leave_scope ();
+
+      /* Revert (any) constification of the current class object.  */
+      current_class_ref = current_class_ref_copy;
 
       if (contract != error_mark_node)
 	{
