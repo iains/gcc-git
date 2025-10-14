@@ -1697,54 +1697,6 @@ finish_contract_condition (cp_expr condition)
   return condition_conversion (condition);
 }
 
-/* Wrap the DECL into VIEW_CONVERT_EXPR representing const qualified version
-   of the declaration.  */
-
-tree
-view_as_const (tree decl)
-{
-  if (!contract_const_wrapper_p (decl))
-    {
-      tree ctype = TREE_TYPE (decl);
-      ctype = cp_build_qualified_type (ctype, (cp_type_quals (ctype)
-					       | TYPE_QUAL_CONST));
-      decl = build1 (VIEW_CONVERT_EXPR, ctype, decl);
-      /* Mark the VCE as contract const wrapper.  */
-      decl->base.private_flag = true;
-    }
-  return decl;
-}
-
-/* Constify access to DECL from within the contract condition.  */
-
-tree
-constify_contract_access (tree decl)
-{
-  /* We check if we have a variable, a parameter, a variable of reference type,
-   * or a parameter of reference type
-   */
-  if (!TREE_READONLY (decl)
-      && (VAR_P (decl)
-	  || (TREE_CODE (decl) == PARM_DECL)
-	  || (REFERENCE_REF_P (decl)
-	      && (VAR_P (TREE_OPERAND (decl, 0))
-		  || (TREE_CODE (TREE_OPERAND (decl, 0)) == PARM_DECL)
-		  || (TREE_CODE (TREE_OPERAND (decl, 0))
-		      == TEMPLATE_PARM_INDEX)))))
-    decl = view_as_const (decl);
-
-  return decl;
-}
-
-/* Indicate if PARM_DECL DECL is ODR used in a postcondition.  */
-
-static void
-set_parm_used_in_post (tree decl, bool constify = true)
-{
-  gcc_checking_assert (TREE_CODE (decl) == PARM_DECL);
-  DECL_LANG_FLAG_4 (decl) = constify;
-}
-
 /* If declaration DECL is a PARM_DECL and it appears in a postcondition, then
    check that it is not a non-const by-value param. LOCATION is where the
    expression was found and is used for diagnostic purposes.  */

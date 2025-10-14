@@ -183,8 +183,6 @@ extern void update_late_contract		(tree, tree, cp_expr);
 extern void check_redecl_contract		(tree, tree);
 extern tree invalidate_contract			(tree);
 extern tree copy_and_remap_contracts		(tree, tree, contract_match_kind remap_kind = cmk_all);
-extern tree constify_contract_access		(tree);
-extern tree view_as_const			(tree);
 
 extern void set_fn_contract_specifiers		(tree, tree);
 extern void update_fn_contract_specifiers	(tree, tree);
