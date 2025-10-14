@@ -46,7 +46,6 @@ static tree verify_stmt_tree_r (tree *, int *, void *);
 
 static tree handle_init_priority_attribute (tree *, tree, tree, int, bool *);
 static tree handle_abi_tag_attribute (tree *, tree, tree, int, bool *);
-static tree handle_contract_attribute (tree *, tree, tree, int, bool *);
 static tree handle_no_dangling_attribute (tree *, tree, tree, int, bool *);
 
 /* If REF is an lvalue, returns the kind of lvalue that REF is.
@@ -5663,10 +5662,6 @@ static const attribute_spec std_attributes[] =
     handle_carries_dependency_attribute, NULL },
   { "indeterminate", 0, 0, true, false, false, false,
     handle_indeterminate_attribute, NULL },
-  { "pre", 0, -1, false, false, false, false,
-    handle_contract_attribute, NULL },
-  { "post", 0, -1, false, false, false, false,
-    handle_contract_attribute, NULL }
 };
 
 const scoped_attribute_specs std_attribute_table =
@@ -5929,17 +5924,6 @@ handle_abi_tag_attribute (tree* node, tree name, tree args,
 
  fail:
   *no_add_attrs = true;
-  return NULL_TREE;
-}
-
-/* Perform checking for contract attributes.  */
-
-tree
-handle_contract_attribute (tree *ARG_UNUSED (node), tree ARG_UNUSED (name),
-			   tree ARG_UNUSED (args), int ARG_UNUSED (flags),
-			   bool *ARG_UNUSED (no_add_attrs))
-{
-  /* TODO: Is there any checking we could do here?  */
   return NULL_TREE;
 }
 
