@@ -1586,12 +1586,7 @@ p2900_check_redecl_contract (tree newdecl, tree olddecl)
     }
 
   if (old_contracts && !new_contracts)
-    {
-      /* We allow re-declarations to omit contracts declared on the initial decl.
-       In fact, this is required if the conditions contain lambdas.  Check if
-       all the parameters are correctly const qualified. */
-      check_postconditions_in_redecl (olddecl, newdecl);
-    }
+      return;
   else if (old_contracts && new_contracts &&
       !contract_any_deferred_p (old_contracts)
       && contract_any_deferred_p (new_contracts)
@@ -1695,78 +1690,6 @@ finish_contract_condition (cp_expr condition)
     return condition;
 
   return condition_conversion (condition);
-}
-
-/* If declaration DECL is a PARM_DECL and it appears in a postcondition, then
-   check that it is not a non-const by-value param. LOCATION is where the
-   expression was found and is used for diagnostic purposes.  */
-
-void
-check_param_in_postcondition (tree decl, location_t location)
-{
-  if (TREE_CODE (decl) == PARM_DECL
-      && processing_postcondition
-      && !cp_unevaluated_operand
-      && !(REFERENCE_REF_P (decl)
-	   && TREE_CODE (TREE_OPERAND (decl, 0)) == PARM_DECL)
-	   /* Return value parameter has DECL_ARTIFICIAL flag set. The flag
-	    * presence of the flag should be sufficient to distinguish the
-	    * return value parameter in this context. */
-	   && !(DECL_ARTIFICIAL (decl)))
-    {
-      set_parm_used_in_post (decl);
-
-      if (!dependent_type_p (TREE_TYPE (decl))
-	  && !CP_TYPE_CONST_P (TREE_TYPE (decl))
-	  && !TREE_READONLY (decl))
-	{
-	  error_at (location,
-		    "a value parameter used in a postcondition must be const");
-	  inform (DECL_SOURCE_LOCATION (decl), "parameter declared here");
-	}
-    }
-}
-
-/* Test if PARM_DECL is ODR used in a postcondition.  */
-
-static bool
-parm_used_in_post_p (const_tree decl)
-{
-  /* Check if this parameter is odr used within a function's postcondition  */
-  return ((TREE_CODE (decl) == PARM_DECL) && DECL_LANG_FLAG_4 (decl));
-}
-
-/* Check if parameters used in postconditions are const qualified on
-   a redeclaration that does not specify contracts or on an instantiation
-   of a function template.  */
-
-void
-check_postconditions_in_redecl (tree olddecl, tree newdecl)
-{
-  tree attr = GET_FN_CONTRACT_SPECIFIERS (olddecl);
-  if (!attr)
-    return;
-
-  tree t1 = FUNCTION_FIRST_USER_PARM (olddecl);
-  tree t2 = FUNCTION_FIRST_USER_PARM (newdecl);
-
-  for (; t1 && t1 != void_list_node;
-  t1 = TREE_CHAIN (t1), t2 = TREE_CHAIN (t2))
-    {
-      if (parm_used_in_post_p (t1))
-	{
-	  set_parm_used_in_post (t2);
-	  if (!dependent_type_p (TREE_TYPE (t2))
-	      && !CP_TYPE_CONST_P (TREE_TYPE (t2))
-	      && !TREE_READONLY (t2))
-	    {
-	      error_at (DECL_SOURCE_LOCATION (t2),
-	      "value parameter %qE used in a postcondition must be const", t2);
-	      inform (DECL_SOURCE_LOCATION (olddecl),
-	      "previous declaration here");
-	    }
-	}
-    }
 }
 
 void

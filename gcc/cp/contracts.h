@@ -221,6 +221,7 @@ set_decl_contracts (tree decl, tree contract_attrs)
   set_fn_contract_specifiers (decl, contract_attrs);
 }
 
+<<<<<<< HEAD
 /* Test if EXP is a contract const wrapper node.  */
 
 inline bool
@@ -247,6 +248,8 @@ strip_contract_const_wrapper (tree exp)
 /* TODO : decide if we should push the tests into contracts.cc  */
 extern contract_evaluation_semantic get_evaluation_semantic (const_tree);
 
+=======
+>>>>>>> 032c58c7225 (wip)
 /* Will this contract be ignored.  */
 
 inline bool
