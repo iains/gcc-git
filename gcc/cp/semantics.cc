@@ -4875,12 +4875,6 @@ finish_id_expression_1 (tree id_expression,
 	  *non_integral_constant_expression_p = true;
 	}
 
-<<<<<<< HEAD
-      if (flag_contracts && processing_contract_condition)
-	r = constify_contract_access(r);
-
-=======
->>>>>>> c50fb28bf5c (removing constification)
       return r;
     }
   else if (TREE_CODE (decl) == UNBOUND_CLASS_TEMPLATE)

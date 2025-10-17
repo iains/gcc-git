@@ -221,35 +221,9 @@ set_decl_contracts (tree decl, tree contract_attrs)
   set_fn_contract_specifiers (decl, contract_attrs);
 }
 
-<<<<<<< HEAD
-/* Test if EXP is a contract const wrapper node.  */
-
-inline bool
-contract_const_wrapper_p (const_tree exp)
-{
-  /* A wrapper node has code VIEW_CONVERT_EXPR, and the flag base.private_flag
-     is set. The wrapper node is used to Used to constify entities inside
-     contract assertions.  */
-  return ((TREE_CODE (exp) == VIEW_CONVERT_EXPR) && exp->base.private_flag);
-}
-
-/* If EXP is a contract_const_wrapper_p, return the wrapped expression.
-   Otherwise, do nothing. */
-
-inline tree
-strip_contract_const_wrapper (tree exp)
-{
-  if (contract_const_wrapper_p (exp))
-    return TREE_OPERAND (exp, 0);
-  else
-    return exp;
-}
-
 /* TODO : decide if we should push the tests into contracts.cc  */
 extern contract_evaluation_semantic get_evaluation_semantic (const_tree);
 
-=======
->>>>>>> 032c58c7225 (wip)
 /* Will this contract be ignored.  */
 
 inline bool
