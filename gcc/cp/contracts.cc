@@ -2227,6 +2227,9 @@ get_fn_contract_specifiers (tree decl)
 void
 check_redecl_contract (tree newdecl, tree olddecl)
 {
+  if (!flag_contracts)
+      return;
+
   if (TREE_CODE (newdecl) == TEMPLATE_DECL)
     newdecl = DECL_TEMPLATE_RESULT (newdecl);
   if (TREE_CODE (olddecl) == TEMPLATE_DECL)
