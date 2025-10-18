@@ -25,30 +25,40 @@ int G0::f(int a) pre (a > 0) // { dg-error "declaration adds contracts" }
 
 struct G1
 {
-  int f(int a) pre (a > 0);
+  int f(int a)
+    pre (a > 0);
 };
 
-int G1::f(int a)  pre ( a > 0 );
-int G1::f(int a);
-int G1::f(int a)  pre ( a > 0 ) pre ( a > 0 ); // { dg-error "different number of contracts" }
-int G1::f(int b) pre ( b > 0 ); // OK. same as the first decl.
+int G1::f(int a)
+  pre ( a > 0 ) // OK. same as the first decl.
+{ return 0; }
 
+int G1::f(int a); // OK not adding
 
+int G1::f(int a) // { dg-error "different number of contracts" }
+  pre ( a > 0 ) pre ( a > 0 );
 
-int f0(int a) pre ( a > 0 );
-int f0(int a) pre ( a > 0 )  pre ( a > 10 ); // { dg-error "different number of contracts" }
+int f0(int a)
+  pre ( a > 0 );
 
-int f1(int a) pre ( a > 0 );
-int f1(int a) pre ( a < 0 ); // { dg-error "mismatched contract" }
+int f0(int a) // { dg-error "different number of contracts" }
+  pre ( a > 0 ) pre ( a > 10 ); 
+
+int f1(int a)
+  pre ( a > 0 );
+int f1(int a)
+  pre ( a < 0 ); // { dg-error "mismatched contract" }
 
 struct Base
 {
-  virtual int f(int a) pre (a > 0); // { dg-error "contracts cannot be added to virtual functions" }
+  virtual int f(int a) // { dg-error "contracts cannot be added to virtual functions" }
+    pre (a > 0);
 };
 
 struct Child : Base
 {
-  int f(int a) pre (a < 0); // { dg-error "contracts cannot be added to virtual functions" }
+  int f(int a) // { dg-error "contracts cannot be added to virtual functions" }
+    pre (a < 0);
 };
 
 struct F1
@@ -56,7 +66,8 @@ struct F1
   virtual int f(int a);
 };
 
-int F1::f(int a) pre (a > 0) // { dg-error "declaration adds contracts" }
+int F1::f(int a) // { dg-error "declaration adds contracts" }
+  pre (a > 0)
 {
   return -a;
 }
@@ -72,18 +83,22 @@ void T1::vfun(int m, double n)
 {
 }
 
-void T1::vfun(int m, double n) pre(true); // { dg-error "declaration adds contracts" }
+void T1::vfun(int m, double n)  // { dg-error "declaration adds contracts" }
+  pre(true);
 
 struct Foo {
-  virtual void f10 (int)  pre ( false ) {} // { dg-error "contracts cannot be added to virtual functions" }
+  virtual void f10 (int) // { dg-error "contracts cannot be added to virtual functions" }
+    pre ( false ) {}
 };
 
 struct Bar : Foo {
-  void f10 (int n = 0) override pre ( false ); // { dg-error "contracts cannot be added to virtual functions" }
+  void f10 (int n = 0) override  // { dg-error "contracts cannot be added to virtual functions" }
+    pre ( false );
 };
 
 // we currently don't diagnose an error here if the original contract was erroneous.
-void Bar::f10(int n) pre (n >10) {}; // { dg-error "mismatched contract" }
+void Bar::f10(int n)
+ pre (n >10) {}; // { dg-error "mismatched contract" }
 
 
 struct NonTrivial{
