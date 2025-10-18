@@ -2307,13 +2307,10 @@ maybe_emit_violation_handler_wrappers ()
   tree semantic = DECL_CHAIN (v);
 
   /* We might be done.  */
-  tree cond = build2 (EQ_EXPR, uint16_type_node, semantic,
+  tree cond = build2 (NE_EXPR, uint16_type_node, semantic,
 		      build_int_cst (uint16_type_node, (uint16_t)CES_QUICK));
   tree if_quick = begin_if_stmt ();
   finish_if_stmt_cond (cond, if_quick);
-  finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
-  finish_then_clause (if_quick);
-  finish_if_stmt (if_quick);
 
   /* We are going to call the handler.  */
   build_contract_handler_call (v);
@@ -2329,6 +2326,7 @@ maybe_emit_violation_handler_wrappers ()
   finish_then_clause (if_observe);
   finish_if_stmt (if_observe);
 
+  finish_if_stmt (if_quick);
   /* else terminate.  */
   finish_expr_stmt (build_call_a (terminate_wrapper, 0, nullptr));
   finish_compound_stmt (compound_stmt);
