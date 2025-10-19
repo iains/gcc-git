@@ -38,6 +38,10 @@
 namespace std
 {
 _GLIBCXX_BEGIN_NAMESPACE_VERSION
+  namespace contracts
+  {
+    class contract_violation;
+  }
 
   /// A class that describes a location in source code.
   struct source_location
@@ -85,6 +89,12 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
   private:
     const __impl* _M_impl = nullptr;
+
+    constexpr source_location (const void *__t)
+      : _M_impl (static_cast <const __impl*>(__t)) {}
+
+    /* To enable use of the source __impl*.  */
+    friend class std::contracts::contract_violation;
   };
 
 _GLIBCXX_END_NAMESPACE_VERSION
