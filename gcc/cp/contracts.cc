@@ -483,9 +483,12 @@ view_as_const (tree decl)
   if (!contract_const_wrapper_p (decl))
     {
       tree ctype = TREE_TYPE (decl);
+      location_t loc =
+	  EXPR_P (decl) ? EXPR_LOCATION (decl) : DECL_SOURCE_LOCATION (decl);
       ctype = cp_build_qualified_type (ctype, (cp_type_quals (ctype)
 					       | TYPE_QUAL_CONST));
       decl = build1 (VIEW_CONVERT_EXPR, ctype, decl);
+      SET_EXPR_LOCATION (decl, loc);
       /* Mark the VCE as contract const wrapper.  */
       CONST_WRAPPER_P (decl) = true;
     }
