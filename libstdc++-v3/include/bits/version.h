@@ -2526,6 +2526,16 @@
 #endif /* !defined(__cpp_lib_philox_engine) */
 #undef __glibcxx_want_philox_engine
 
+#if !defined(__cpp_lib_reflection)
+# if (__cplusplus >  202302L) && (__cpp_impl_reflection >= 202506L)
+#  define __glibcxx_reflection 202506L
+#  if defined(__glibcxx_want_all) || defined(__glibcxx_want_reflection)
+#   define __cpp_lib_reflection 202506L
+#  endif
+# endif
+#endif /* !defined(__cpp_lib_reflection) */
+#undef __glibcxx_want_reflection
+
 #if !defined(__cpp_lib_is_implicit_lifetime)
 # if (__cplusplus >= 202100L) && (__has_builtin(__builtin_is_implicit_lifetime))
 #  define __glibcxx_is_implicit_lifetime 202302L
@@ -2536,14 +2546,14 @@
 #endif /* !defined(__cpp_lib_is_implicit_lifetime) */
 #undef __glibcxx_want_is_implicit_lifetime
 
-#if !defined(__cpp_lib_reflection)
-# if (__cplusplus >  202302L) && (__cpp_impl_reflection >= 202506L)
-#  define __glibcxx_reflection 202506L
-#  if defined(__glibcxx_want_all) || defined(__glibcxx_want_reflection)
-#   define __cpp_lib_reflection 202506L
+#if !defined(__cpp_lib_contracts)
+# if (__cplusplus >  202302L) && (__cpp_contracts >= 202502L)
+#  define __glibcxx_contracts 202502L
+#  if defined(__glibcxx_want_all) || defined(__glibcxx_want_contracts)
+#   define __cpp_lib_contracts 202502L
 #  endif
 # endif
-#endif /* !defined(__cpp_lib_reflection) */
-#undef __glibcxx_want_reflection
+#endif /* !defined(__cpp_lib_contracts) */
+#undef __glibcxx_want_contracts
 
 #undef __glibcxx_want_all
