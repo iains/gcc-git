@@ -1919,6 +1919,11 @@ fcontract-disable-check-epochs
 C++ ObjC++ Var(flag_contract_disable_check_epochs) Init(0)
 -fcontract-disable-epoch-checks	Disable insertion of epoch markers after each contract check.
 
+fcontracts-conservative-ipa
+C++ ObjC++ Var(flag_contracts_conservative_ipa) Init(1)
+-fcontracts-conservative-ipa	Do not allow certain optimisations between
+functions in contract assertions.
+
 fcoroutines
 C++ ObjC++ LTO Var(flag_coroutines)
 Enable C++ coroutines (experimental).
