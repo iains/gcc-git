@@ -225,29 +225,18 @@ contract_attribute_valid_p (tree attribute)
   return contract_valid_p (TREE_VALUE (TREE_VALUE (attribute)));
 }
 
-/* FIXME: We do not handle contracts on virtual functions, so the override
-   stuff should be redundant.  */
-enum contract_matching_context
-{
-  cmc_declaration,
-  cmc_override
-};
-
 /* Compare the contract conditions of OLD_CONTRACT and NEW_CONTRACT.
    Returns false if the conditions are equivalent, and true otherwise.  */
 
 static bool
-mismatched_contracts_p (tree old_contract, tree new_contract,
-			contract_matching_context ctx)
+mismatched_contracts_p (tree old_contract, tree new_contract)
 {
   /* Different kinds of contracts do not match.  */
   if (TREE_CODE (old_contract) != TREE_CODE (new_contract))
     {
       auto_diagnostic_group d;
       error_at (EXPR_LOCATION (new_contract),
-		ctx == cmc_declaration
-		? "mismatched contract attribute in declaration"
-		: "mismatched contract attribute in override");
+		"mismatched contract attribute in declaration");
       inform (EXPR_LOCATION (old_contract), "previous contract here");
       return true;
     }
@@ -266,20 +255,14 @@ mismatched_contracts_p (tree old_contract, tree new_contract,
      Set the comparing_override_contracts flag to ensure that references
      through 'this' are equal if they designate the same member, regardless of
      the path those members.  */
-// FIXME: this does not seem right now we have no contracts on virtual fns.
-//  bool saved_comparing_contracts = comparing_override_contracts;
-//  comparing_override_contracts = (ctx == cmc_override);
-  bool matching_p = cp_tree_equal (t1, t2);
-//  comparing_override_contracts = saved_comparing_contracts;
 
-// Likewise in the error message,
+  bool matching_p = cp_tree_equal (t1, t2);
+
   if (!matching_p)
     {
       auto_diagnostic_group d;
       error_at (EXPR_LOCATION (CONTRACT_CONDITION (new_contract)),
-		ctx == cmc_declaration
-		? "mismatched contract condition in declaration"
-		: "mismatched contract condition in override");
+		"mismatched contract condition in declaration");
       inform (EXPR_LOCATION (CONTRACT_CONDITION (old_contract)),
 	      "previous contract here");
       return true;
@@ -293,8 +276,7 @@ mismatched_contracts_p (tree old_contract, tree new_contract,
 
 static bool
 match_contract_attributes (location_t oldloc, tree old_attrs,
-			   location_t newloc, tree new_attrs,
-			   contract_matching_context ctx)
+			   location_t newloc, tree new_attrs)
 {
   /* Contracts only match if they are both specified.  */
   if (!old_attrs || !new_attrs)
@@ -310,7 +292,7 @@ match_contract_attributes (location_t oldloc, tree old_attrs,
 	return false;
 
       if (mismatched_contracts_p (CONTRACT_STATEMENT (old_attrs),
-				  CONTRACT_STATEMENT (new_attrs), ctx))
+				  CONTRACT_STATEMENT (new_attrs)))
 	return false;
       old_attrs = NEXT_CONTRACT_ATTR (old_attrs);
       new_attrs = NEXT_CONTRACT_ATTR (new_attrs);
@@ -321,11 +303,8 @@ match_contract_attributes (location_t oldloc, tree old_attrs,
     {
       auto_diagnostic_group d;
       error_at (newloc,
-		ctx == cmc_declaration
-		? "declaration has a different number of contracts than "
-		  "previously declared"
-		: "override has a different number of contracts than "
-		  "previously declared");
+		"declaration has a different number of contracts than "
+		"previously declared");
       inform (oldloc,
 	      new_attrs
 	      ? "previous declaration with fewer contracts here"
@@ -1656,7 +1635,7 @@ p2900_check_redecl_contract (tree newdecl, tree olddecl)
       cont_end = make_location (new_loc, new_loc, cont_end);
       /* We have two sets - they should match or we issue a diagnostic.  */
       match_contract_attributes (rdp->note_loc, rdp->original_contracts,
-				 cont_end, new_contracts, cmc_declaration);
+				 cont_end, new_contracts);
     }
 
   return;
@@ -2655,16 +2634,8 @@ match_deferred_contracts (tree fndecl)
       location_t new_loc = CONTRACT_SOURCE_LOCATION (new_contracts);
       tree old_contracts = GET_FN_CONTRACT_SPECIFIERS (fndecl);
       location_t old_loc = CONTRACT_SOURCE_LOCATION (old_contracts);
-      /* todo : this is suspicious : with P2900 we have a TREE_PURPOSE set
-	 despite the fact we no longer inherit the contracts from the base.
-	 Where is TREE_PURPOSE being set ?
-	 It looks like it's set for declarations of friend functions.
-	 This means the diagnostic may claim override even in case oF
-	 re declarations.  */
-      tree base = TREE_PURPOSE (pending);
       match_contract_attributes (new_loc, new_contracts,
-				 old_loc, old_contracts,
-				 base ? cmc_override : cmc_declaration);
+				 old_loc, old_contracts);
     }
 
   /* Clear out deferred match list so we don't check it twice.  */
