@@ -31,9 +31,6 @@ along with GCC; see the file COPYING3.  If not see
 
 #include <cstdint>
 
-/* Check if an attribute is a cxx contract attribute.  */
-extern bool cxx_contract_attribute_p		(const_tree);
-
 /* Now our contracts are stored separately from other attributes we
    can iterate simply... */
 #define NEXT_CONTRACT_ATTR(NODE) \

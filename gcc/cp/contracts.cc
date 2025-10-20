@@ -47,28 +47,6 @@ along with GCC; see the file COPYING3.  If not see
 
 /*  TODO : design description... */
 
-/* Return TRUE iff ATTR has been parsed by the front-end as a c++2a contract
-   attribute. */
-
-bool
-cxx_contract_attribute_p (const_tree attr)
-{
-  if (attr == NULL_TREE
-      || TREE_CODE (attr) != TREE_LIST)
-    return false;
-
-  if (!TREE_PURPOSE (attr) || TREE_CODE (TREE_PURPOSE (attr)) != TREE_LIST)
-    return false;
-  if (!TREE_VALUE (attr) || TREE_CODE (TREE_VALUE (attr)) != TREE_LIST)
-    return false;
-  if (!TREE_VALUE (TREE_VALUE (attr)))
-    return false;
-
-  return (TREE_CODE (TREE_VALUE (TREE_VALUE (attr))) == PRECONDITION_STMT
-      || TREE_CODE (TREE_VALUE (TREE_VALUE (attr))) == POSTCONDITION_STMT
-      || TREE_CODE (TREE_VALUE (TREE_VALUE (attr))) == ASSERTION_STMT);
-}
-
 static tree
 build_comment (cp_expr condition)
 {
