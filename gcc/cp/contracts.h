@@ -196,7 +196,7 @@ extern void maybe_update_postconditions		(tree);
 extern void rebuild_postconditions		(tree);
 extern bool check_postcondition_result		(tree, tree, location_t);
 
-extern void match_deferred_contracts		(tree);
+extern bool contract_any_deferred_p 		(tree);
 
 extern tree get_precondition_function		(tree);
 extern tree get_postcondition_function		(tree);

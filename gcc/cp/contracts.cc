@@ -505,22 +505,16 @@ build_contract_condition_function (tree fndecl, bool pre)
 
   DECL_VIRTUAL_P (fn) = false;
 
-  /* Make these functions internal if we can, i.e. if the guarded function is
-     not vague linkage, or if we can put them in a comdat group with the
-     guarded function.  */
-  if (!DECL_WEAK (fndecl) || HAVE_COMDAT_GROUP)
-    {
-      TREE_PUBLIC (fn) = false;
-      DECL_EXTERNAL (fn) = false;
-      DECL_WEAK (fn) = false;
-      DECL_COMDAT (fn) = false;
-      DECL_INTERFACE_KNOWN (fn) = true;
-    }
+  /* These functions should be internal.  */
+  TREE_PUBLIC (fn) = false;
+  DECL_EXTERNAL (fn) = false;
+  DECL_WEAK (fn) = false;
+  DECL_COMDAT (fn) = false;
+  DECL_INTERFACE_KNOWN (fn) = true;
 
   DECL_ARTIFICIAL (fn) = true;
 
-  /* Update various inline related declaration properties.  */
-  //DECL_DECLARED_INLINE_P (fn) = true;
+  /* Always inline these functions. */
   DECL_DISREGARD_INLINE_LIMITS (fn) = true;
   suppress_warning (fn);
 
@@ -583,7 +577,7 @@ contract_any_active_p (tree fndecl)
 
 /* Return true if any contract in CONTRACT_ATTRs is not yet parsed.  */
 
-static bool
+bool
 contract_any_deferred_p (tree contract_attr)
 {
   for (; contract_attr; contract_attr = NEXT_CONTRACT_ATTR (contract_attr))
@@ -591,29 +585,6 @@ contract_any_deferred_p (tree contract_attr)
       return true;
   return false;
 }
-
-/* Copy deferred contract attributes from SRC onto DEST.  This
- assumes that if one contract is deferred, all contracts are deferred.  */
-
-/* FIXME: this does not seem to make an actual copy, just re-builds the
-   list; not sure it's needed any more with contract specifiers.  */
-static void
-copy_deferred_contracts (tree srcdecl, tree destdecl)
-{
-  tree contracts = get_fn_contract_specifiers (srcdecl);
-
-  if (!contracts)
-    return;
-
-  gcc_checking_assert(contract_any_deferred_p (contracts));
-
-  tree attrs = NULL_TREE;
-  for (tree c = contracts; c; c = TREE_CHAIN (c))
-    attrs = tree_cons (TREE_PURPOSE (c), TREE_VALUE (c), attrs);
-
-  set_fn_contract_specifiers (destdecl, nreverse (attrs));
-}
-
 
 /* Returns true if function decl FNDECL has contracts and we need to
    process them for the purposes of either building caller or definition
@@ -901,19 +872,14 @@ build_arg_list (tree fndecl)
   return args;
 }
 
+/* Copy all contracts from ATTR and apply them to FNDECL. */
+
 static tree
-copy_contracts_list (tree attr, tree fndecl,
-		     contract_match_kind remap_kind = cmk_all)
+copy_contracts_list (tree attr, tree fndecl)
 {
   tree last = NULL_TREE, contract_attrs = NULL_TREE;
   for (; attr; attr = NEXT_CONTRACT_ATTR (attr))
     {
-      if ((remap_kind == cmk_pre
-	   && (TREE_CODE (CONTRACT_STATEMENT (attr)) == POSTCONDITION_STMT))
-	  || (remap_kind == cmk_post
-	      && (TREE_CODE (CONTRACT_STATEMENT (attr)) == PRECONDITION_STMT)))
-	continue;
-
       tree c = copy_node (attr);
       TREE_VALUE (c) = build_tree_list (TREE_PURPOSE (TREE_VALUE (c)),
 					copy_node (CONTRACT_STATEMENT (c)));
@@ -1553,91 +1519,11 @@ struct contract_redecl
 {
   tree original_contracts;
   tree contract_specifiers;
-  tree pending_list;
   location_t note_loc;
 };
 
-static void defer_guarded_contract_match (tree, tree, tree);
-
 static GTY(()) hash_map<tree, contract_redecl> *redeclared_contracts;
 
-/* This is called via duplicate_decls, from pushdecl, and is used to determine
-   if two sets of contract attributes match.  */
-
-static void
-p2900_check_redecl_contract (tree newdecl, tree olddecl)
-{
-  tree new_contracts = get_fn_contract_specifiers (newdecl);
-  tree old_contracts = get_fn_contract_specifiers (olddecl);
-
-  if (!old_contracts && !new_contracts)
-    return;
-
-  /* We should always be comparing with the 'first' declaration which should
-     have been recorded already (if it has contract specifiers).  However
-     if the new decl is trying to add contracts, that is an error and we do
-     not want to create a map entry yet.  */
-  contract_redecl *rdp = hash_map_safe_get (redeclared_contracts, olddecl);
-  gcc_checking_assert (rdp || !old_contracts);
-
-  location_t new_loc = DECL_SOURCE_LOCATION (newdecl);
-  if (new_contracts && !old_contracts)
-    {
-      auto_diagnostic_group d;
-      /* If a re-declaration has contracts, they must be the same as those that
-	 appear on the first declaration seen (they cannot be added).  */
-      location_t cont_end = get_contract_end_loc (new_contracts);
-      cont_end = make_location (new_loc, new_loc, cont_end);
-      error_at (cont_end, "declaration adds contracts to %q#D", olddecl);
-      location_t old_loc;
-      if (rdp && rdp->note_loc)
-	old_loc = rdp->note_loc;
-      else
-	old_loc = DECL_SOURCE_LOCATION (olddecl);
-      inform (old_loc , "first declared here");
-      return;
-    }
-
-  if (old_contracts && !new_contracts)
-    {
-      /* We allow re-declarations to omit contracts declared on the initial decl.
-       In fact, this is required if the conditions contain lambdas.  Check if
-       all the parameters are correctly const qualified. */
-      check_postconditions_in_redecl (olddecl, newdecl);
-    }
-  else if (old_contracts && new_contracts &&
-      !contract_any_deferred_p (old_contracts)
-      && contract_any_deferred_p (new_contracts)
-      && DECL_UNIQUE_FRIEND_P (newdecl))
-    {
-	/* Newdecl's contracts are still DEFERRED_PARSE, and we're about to
-	   collapse it into olddecl, so stash away olddecl's contracts for
-	   later comparison.  */
-	defer_guarded_contract_match (olddecl, olddecl, old_contracts);
-	/* put the defered contracts on the olddecl so we parse it when
-	  we can.  */
-	copy_deferred_contracts (newdecl, olddecl);
-    }
-  else if (contract_any_deferred_p (old_contracts)
-	   || contract_any_deferred_p (new_contracts))
-    {
-      /* TODO: ignore these and figure out how to process them later.  */
-      /* Note that a friend declaration has deferred contracts, but the
-	 declaration of the same function outside the class definition
-	 doesn't.  */
-    }
-  else
-    {
-      gcc_checking_assert (old_contracts);
-      location_t cont_end = get_contract_end_loc (new_contracts);
-      cont_end = make_location (new_loc, new_loc, cont_end);
-      /* We have two sets - they should match or we issue a diagnostic.  */
-      match_contract_attributes (rdp->note_loc, rdp->original_contracts,
-				 cont_end, new_contracts);
-    }
-
-  return;
-}
 
 /* ======== public API ======= */
 
@@ -2115,6 +2001,8 @@ set_fn_contract_specifiers (tree decl, tree list)
   rd.contract_specifiers = list;
 }
 
+/* Update the entry for DECL in the map of contract specifiers with the
+  contracts in LIST. */
 void
 update_fn_contract_specifiers (tree decl, tree list)
 {
@@ -2125,13 +2013,19 @@ update_fn_contract_specifiers (tree decl, tree list)
   contract_redecl& rd
     = hash_map_safe_get_or_insert<hm_ggc> (redeclared_contracts, decl, &existed);
   gcc_checking_assert (existed);
-  /* We might come here multiple times as we iterate through deferred contracts
-     on a decl, wait until they are all done and then copy.  */
-  if (!contract_any_deferred_p (list))
+
+  /* We should only get here when we parse deferred contracts.  */
+  gcc_checking_assert(!contract_any_deferred_p (list));
+
+  /* Replace the original contracts if they were deferred */
+  if (contract_any_deferred_p (rd.original_contracts))
     {
-      /* See above.  */
+      /* Because original_contracts are used for comparison with
+	 redeclarations, we need to create a copy of list to store in
+	 original_contracts so the contract conditions do not get
+	 modified as we apply them.  */
       rd.original_contracts = copy_contracts_list (list, decl);
-      location_t decl_loc = DECL_SOURCE_LOCATION (decl);
+      location_t decl_loc = DECL_SOURCE_LOCATION(decl);
       location_t cont_end = decl_loc;
       if (list)
 	cont_end = get_contract_end_loc (list);
@@ -2149,7 +2043,6 @@ remove_decl_with_fn_contracts_specifiers (tree decl)
     {
       p->contract_specifiers = NULL_TREE;
       p->original_contracts = NULL_TREE;
-      p->pending_list = NULL_TREE;
       redeclared_contracts->remove (decl);
     }
 }
@@ -2163,7 +2056,6 @@ remove_fn_contract_specifiers (tree decl)
     {
       p->contract_specifiers = NULL_TREE;
       p->original_contracts = NULL_TREE;
-      p->pending_list = NULL_TREE;
     }
 }
 
@@ -2190,7 +2082,67 @@ check_redecl_contract (tree newdecl, tree olddecl)
   if (TREE_CODE (olddecl) == TEMPLATE_DECL)
     olddecl = DECL_TEMPLATE_RESULT (olddecl);
 
-  p2900_check_redecl_contract (newdecl, olddecl);
+  tree new_contracts = get_fn_contract_specifiers (newdecl);
+  tree old_contracts = get_fn_contract_specifiers (olddecl);
+
+  if (!old_contracts && !new_contracts)
+    return;
+
+  /* We should always be comparing with the 'first' declaration which should
+   have been recorded already (if it has contract specifiers).  However
+   if the new decl is trying to add contracts, that is an error and we do
+   not want to create a map entry yet.  */
+  contract_redecl *rdp = hash_map_safe_get (redeclared_contracts, olddecl);
+  gcc_checking_assert(rdp || !old_contracts);
+
+  location_t new_loc = DECL_SOURCE_LOCATION(newdecl);
+  if (new_contracts && !old_contracts)
+    {
+      auto_diagnostic_group d;
+      /* If a re-declaration has contracts, they must be the same as those
+       that appear on the first declaration seen (they cannot be added).  */
+      location_t cont_end = get_contract_end_loc (new_contracts);
+      cont_end = make_location (new_loc, new_loc, cont_end);
+      error_at (cont_end, "declaration adds contracts to %q#D", olddecl);
+      inform (DECL_SOURCE_LOCATION(olddecl), "first declared here");
+      return;
+    }
+
+  if (old_contracts && !new_contracts)
+    {
+      /* We allow re-declarations to omit contracts declared on the initial
+       decl. In fact, this is required if the conditions contain lambdas.
+       Check if all the parameters are correctly const qualified. */
+      check_postconditions_in_redecl (olddecl, newdecl);
+    }
+  else if (old_contracts && new_contracts
+      && !contract_any_deferred_p (
+	  old_contracts) && contract_any_deferred_p (new_contracts)
+	  && DECL_UNIQUE_FRIEND_P (newdecl))
+    {
+      /* put the defered contracts on the olddecl so we parse it when
+       we can.  */
+      set_fn_contract_specifiers (olddecl, old_contracts);
+    }
+  else if (contract_any_deferred_p (old_contracts)
+      || contract_any_deferred_p (new_contracts))
+    {
+      /* TODO: ignore these and figure out how to process them later.  */
+      /* Note that a friend declaration has deferred contracts, but the
+       declaration of the same function outside the class definition
+       doesn't.  */
+    }
+  else
+    {
+      gcc_checking_assert(old_contracts);
+      location_t cont_end = get_contract_end_loc (new_contracts);
+      cont_end = make_location (new_loc, new_loc, cont_end);
+      /* We have two sets - they should match or we issue a diagnostic.  */
+      match_contract_attributes (rdp->note_loc, rdp->original_contracts,
+				 cont_end, new_contracts);
+    }
+
+  return;
 }
 
 /* Update the contracts of DEST to match the argument names from contracts
@@ -2213,7 +2165,7 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
     {
       if (contract_any_deferred_p (dest_contracts))
 	{
-	  copy_deferred_contracts (destdecl, srcdecl);
+	  set_fn_contract_specifiers (srcdecl, dest_contracts);
 	  /* Nothing more to do here.  */
 	  return;
 	}
@@ -2229,7 +2181,7 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
     For non deferred contracts we currently do copy and remap, which is doing
     more than we need.  */
   if (contract_any_deferred_p (src_contracts))
-    copy_deferred_contracts(srcdecl, destdecl);
+    set_fn_contract_specifiers(destdecl, src_contracts);
   else
     {
       /* temporarily rename the arguments to get the right mapping */
@@ -2571,73 +2523,6 @@ update_late_contract (tree contract, tree result, cp_expr condition)
   /* The condition is converted to bool.  */
   condition = finish_contract_condition (condition);
   CONTRACT_CONDITION (contract) = condition;
-}
-
-/* Deferred contract mapping.
-
-   This is used to compare late-parsed contracts on overrides with their
-   base class functions.
-
-   TODO: It seems like this could be replaced by a simple list that maps from
-   overrides to their base functions. It's not clear that we really need
-   a map to a function + a list of contracts.   */
-
-/* Map from FNDECL to a tree list of contracts that have not been matched or
-   diagnosed yet.  The TREE_PURPOSE is the basefn we're overriding, and the
-   TREE_VALUE is the list of contract attrs for BASEFN.  */
-
-static hash_map<tree_decl_hash, tree> pending_guarded_decls;
-
-static void
-defer_guarded_contract_match (tree fndecl, tree fn, tree contracts)
-{
-  if (!pending_guarded_decls.get (fndecl))
-    {
-      pending_guarded_decls.put (fndecl, build_tree_list (fn, contracts));
-      return;
-    }
-
-  for (tree pending = *pending_guarded_decls.get (fndecl);
-      pending;
-      pending = TREE_CHAIN (pending))
-    {
-      if (TREE_VALUE (pending) == contracts)
-	return;
-      if (TREE_CHAIN (pending) == NULL_TREE)
-	TREE_CHAIN (pending) = build_tree_list (fn, contracts);
-    }
-}
-
-/* If the function decl FNDECL has any contracts that had their matching
-   deferred earlier, do that checking now.  */
-
-void
-match_deferred_contracts (tree fndecl)
-{
-  tree *tp = pending_guarded_decls.get (fndecl);
-  if (!tp)
-    return;
-
-  tree attributes = GET_FN_CONTRACT_SPECIFIERS (fndecl);
-
-  gcc_assert(!contract_any_deferred_p (attributes));
-
-  processing_template_decl_sentinel ptds;
-  processing_template_decl = uses_template_parms (fndecl);
-
-  /* Do late contract matching.  */
-  for (tree pending = *tp; pending; pending = TREE_CHAIN (pending))
-    {
-      tree new_contracts = TREE_VALUE (pending);
-      location_t new_loc = CONTRACT_SOURCE_LOCATION (new_contracts);
-      tree old_contracts = GET_FN_CONTRACT_SPECIFIERS (fndecl);
-      location_t old_loc = CONTRACT_SOURCE_LOCATION (old_contracts);
-      match_contract_attributes (new_loc, new_contracts,
-				 old_loc, old_contracts);
-    }
-
-  /* Clear out deferred match list so we don't check it twice.  */
-  pending_guarded_decls.remove (fndecl);
 }
 
 /* Returns the precondition funtion for FNDECL, or null if not set.  */

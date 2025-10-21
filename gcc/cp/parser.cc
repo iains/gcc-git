@@ -12917,8 +12917,7 @@ cp_parser_lambda_body (cp_parser* parser, tree lambda_expr)
 
     /* We need to parse deferred contract conditions before we try to call
        finish_function (which will try to emit the contracts).  */
-    if (DECL_HAS_CONTRACTS_P (fco))
-      cp_parser_late_contracts (parser, fco);
+    cp_parser_late_contracts (parser, fco);
 
     finish_lambda_function (body);
   }
@@ -28683,9 +28682,6 @@ cp_parser_class_specifier (cp_parser* parser)
 
 	  /* Remove any template parameters from the symbol table.  */
 	  maybe_end_member_template_processing ();
-
-	  /* Perform any deferred contract matching.  */
-	  match_deferred_contracts (decl);
 	}
       vec_safe_truncate (unparsed_contracts, 0);
 
@@ -32153,24 +32149,23 @@ void cp_parser_late_contracts (cp_parser *parser,
 {
 
   tree new_contracts = NULL_TREE;
-  tree a = GET_FN_CONTRACT_SPECIFIERS (fndecl);
-  for (; a; a = NEXT_CONTRACT_ATTR (a))
+  tree old_contracts = GET_FN_CONTRACT_SPECIFIERS(fndecl);
+
+  if (old_contracts == NULL_TREE || !contract_any_deferred_p (old_contracts))
+    return;
+
+  for (; old_contracts; old_contracts = NEXT_CONTRACT_ATTR(old_contracts))
     {
-	tree contract = TREE_VALUE (TREE_VALUE (a));
+      tree contract = TREE_VALUE(TREE_VALUE (old_contracts));
 
-	/* Make sure we've gotten something that hasn't been parsed yet or that
-	 we're not parsing an invalid contract.  */
-	tree condition = CONTRACT_CONDITION (contract);
-	if (TREE_CODE (condition) != DEFERRED_PARSE)
-	  {
-	    tree list = tree_cons (TREE_PURPOSE (a), TREE_VALUE (a), NULL_TREE);
-	    new_contracts = chainon (new_contracts, list);
-	    continue;
-	  }
+      tree condition = CONTRACT_CONDITION(contract);
+      /* All contracts should be deferred if one of them is deferred */
+      gcc_checking_assert(TREE_CODE (condition) == DEFERRED_PARSE);
 
-	  cp_parser_late_contract_condition (parser, fndecl, contract);
-	  tree list = tree_cons (TREE_PURPOSE (a), TREE_VALUE (a), NULL_TREE);
-	  new_contracts = chainon (new_contracts, list);
+      cp_parser_late_contract_condition (parser, fndecl, contract);
+      tree list = tree_cons (TREE_PURPOSE(old_contracts),
+			     TREE_VALUE(old_contracts), NULL_TREE);
+      new_contracts = chainon (new_contracts, list);
     }
 
   update_fn_contract_specifiers (fndecl, new_contracts);
