@@ -1443,25 +1443,25 @@ build_contract_check (tree contract)
 
   contract_evaluation_semantic semantic = get_evaluation_semantic (contract);
   if (semantic == CES_INVALID)
-    return NULL_TREE ;
+    return NULL_TREE;
 
   /* Ignored contracts are never checked or assumed.  */
   if (semantic == CES_IGNORE)
     return void_node;
 
-  location_t loc = EXPR_LOCATION(contract);
+  location_t loc = EXPR_LOCATION (contract);
 
-  remap_dummy_this (current_function_decl, &CONTRACT_CONDITION(contract));
-  tree condition = CONTRACT_CONDITION(contract);
+  remap_dummy_this (current_function_decl, &CONTRACT_CONDITION (contract));
+  tree condition = CONTRACT_CONDITION (contract);
   if (condition == error_mark_node)
-  return NULL_TREE;
+    return NULL_TREE;
 
   bool check_might_throw = flag_exceptions
-      && !expr_noexcept_p (condition, tf_none);
+			   && !expr_noexcept_p (condition, tf_none);
 
   /* Build a read-only violation object, with the contract settings.  */
   /* Build a statement expression to hold a contract check, with the check
-   potentially wrapped in a try-catch expr.  */
+     potentially wrapped in a try-catch expr.  */
   tree cc_bind = build3 (BIND_EXPR, void_type_node, NULL, NULL, NULL);
   BIND_EXPR_BODY (cc_bind) = push_stmt_list ();
 
@@ -1473,7 +1473,7 @@ build_contract_check (tree contract)
   tree ctor = build_contract_violation_ctor (contract);
   tree violation = NULL_TREE;
   bool viol_is_var = false;
-  if (TREE_CONSTANT(ctor))
+  if (TREE_CONSTANT (ctor))
     violation = build_contract_violation_constant (ctor, contract, /*is_const*/
 						   true);
   else
@@ -1512,32 +1512,32 @@ build_contract_check (tree contract)
       tree handler = begin_handler ();
       finish_handler_parms (NULL_TREE, handler); /* catch (...) */
       tree e = cp_build_modify_expr (loc, no_excp_, NOP_EXPR, boolean_false_node,
-	  tf_warning_or_error);
+				     tf_warning_or_error);
       finish_expr_stmt (e);
       tree s_const = build_int_cst (uint16_type_node, semantic);
       if (viol_is_var)
 	{
 	  /* We can update the detection mode here.  */
 	  tree memb
-	  = lookup_member (builtin_contract_violation_type,
-	      get_identifier ("_M_detection_mode"),
-	      1, 0, tf_warning_or_error);
+	    = lookup_member (builtin_contract_violation_type,
+			     get_identifier ("_M_detection_mode"),
+			     1, 0, tf_warning_or_error);
 	  tree r
-	  = build_class_member_access_expr (violation, memb, NULL_TREE, false,
-	      tf_warning_or_error);
+	    = build_class_member_access_expr (violation, memb, NULL_TREE, false,
+					      tf_warning_or_error);
 	  r = cp_build_modify_expr (loc, r, NOP_EXPR,
-	      build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
-	      tf_warning_or_error);
+				build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
+				tf_warning_or_error);
 	  finish_expr_stmt (r);
 	  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
-		  build_address (violation),
-		  s_const));
+					  build_address (violation),
+					  s_const));
 	}
       else
-      /* We need to make a copy of the violation object to update.  */
-      finish_expr_stmt (build_call_n (__tu_has_violation_exception, 2,
-	      build_address (violation),
-	      s_const));
+	/* We need to make a copy of the violation object to update.  */
+	finish_expr_stmt (build_call_n (__tu_has_violation_exception, 2,
+					build_address (violation),
+					s_const));
       finish_handler (handler);
       finish_handler_sequence (check_try);
       cond = build2 (TRUTH_ANDIF_EXPR, boolean_type_node, check_failed, no_excp_);
@@ -1546,13 +1546,13 @@ build_contract_check (tree contract)
 
   tree do_check = begin_if_stmt ();
   finish_if_stmt_cond (cond, do_check);
-  finish_expr_stmt (
-      build_call_n (__tu_has_violation, 2, build_address (violation),
-		    build_int_cst (uint16_type_node, semantic)));
+  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
+				  build_address (violation),
+				  build_int_cst (uint16_type_node, semantic)));
   finish_then_clause (do_check);
   finish_if_stmt (do_check);
 
-  BIND_EXPR_BODY (cc_bind) = pop_stmt_list (BIND_EXPR_BODY(cc_bind));
+  BIND_EXPR_BODY (cc_bind) = pop_stmt_list (BIND_EXPR_BODY (cc_bind));
   return cc_bind;
 }
 
