@@ -32073,8 +32073,8 @@ void cp_parser_late_contract_condition (cp_parser *parser,
 	}
     }
 
-  /* P2900 contracts allow access to members only through explicit use of
-     'this' pointer. */
+  /* Contracts allow access to members only through explicit use of 'this'
+     pointer. */
    tree saved_ccr = current_class_ref;
    tree saved_ccp = current_class_ptr;
    tree saved_contract_ccp = contract_class_ptr;
