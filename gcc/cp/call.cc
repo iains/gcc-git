@@ -11580,9 +11580,6 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
 	}
     }
 
-  /* When we have contracts enabled, and they are P2900-style then we might
-     wrap a virtual method call with caller-side checking.  */
-
   if (VOID_TYPE_P (TREE_TYPE (fn)))
     return fn;
 

@@ -1072,7 +1072,7 @@ get_src_loc_impl_ptr (location_t loc)
 /* Build a layout-compatible internal version of contract_violation type.  */
 
 static tree
-get_p9600_contract_violation_fields ()
+get_contract_violation_fields ()
 {
   tree fields = NULL_TREE;
   /* Must match <contracts>:
@@ -1116,7 +1116,7 @@ get_p9600_contract_violation_fields ()
 }
 
 /* Get constract_assertion_kind of the specified contract. Used when building
- P2900R7 contract_violation object.  */
+  contract_violation object.  */
 
 static int
 get_contract_assertion_kind (tree contract)
@@ -1172,12 +1172,12 @@ emit_builtin_observable_checkpoint ()
 
 }
 
-/* Build a p2900 contract_violation layout compatible object. */
+/* Build a contract_violation layout compatible object. */
 
 /* Constructor - possibly not constant. */
 
 static tree
-build_contract_violation_p2900_ctor (tree contract)
+build_contract_violation_ctor (tree contract)
 {
   bool can_be_const = true;
   uint16_t version = 1;
@@ -1238,7 +1238,7 @@ build_contract_violation_p2900_ctor (tree contract)
 }
 
 static tree
-build_contract_violation_p2900_constant (tree ctor, tree contract, bool is_const)
+build_contract_violation_constant (tree ctor, tree contract, bool is_const)
 {
   tree viol_ = contracts_tu_local_named_var
     (EXPR_LOCATION (contract), "Lcontract_violation",
@@ -1252,7 +1252,7 @@ build_contract_violation_p2900_constant (tree ctor, tree contract, bool is_const
 }
 
 static tree
-build_contract_violation_p2900_var (tree ctor, tree contract)
+build_contract_violation_var (tree ctor, tree contract)
 {
   location_t loc = EXPR_LOCATION (contract);
   tree a_type
@@ -1378,125 +1378,6 @@ get_terminate_wrapper ()
   return __tu_terminate_wrapper;
 }
 
-/* Expand a p2900 CONTRACT tree.  This is called during genericization.  */
-
-static tree
-build_contract_check_p2900 (tree contract)
-{
-  contract_evaluation_semantic semantic = get_evaluation_semantic (contract);
-  if (semantic == CES_INVALID)
-    return NULL_TREE;
-
-  /* Ignored contracts are never checked or assumed.  */
-  if (semantic == CES_IGNORE)
-    return void_node;
-
-  location_t loc = EXPR_LOCATION (contract);
-
-  remap_dummy_this (current_function_decl, &CONTRACT_CONDITION (contract));
-  tree condition = CONTRACT_CONDITION (contract);
-  if (condition == error_mark_node)
-    return NULL_TREE;
-
-  bool check_might_throw = flag_exceptions
-			   && !expr_noexcept_p (condition, tf_none);
-
-  /* Build a read-only violation object, with the contract settings.  */
-  /* Build a statement expression to hold a contract check, with the check
-     potentially wrapped in a try-catch expr.  */
-  tree cc_bind = build3 (BIND_EXPR, void_type_node, NULL, NULL, NULL);
-  BIND_EXPR_BODY (cc_bind) = push_stmt_list ();
-
-  if (!flag_contract_disable_check_epochs
-      && TREE_CODE (contract) == ASSERTION_STMT)
-    emit_builtin_observable_checkpoint ();
-  tree cond = build_x_unary_op (loc, TRUTH_NOT_EXPR, condition, NULL_TREE,
-				tf_warning_or_error);
-  tree ctor = build_contract_violation_p2900_ctor (contract);
-  tree violation = NULL_TREE;
-  bool viol_is_var = false;
-  if (TREE_CONSTANT (ctor))
-    violation = build_contract_violation_p2900_constant (ctor, contract, /*is_const*/true);
-  else
-    {
-      violation = build_contract_violation_p2900_var (ctor, contract);
-      add_decl_expr (violation);
-      BIND_EXPR_VARS (cc_bind) = violation;
-      viol_is_var = true;
-    }
-  /* So now do we need a try-catch?  */
-  if (check_might_throw)
-    {
-      /* This will hold the computed condition.  */
-      tree check_failed = build_decl (loc, VAR_DECL, NULL, boolean_type_node);
-      DECL_ARTIFICIAL (check_failed) = true;
-      DECL_IGNORED_P (check_failed) = true;
-      DECL_CONTEXT (check_failed) = current_function_decl;
-      layout_decl (check_failed, 0);
-      add_decl_expr (check_failed);
-      DECL_CHAIN (check_failed) = BIND_EXPR_VARS (cc_bind);
-      BIND_EXPR_VARS (cc_bind) = check_failed;
-      /* This will let us check if we had an exception.  */
-      tree no_excp_ = build_decl (loc, VAR_DECL, NULL, boolean_type_node);
-      DECL_ARTIFICIAL (no_excp_) = true;
-      DECL_IGNORED_P (no_excp_) = true;
-      DECL_CONTEXT (no_excp_) = current_function_decl;
-      DECL_INITIAL (no_excp_) = boolean_true_node;
-      layout_decl (no_excp_, 0);
-      add_decl_expr (no_excp_);
-      DECL_CHAIN (no_excp_) = BIND_EXPR_VARS (cc_bind);
-      BIND_EXPR_VARS (cc_bind) = no_excp_;
-
-      tree check_try = begin_try_block ();
-      finish_expr_stmt (cp_build_init_expr (check_failed, cond));
-      finish_try_block (check_try);
-      tree handler = begin_handler ();
-      finish_handler_parms (NULL_TREE, handler); /* catch (...) */
-      tree e = cp_build_modify_expr (loc, no_excp_, NOP_EXPR, boolean_false_node,
-				     tf_warning_or_error);
-      finish_expr_stmt (e);
-      tree s_const = build_int_cst (uint16_type_node, semantic);
-      if (viol_is_var)
-	{
-	  /* We can update the detection mode here.  */
-	  tree memb
-	    = lookup_member (builtin_contract_violation_type,
-			     get_identifier ("_M_detection_mode"),
-			     1, 0, tf_warning_or_error);
-	  tree r
-	    = build_class_member_access_expr (violation, memb, NULL_TREE, false,
-					      tf_warning_or_error);
-	  r = cp_build_modify_expr (loc, r, NOP_EXPR,
-				build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
-				tf_warning_or_error);
-	  finish_expr_stmt (r);
-	  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
-					  build_address (violation),
-					  s_const));
-	}
-      else
-	/* We need to make a copy of the violation object to update.  */
-	finish_expr_stmt (build_call_n (__tu_has_violation_exception, 2,
-					build_address (violation),
-					s_const));
-      finish_handler (handler);
-      finish_handler_sequence (check_try);
-      cond = build2 (TRUTH_ANDIF_EXPR, boolean_type_node, check_failed, no_excp_);
-      BIND_EXPR_VARS (cc_bind) = nreverse (BIND_EXPR_VARS (cc_bind));
-    }
-
-  tree do_check = begin_if_stmt ();
-  finish_if_stmt_cond (cond, do_check);
-  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
-				  build_address (violation),
-				  build_int_cst (uint16_type_node, semantic)));
-  finish_then_clause (do_check);
-  finish_if_stmt (do_check);
-
-  BIND_EXPR_BODY (cc_bind) = pop_stmt_list (BIND_EXPR_BODY (cc_bind));
-  return cc_bind;
-}
-
 static location_t
 get_contract_end_loc (tree contracts)
 {
@@ -1530,7 +1411,7 @@ init_builtin_contract_violation_type ()
   if (builtin_contract_violation_type)
     return builtin_contract_violation_type;
 
-  tree fields = get_p9600_contract_violation_fields ();
+  tree fields = get_contract_violation_fields ();
 
   iloc_sentinel ils (input_location);
   input_location = BUILTINS_LOCATION;
@@ -1559,7 +1440,120 @@ tree
 build_contract_check (tree contract)
 {
   maybe_declare_violation_handler_wrappers ();
-  return build_contract_check_p2900 (contract);
+
+  contract_evaluation_semantic semantic = get_evaluation_semantic (contract);
+  if (semantic == CES_INVALID)
+    return NULL_TREE ;
+
+  /* Ignored contracts are never checked or assumed.  */
+  if (semantic == CES_IGNORE)
+    return void_node;
+
+  location_t loc = EXPR_LOCATION(contract);
+
+  remap_dummy_this (current_function_decl, &CONTRACT_CONDITION(contract));
+  tree condition = CONTRACT_CONDITION(contract);
+  if (condition == error_mark_node)
+  return NULL_TREE;
+
+  bool check_might_throw = flag_exceptions
+      && !expr_noexcept_p (condition, tf_none);
+
+  /* Build a read-only violation object, with the contract settings.  */
+  /* Build a statement expression to hold a contract check, with the check
+   potentially wrapped in a try-catch expr.  */
+  tree cc_bind = build3 (BIND_EXPR, void_type_node, NULL, NULL, NULL);
+  BIND_EXPR_BODY (cc_bind) = push_stmt_list ();
+
+  if (!flag_contract_disable_check_epochs
+      && TREE_CODE (contract) == ASSERTION_STMT)
+    emit_builtin_observable_checkpoint ();
+  tree cond = build_x_unary_op (loc, TRUTH_NOT_EXPR, condition, NULL_TREE,
+				tf_warning_or_error);
+  tree ctor = build_contract_violation_ctor (contract);
+  tree violation = NULL_TREE;
+  bool viol_is_var = false;
+  if (TREE_CONSTANT(ctor))
+    violation = build_contract_violation_constant (ctor, contract, /*is_const*/
+						   true);
+  else
+    {
+      violation = build_contract_violation_var (ctor, contract);
+      add_decl_expr (violation);
+      BIND_EXPR_VARS (cc_bind) = violation;
+      viol_is_var = true;
+    }
+  /* So now do we need a try-catch?  */
+  if (check_might_throw)
+    {
+      /* This will hold the computed condition.  */
+      tree check_failed = build_decl (loc, VAR_DECL, NULL, boolean_type_node);
+      DECL_ARTIFICIAL (check_failed) = true;
+      DECL_IGNORED_P (check_failed) = true;
+      DECL_CONTEXT (check_failed) = current_function_decl;
+      layout_decl (check_failed, 0);
+      add_decl_expr (check_failed);
+      DECL_CHAIN (check_failed) = BIND_EXPR_VARS (cc_bind);
+      BIND_EXPR_VARS (cc_bind) = check_failed;
+      /* This will let us check if we had an exception.  */
+      tree no_excp_ = build_decl (loc, VAR_DECL, NULL, boolean_type_node);
+      DECL_ARTIFICIAL (no_excp_) = true;
+      DECL_IGNORED_P (no_excp_) = true;
+      DECL_CONTEXT (no_excp_) = current_function_decl;
+      DECL_INITIAL (no_excp_) = boolean_true_node;
+      layout_decl (no_excp_, 0);
+      add_decl_expr (no_excp_);
+      DECL_CHAIN (no_excp_) = BIND_EXPR_VARS (cc_bind);
+      BIND_EXPR_VARS (cc_bind) = no_excp_;
+
+      tree check_try = begin_try_block ();
+      finish_expr_stmt (cp_build_init_expr (check_failed, cond));
+      finish_try_block (check_try);
+      tree handler = begin_handler ();
+      finish_handler_parms (NULL_TREE, handler); /* catch (...) */
+      tree e = cp_build_modify_expr (loc, no_excp_, NOP_EXPR, boolean_false_node,
+	  tf_warning_or_error);
+      finish_expr_stmt (e);
+      tree s_const = build_int_cst (uint16_type_node, semantic);
+      if (viol_is_var)
+	{
+	  /* We can update the detection mode here.  */
+	  tree memb
+	  = lookup_member (builtin_contract_violation_type,
+	      get_identifier ("_M_detection_mode"),
+	      1, 0, tf_warning_or_error);
+	  tree r
+	  = build_class_member_access_expr (violation, memb, NULL_TREE, false,
+	      tf_warning_or_error);
+	  r = cp_build_modify_expr (loc, r, NOP_EXPR,
+	      build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
+	      tf_warning_or_error);
+	  finish_expr_stmt (r);
+	  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
+		  build_address (violation),
+		  s_const));
+	}
+      else
+      /* We need to make a copy of the violation object to update.  */
+      finish_expr_stmt (build_call_n (__tu_has_violation_exception, 2,
+	      build_address (violation),
+	      s_const));
+      finish_handler (handler);
+      finish_handler_sequence (check_try);
+      cond = build2 (TRUTH_ANDIF_EXPR, boolean_type_node, check_failed, no_excp_);
+      BIND_EXPR_VARS (cc_bind) = nreverse (BIND_EXPR_VARS (cc_bind));
+    }
+
+  tree do_check = begin_if_stmt ();
+  finish_if_stmt_cond (cond, do_check);
+  finish_expr_stmt (
+      build_call_n (__tu_has_violation, 2, build_address (violation),
+		    build_int_cst (uint16_type_node, semantic)));
+  finish_then_clause (do_check);
+  finish_if_stmt (do_check);
+
+  BIND_EXPR_BODY (cc_bind) = pop_stmt_list (BIND_EXPR_BODY(cc_bind));
+  return cc_bind;
 }
 
 
@@ -1872,19 +1866,12 @@ maybe_apply_function_contracts (tree fndecl)
    PARM_DECLs have been rewritten to the corresponding PARM_DECL in DEST.  */
 
 tree
-copy_and_remap_contracts (tree dest, tree source,
-			  contract_match_kind remap_kind)
+copy_and_remap_contracts (tree dest, tree source)
 {
   tree last = NULL_TREE, contract_attrs = NULL_TREE;
   tree attr = GET_FN_CONTRACT_SPECIFIERS (source);
   for (; attr; attr = NEXT_CONTRACT_ATTR (attr))
     {
-      if ((remap_kind == cmk_pre
-	   && (TREE_CODE (CONTRACT_STATEMENT (attr)) == POSTCONDITION_STMT))
-	  || (remap_kind == cmk_post
-	      && (TREE_CODE (CONTRACT_STATEMENT (attr)) == PRECONDITION_STMT)))
-	continue;
-
       tree c = copy_node (attr);
       TREE_VALUE (c) = build_tree_list (TREE_PURPOSE (TREE_VALUE (c)),
 					copy_node (CONTRACT_STATEMENT (c)));
@@ -2164,9 +2151,8 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
 	  return;
 	}
       else
-	set_fn_contract_specifiers (srcdecl,
-				    copy_and_remap_contracts (srcdecl, destdecl,
-							      cmk_all));
+	set_fn_contract_specifiers (
+	    srcdecl, copy_and_remap_contracts (srcdecl, destdecl));
     }
 
   /* For deferred contracts, we currently copy the tokens from the redeclaration
@@ -2182,8 +2168,7 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
       tree tmp_arguments = DECL_ARGUMENTS (destdecl);
       DECL_ARGUMENTS (destdecl) = DECL_ARGUMENTS (srcdecl);
       set_fn_contract_specifiers (destdecl,
-				  copy_and_remap_contracts (destdecl, srcdecl,
-							    cmk_all));
+				  copy_and_remap_contracts (destdecl, srcdecl));
       DECL_ARGUMENTS (destdecl) = tmp_arguments;
     }
 

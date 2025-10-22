@@ -1893,22 +1893,22 @@ Enable features proposed for C++26 Contracts.
 ; Keep these in step with the values in cp/contracts.h
 
 Enum
-Name(p2900_semantic) Type(int)  UnknownError(unrecognized contract evaluation semantic %qs)
+Name(contract_semantic) Type(int)  UnknownError(unrecognized contract evaluation semantic %qs)
 
 EnumValue
-Enum(p2900_semantic) String(ignore) Value(1)
+Enum(contract_semantic) String(ignore) Value(1)
 
 EnumValue
-Enum(p2900_semantic) String(observe) Value(2)
+Enum(contract_semantic) String(observe) Value(2)
 
 EnumValue
-Enum(p2900_semantic) String(enforce) Value(3)
+Enum(contract_semantic) String(enforce) Value(3)
 
 EnumValue
-Enum(p2900_semantic) String(quick_enforce) Value(4)
+Enum(contract_semantic) String(quick_enforce) Value(4)
 
 fcontract-evaluation-semantic=
-C++ ObjC++ Joined RejectNegative Enum(p2900_semantic) Var(flag_contract_evaluation_semantic) Init(3)
+C++ ObjC++ Joined RejectNegative Enum(contract_semantic) Var(flag_contract_evaluation_semantic) Init(3)
 -fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce]	Select the contract evaluation semantic (defaults to enforce).
 
 fcontract-disable-optimized-checks

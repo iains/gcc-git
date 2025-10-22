@@ -34,7 +34,7 @@ along with GCC; see the file COPYING3.  If not see
 #define NEXT_CONTRACT_ATTR(NODE) \
   TREE_CHAIN (NODE)
 
-/* P2900R14+ contract classification */
+/* Contract assertion kind */
 /* Must match relevant enums in <contracts> header  */
 
 enum contract_assertion_kind : uint16_t {
@@ -59,23 +59,7 @@ enum detection_mode : uint16_t {
   CDM_EVAL_EXCEPTION = 2
 };
 
-enum contract_match_kind
-{
-  cmk_all,
-  cmk_pre,
-  cmk_post
-};
-
-/* Contract inheritance models (experimental).  */
-enum contract_inheritance
-{
-  CONTRACTS_ON_VIRTUALS_NONE = 0,
-  CONTRACTS_ON_VIRTUALS_P2900R13 = 1,
-  CONTRACTS_ON_VIRTUALS_P3653 = 2,
-};
-
-/* P2900 meanings.  */
-/* evaluation_semantic */
+/* Contract evaluation_semantic */
 #define CONTRACT_EVALUATION_SEMANTIC(NODE) \
   (TREE_OPERAND (CONTRACT_CHECK (NODE), 0))
 
@@ -177,7 +161,7 @@ extern tree finish_contract_condition		(cp_expr);
 extern void update_late_contract		(tree, tree, cp_expr);
 extern void check_redecl_contract		(tree, tree);
 extern tree invalidate_contract			(tree);
-extern tree copy_and_remap_contracts		(tree, tree, contract_match_kind remap_kind = cmk_all);
+extern tree copy_and_remap_contracts		(tree, tree);
 extern tree constify_contract_access		(tree);
 extern tree view_as_const			(tree);
 

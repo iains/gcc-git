@@ -32073,11 +32073,8 @@ void cp_parser_late_contract_condition (cp_parser *parser,
 	}
     }
 
-  /* In C++20 contracts, 'this' is not allowed in preconditions of
-     constructors or in postconditions of destructors.  Note that the
-     previous value of this variable is established by the calling function,
-     so we need to save it here. P2900 contracts allow access to members
-     through explicit use of 'this' pointer. */
+  /* P2900 contracts allow access to members only through explicit use of
+     'this' pointer. */
    tree saved_ccr = current_class_ref;
    tree saved_ccp = current_class_ptr;
    tree saved_contract_ccp = contract_class_ptr;
@@ -32239,7 +32236,7 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
   return contract;
 }
 
-/* Parse a natural syntax contract specifier seq.
+/* Parse a contract specifier.
 
   function-contract-specifier :
     precondition-specifier
@@ -32392,8 +32389,8 @@ cp_parser_function_contract_specifier (cp_parser *parser)
   return contract;
 }
 
-/* Parse a natural syntax contract specifier seq. Returns a list of
-   preconditions and postconditions in an attribute tree.
+/* Parse a contract specifier seq. Returns a list of preconditions and
+  postconditions in an attribute tree.
 
   function-contract-specifier-seq :
     function-contract-specifier function-contract-specifier-seq.  */
@@ -32715,7 +32712,6 @@ cp_parser_skip_std_attribute_spec_seq (cp_parser *parser, size_t n, bool nonattr
 	       && (token = cp_lexer_peek_nth_token (parser->lexer, n))
 	       && token->type == CPP_NAME
 	       && (attr_name = token->u.value)
-	       && contract_attribute_p (attr_name)
 	       && cp_lexer_nth_token_is (parser->lexer, n + 1, CPP_OPEN_PAREN))
 	{
 	  size_t n2 = cp_parser_skip_balanced_tokens (parser, n + 1);
