@@ -1,6 +1,6 @@
 // check that we do not ICE with an empty nontrivial parameter
-// { dg-do run }
-// { dg-options "-std=c++23 -fcontracts " }
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 struct NTClass {
   NTClass(){};
@@ -15,6 +15,23 @@ void f (const NTClass i) pre (true){
 
 void g (const Empty i) pre (true){
 }
+
+
+struct S {
+  void f (const NTClass i)
+    post ( true);
+
+  void g (const Empty i)
+    post ( true);
+
+};
+
+void
+S::f (NTClass i){}
+
+void
+S::g (Empty i){}
+
 int main(){
 
   NTClass n;

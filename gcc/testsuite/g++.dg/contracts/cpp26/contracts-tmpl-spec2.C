@@ -1,6 +1,5 @@
-// basic test to ensure contracts work for class and member specializations
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts -fcontract-evaluation-semantic=observe -fsigned-char" }
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe -fsigned-char" }
 #include <cstdio>
 
 // template specializations can have differing contracts

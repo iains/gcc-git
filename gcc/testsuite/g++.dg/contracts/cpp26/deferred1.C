@@ -1,7 +1,7 @@
 // This case should be diagnosed, but we do not handl deferred contracts properly at the moment.
 // For now, diagnose that we at least don't accidentally merge the contracts
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts -g3" }
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -g3" }
 #include <cassert>
 struct contract
 {

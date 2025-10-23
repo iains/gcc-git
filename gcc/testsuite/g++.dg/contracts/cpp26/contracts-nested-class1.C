@@ -1,5 +1,5 @@
-// { dg-do compile }
-// { dg-options "-std=c++2a -fcontracts " }
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 void gfn3(int n) pre ( n > 0 );
 

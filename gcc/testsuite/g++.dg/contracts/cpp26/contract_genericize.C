@@ -1,7 +1,6 @@
-// check that we do not get a crash
-// { dg-do compile }
-// { dg-options "-std=c++2b -fcontracts -fcontract-evaluation-semantic=enforce " }
-
+// Check that we do not get a crash
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=enforce" }
 
 
 struct Swapper {

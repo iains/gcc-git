@@ -1,14 +1,11 @@
-// generic assert contract parsing checks
-//   check omitted, 'default', 'audit', and 'axiom' contract levels parse
-//   check that all concrete semantics parse
-//   check omitted, '%default' contract roles parse
-//   ensure that an invalid contract level 'invalid' errors
-//   ensure that a predicate referencing an undefined variable errors
-//   ensure that a missing colon after contract level errors
-//   ensure that an invalid contract role 'invalid' errors
-//   ensure that a missing colon after contract role errors
-// { dg-options "-std=c++2b -fcontracts " }
-// { dg-do compile }
+// N5008 [expr.prim.id.unqual]/p7
+// Otherwise, if the unqualified-id appears in the predicate of a contract assertion C (6.10) and the entity is
+// (7.1) — a variable declared outside of C of object type T,
+// (7.2) — a variable or template parameter declared outside of C of type “reference to T”, or
+// (7.3) — a structured binding of type T whose corresponding variable is declared outside of C,
+// then the type of the expression is const T
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 
 static_assert (__cpp_contracts >= 202502L);

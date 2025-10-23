@@ -1,7 +1,11 @@
-// Throwing violation handler in an assert check in a noexcept function
-// can be caught by the function.
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts -fcontract-evaluation-semantic=observe " }
+// N5008:
+// basic.contract.eval/p17
+// If a contract-violation handler invoked from the evaluation of a function contract assertion (9.4.1) exits via
+// an exception, the behavior is as if the function body exits via that same exception.
+// [Note 13 : If a contract-violation handler invoked from an assertion-statement (8.8)) exits via an exception, the search
+// for a handler continues from the execution of that statement. — end note]
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe " }
 
 #include <contracts>
 #include <exception>

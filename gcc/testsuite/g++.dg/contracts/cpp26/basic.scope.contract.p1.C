@@ -1,4 +1,8 @@
-// { dg-options "-std=c++23 -fcontracts " }
+// N5008
+// basic.scope.contract/p1
+// Each contract assertion (6.10) C introduces a contract-assertion scope that includes C.
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe " }
 
 // Check that result vars are not visible in function bodies.
 

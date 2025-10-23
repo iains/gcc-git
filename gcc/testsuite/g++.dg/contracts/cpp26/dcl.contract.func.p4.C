@@ -1,6 +1,9 @@
-// generic error tests for generalized contract redecls
-// { dg-do compile }
-// { dg-options "-std=c++2a -fcontracts " }
+// N5008 :
+// A declaration D of a function or function template f that is not a first declaration shall have either no
+// function-contract-specifier-seq or the same function-contract-specifier-seq (see below) as any first declaration
+// F reachable from D.
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 // allowed to repeat contracts or omit them
 int g0(int a) pre (a > 0);

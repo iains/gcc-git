@@ -1,6 +1,11 @@
-// check that we do not get unused warnings for contract check function parameters
-// { dg-do compile }
-// { dg-options "-std=c++2b -fcontracts -fcontract-evaluation-semantic=enforce -O " }
+// N5008 [expr.prim.id.unqual]/p7
+// Otherwise, if the unqualified-id appears in the predicate of a contract assertion C (6.10) and the entity is
+// (7.1) — a variable declared outside of C of object type T,
+// (7.2) — a variable or template parameter declared outside of C of type “reference to T”, or
+// (7.3) — a structured binding of type T whose corresponding variable is declared outside of C,
+// then the type of the expression is const T
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=enforce -O" }
 
 struct S{
   S(){};

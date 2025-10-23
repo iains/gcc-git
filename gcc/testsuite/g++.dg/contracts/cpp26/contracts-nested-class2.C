@@ -1,5 +1,5 @@
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts -fcontract-evaluation-semantic=observe" }
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe" }
 
 void gfn3(int n) pre (n > 0 );
 

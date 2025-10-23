@@ -1,6 +1,6 @@
 // check that dependent contract check does not cause an ICE
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts -fcontract-evaluation-semantic=observe " }
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe " }
 template <typename ST>
 struct S{
 

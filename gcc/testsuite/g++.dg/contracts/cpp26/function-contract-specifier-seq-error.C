@@ -1,12 +1,18 @@
-// generic assert contract parsing checks
-
-// { dg-do compile }
-// { dg-options "-std=c++2a -fcontracts " }
-
-static_assert (__cpp_contracts >= 202502L);
+// generic function-contract-specifier-seq parsing checks
+// N5008
+// function-contract-specifier-seq :
+//  	function-contract-specifier function-contract-specifier-seq opt
+// function-contract-specifier :
+//	precondition-specifier
+// 	postcondition-specifier
+// precondition-specifier : pre attribute-specifier-seq opt ( conditional-expression )
+// postcondition-specifier :
+//	post attribute-specifier-seq opt ( result-name-introducer opt conditional-expression )
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 int f(int);
-int g1(int a) pre(f(a) > a)
+int g1(int a) pre(f(a) > a) pre (true) post(false) pre(f(1) > 4)
 {
 	int r = a - f(a);
 	return 2 * r;
@@ -42,4 +48,3 @@ struct Baz
   void h(const int x) post(x = 0); // { dg-error "expected conditional-expression" }
   void i(const int x) post(x, x); // { dg-error "expected conditional-expression" }
 };
-		  

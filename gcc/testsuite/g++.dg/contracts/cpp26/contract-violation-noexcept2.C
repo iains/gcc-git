@@ -1,6 +1,6 @@
 // test that a noexcept function can't throw even if a violation handler throws
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts  " }
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 // { dg-additional-sources "throwing-violation-handler.cc" }
 
 #include <exception>

@@ -1,7 +1,7 @@
-// { dg-options "-std=c++23 -fcontracts -fcontract-evaluation-semantic=observe" }
-// { dg-additional-options "-O -g" }
-
 // Check that we do not ICE with debug + optimisation.
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe -O -g" }
+
 
 int foo (const int i)
   pre (i > 3)

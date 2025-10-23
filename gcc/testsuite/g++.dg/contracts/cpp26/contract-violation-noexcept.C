@@ -1,6 +1,6 @@
 // test that the default contract violation handler can't throw
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts -fcontract-evaluation-semantic=observe " }
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe " }
 
 #include <iostream>
 #include <exception>

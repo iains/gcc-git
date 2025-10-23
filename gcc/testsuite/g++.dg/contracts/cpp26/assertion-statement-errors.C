@@ -1,14 +1,9 @@
-// generic assert contract parsing checks
-//   check omitted, 'default', 'audit', and 'axiom' contract levels parse
-//   check that all concrete semantics parse
-//   check omitted, '%default' contract roles parse
-//   ensure that an invalid contract level 'invalid' errors
-//   ensure that a predicate referencing an undefined variable errors
-//   ensure that a missing colon after contract level errors
-//   ensure that an invalid contract role 'invalid' errors
-//   ensure that a missing colon after contract role errors
-// { dg-do compile }
-// { dg-options "-std=c++2a -fcontracts " }
+// generic assertion-statement parsing checks
+// N5008
+// assertion-statement :
+// contract_assert attribute-specifier-seq opt ( conditional-expression ) ;
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 // { dg-prune-output "not declared" }
 
@@ -39,6 +34,8 @@ int main()
 
     contract_assert(true) // { dg-error  "expected .;. before .g." }
     g();
+
+    contract_assert [[deprecated]] (i == 3);  // { dg-warning "attributes are ignored on contract assertions" }
 
     return 0;
 }
