@@ -1,5 +1,5 @@
-// { dg-do run }
-// { dg-options "-std=c++26 -fcontracts -fcontract-evaluation-semantic=observe " }
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe " }
 
 // Test source location without including <source_location>
 

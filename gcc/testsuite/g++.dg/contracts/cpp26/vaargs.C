@@ -1,5 +1,6 @@
-// { dg-do run }
-// { dg-options "-std=c++2a -fcontracts " }
+// Check contract assertion on a vaarg function
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=enforce " }
 #include <stdio.h>
 #include <stdarg.h>
 int simple_printf(const char* fmt, ...) pre (fmt != 0) post (r: r > 0)

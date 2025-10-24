@@ -1,6 +1,16 @@
+// N5008 :
+// dcl.contract.res/p1
+// The result-name-introducer of a postcondition-specifier is a declaration. The result-name-introducer introduces
+// the identifier as the name of a result binding of the associated function. If a postcondition assertion has a
+// result-name-introducer and the return type of the function is cv void, the program is ill-formed. A result
+// binding denotes the object or reference returned by invocation of that function. The type of a result binding
+// is the return type of its associated function. The optional attribute-specifier-seq of the attributed-identifier in
+// the result-name-introducer appertains to the result binding so introduced.
+// [Note 1 : An id-expression that names a result binding is a const lvalue (7.5.5.2). — end note]
+//
 // check that the return value has correct const qualification
-// { dg-do run }
-// { dg-options "-std=c++2b -fcontracts " }
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 
 #include <type_traits>

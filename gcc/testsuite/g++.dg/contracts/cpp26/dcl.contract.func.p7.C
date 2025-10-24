@@ -1,5 +1,9 @@
-// { dg-do compile }
-// { dg-options "-std=c++23 -fcontracts " }
+// N5008:
+// dcl.contract.func/p7
+// If the predicate of a postcondition assertion of a function f odr-uses (6.3) a non-reference parameter of f,
+// that parameter and the corresponding parameter on all declarations of f shall have const type
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 #include <type_traits>
 struct NTClass {
   //TODO, make non trivial when https://github.com/NinaRanns/gcc/issues/21 is solved
@@ -148,8 +152,8 @@ void f7(T t) post (t > 0);
 void bar(){
   f3(1);
   f4<int>(1);
-  f5(1); // { dg-error "used in a postcondition must be const" "" { target *-*-* } 141 }
-  f6<int>(1); // { dg-error "used in a postcondition must be const" "" { target *-*-* } 143  }
+  f5(1); // { dg-error "used in a postcondition must be const" "" { target *-*-* } 145 }
+  f6<int>(1); // { dg-error "used in a postcondition must be const" "" { target *-*-* } 147  }
   f7<const int>(1); // OK
 }
 
