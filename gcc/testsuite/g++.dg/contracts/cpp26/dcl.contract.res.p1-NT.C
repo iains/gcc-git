@@ -1,7 +1,13 @@
+// N5008 :
+// dcl.contract.res/p1
+// The result-name-introducer of a postcondition-specifier is a declaration. The result-name-introducer introduces
+// the identifier as the name of a result binding of the associated function. If a postcondition assertion has a
+// result-name-introducer and the return type of the function is cv void, the program is ill-formed.
+//
 // Various tests with non trivial return value identifier
-// in either derived class or base class.
-// { dg-do compile }
-// { dg-options "-std=c++2a -fcontracts " }
+//
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts" }
 
 
 struct NonTrivial{

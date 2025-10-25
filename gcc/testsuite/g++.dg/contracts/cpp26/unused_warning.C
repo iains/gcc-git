@@ -1,6 +1,6 @@
 // check that we do not get unused warnings for contract check function parameters
-// { dg-do compile }
-// { dg-options "-std=c++2b -fcontracts -fcontract-evaluation-semantic=enforce  -Wall -Wextra" }
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=enforce  -Wall -Wextra" }
 
 struct TimeInterval{
   int i = 4;
