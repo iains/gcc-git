@@ -13652,28 +13652,6 @@ fold_builtin_is_corresponding_member (location_t loc, int nargs,
 				   fold_convert (TREE_TYPE (arg1), arg2)));
 }
 
-/* [basic.types] 8.  True iff TYPE is an object type.  */
-
-static bool
-object_type_p (const_tree type)
-{
-  return (TREE_CODE (type) != FUNCTION_TYPE
-          && !TYPE_REF_P (type)
-          && !VOID_TYPE_P (type));
-}
-
-/* [defns.referenceable] True iff TYPE is a referenceable type.  */
-
-static bool
-referenceable_type_p (const_tree type)
-{
-  return (TYPE_REF_P (type)
-	  || object_type_p (type)
-	  || (FUNC_OR_METHOD_TYPE_P (type)
-	      && type_memfn_quals (type) == TYPE_UNQUALIFIED
-	      && type_memfn_rqual (type) == REF_QUAL_NONE));
-}
-
 /* Actually evaluates the trait.  */
 
 static bool
@@ -13847,19 +13825,7 @@ trait_expr_value (cp_trait_kind kind, tree type1, tree type2)
       return expr_noexcept_p (build_invoke (type1, type2, tf_none), tf_none);
 
     case CPTK_IS_NOTHROW_RELOCATABLE:
-      if (trivially_relocatable_type_p (type1))
-	return true;
-      else
-	{
-	  type1 = strip_array_types (type1);
-	  if (!referenceable_type_p (type1))
-	    return false;
-	  tree arg = make_tree_vec (1);
-	  TREE_VEC_ELT (arg, 0)
-	    = cp_build_reference_type (type1, /*rval=*/true);
-	  return (is_nothrow_xible (INIT_EXPR, type1, arg)
-		  && is_nothrow_xible (BIT_NOT_EXPR, type1, NULL_TREE));
-	}
+      return nothrow_relocatable_type_p (type1);
 
     case CPTK_IS_OBJECT:
       return object_type_p (type1);
