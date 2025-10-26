@@ -2218,6 +2218,32 @@ get_copy_assign (tree type)
   return fn;
 }
 
+/* Locate the move ctor of TYPE.  */
+
+tree
+get_move_ctor (tree type, tsubst_flags_t complain)
+{
+  tree argtype = build_stub_type (type, TYPE_UNQUALIFIED, /*rvalue=*/true);
+  tree fn = locate_fn_flags (type, complete_ctor_identifier, argtype,
+			     LOOKUP_NORMAL, complain);
+  if (fn == error_mark_node)
+    return NULL_TREE;
+  return fn;
+}
+
+/* Locate the move assignment operator for an lvalue of TYPE.  */
+
+tree
+get_move_assign (tree type, tsubst_flags_t complain)
+{
+  tree argtype = build_stub_type (type, TYPE_UNQUALIFIED, /*rvalue=*/true);
+  tree fn = locate_fn_flags (type, assign_op_identifier, argtype,
+			     LOOKUP_NORMAL, complain);
+  if (fn == error_mark_node)
+    return NULL_TREE;
+  return fn;
+}
+
 /* walk_tree helper function for is_trivially_xible.  If *TP is a call,
    return it if it calls something other than a trivial special member
    function.  */

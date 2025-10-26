@@ -1299,6 +1299,27 @@ vla_type_p (tree t)
   return false;
 }
 
+/* [basic.types] 8.  True iff TYPE is an object type.  */
+
+bool
+object_type_p (const_tree type)
+{
+  return (TREE_CODE (type) != FUNCTION_TYPE
+	  && !TYPE_REF_P (type)
+	  && !VOID_TYPE_P (type));
+}
+
+/* [defns.referenceable] True iff TYPE is a referenceable type.  */
+
+bool
+referenceable_type_p (const_tree type)
+{
+  return (TYPE_REF_P (type)
+	  || object_type_p (type)
+	  || (FUNC_OR_METHOD_TYPE_P (type)
+	      && type_memfn_quals (type) == TYPE_UNQUALIFIED
+	      && type_memfn_rqual (type) == REF_QUAL_NONE));
+}
 
 /* Return a reference type node of MODE referring to TO_TYPE.  If MODE
    is VOIDmode the standard pointer mode will be picked.  If RVAL is
@@ -4814,80 +4835,81 @@ trivial_type_p (const_tree t)
    [class.prop].  */
 
 static bool
-default_movable_type_p (tree t)
+default_movable_type_p (tree t, bool explain = false)
 {
   if (!CLASS_TYPE_P (t) || !COMPLETE_TYPE_P (t))
-    return false;
+    {
+      if (explain)
+	inform (location_of (t), "%qT is not a complete class type", t);
+      return false;
+    }
   if (CLASSTYPE_LAZY_DESTRUCTOR (t))
     lazily_declare_fn (sfk_destructor, t);
   if (tree dtor = CLASSTYPE_DESTRUCTOR (t))
-    if (user_provided_p (dtor) || DECL_DELETED_FN (dtor))
-      return false;
+    {
+      if (user_provided_p (dtor))
+	{
+	  if (explain)
+	    inform (DECL_SOURCE_LOCATION (dtor),
+		    "%qT has a user-provided destructor", t);
+	  return false;
+	}
+      if (DECL_DELETED_FN (dtor))
+	{
+	  if (explain && !maybe_explain_implicit_delete (dtor))
+	    inform (DECL_SOURCE_LOCATION (dtor),
+		    "%qD is defined as deleted", dtor);
+	  return false;
+	}
+    }
 
-  tree copy_ctor = NULL_TREE, move_ctor = NULL_TREE;
-  tree copy_assign = NULL_TREE, move_assign = NULL_TREE;
-  if (CLASSTYPE_LAZY_MOVE_CTOR (t))
-    move_ctor = lazily_declare_fn (sfk_move_constructor, t);
-  if (CLASSTYPE_LAZY_MOVE_ASSIGN (t))
-    move_assign = lazily_declare_fn (sfk_move_assignment, t);
-  if (!move_ctor)
-    for (ovl_iterator iter (CLASSTYPE_CONSTRUCTORS (t)); iter; ++iter)
-      if (TREE_CODE (*iter) == FUNCTION_DECL)
-	{
-	  if (copy_fn_p (*iter))
-	    copy_ctor = *iter;
-	  else if (move_fn_p (*iter))
-	    {
-	      move_ctor = *iter;
-	      break;
-	    }
-	}
-  if (!move_assign)
-    for (ovl_iterator iter (get_class_binding_direct (t,
-						      assign_op_identifier));
-	 iter; ++iter)
-      if (TREE_CODE (*iter) == FUNCTION_DECL)
-	{
-	  if (copy_fn_p (*iter))
-	    copy_assign = *iter;
-	  else if (move_fn_p (*iter))
-	    {
-	      move_assign = *iter;
-	      break;
-	    }
-	}
+  /* We should actually perform overload resolution, in case the user has
+     provided multiple candidate move constructors.  */
+  deferring_access_check_sentinel dacs (dk_no_check);
+  tree move_ctor = get_move_ctor (t, tf_none);
   if (!move_ctor)
     {
-      if (CLASSTYPE_LAZY_COPY_CTOR (t))
-	copy_ctor = lazily_declare_fn (sfk_copy_constructor, t);
-      if (!copy_ctor)
-	return false;
-      if (user_provided_p (copy_ctor)
-	  || DECL_DELETED_FN (copy_ctor)
-	  || DECL_CONTEXT (copy_ctor) != t
-	  || DECL_INHERITED_CTOR (copy_ctor))
-	return false;
+      if (explain)
+	get_move_ctor (t, tf_error);
+      return false;
     }
-  else if (user_provided_p (move_ctor)
-	   || DECL_DELETED_FN (move_ctor)
-	   || DECL_CONTEXT (move_ctor) != t
-	   || DECL_INHERITED_CTOR (move_ctor))
-    return false;
+  else if (user_provided_p (move_ctor))
+    {
+      if (explain)
+	inform (DECL_SOURCE_LOCATION (move_ctor),
+		"%qD is user-provided", move_ctor);
+      return false;
+    }
+  else if (DECL_CONTEXT (move_ctor) != t || DECL_INHERITED_CTOR (move_ctor))
+    {
+      if (explain)
+	inform (DECL_SOURCE_LOCATION (move_ctor),
+		"%qD is not a direct member of %qT", move_ctor, t);
+      return false;
+    }
+
+  tree move_assign = get_move_assign (t, tf_none);
   if (!move_assign)
     {
-      if (CLASSTYPE_LAZY_COPY_ASSIGN (t))
-	copy_assign = lazily_declare_fn (sfk_copy_assignment, t);
-      if (!copy_assign)
-	return false;
-      if (user_provided_p (copy_assign)
-	  || DECL_DELETED_FN (copy_assign)
-	  || DECL_CONTEXT (copy_assign) != t)
-	return false;
+      if (explain)
+	get_move_assign (t, tf_error);
+      return false;
     }
-  else if (user_provided_p (move_assign)
-	   || DECL_DELETED_FN (move_assign)
-	   || DECL_CONTEXT (move_assign) != t)
-    return false;
+  else if (user_provided_p (move_assign))
+    {
+      if (explain)
+	inform (DECL_SOURCE_LOCATION (move_assign),
+		"%qD is user-provided", move_assign);
+      return false;
+    }
+  else if (DECL_CONTEXT (move_assign) != t)
+    {
+      if (explain)
+	inform (DECL_SOURCE_LOCATION (move_assign),
+		"%qD is not a direct member of %qT", move_assign, t);
+      return false;
+    }
+
   return true;
 }
 
@@ -4924,37 +4946,51 @@ union_with_no_declared_special_member_fns (tree t)
    [basic.types.general] and [class.prop].  */
 
 bool
-trivially_relocatable_type_p (tree t)
+trivially_relocatable_type_p (tree t, bool explain/*=false*/)
 {
   t = strip_array_types (t);
 
   if (!CLASS_TYPE_P (t))
-    return scalarish_type_p (t);
+    {
+      if (!scalarish_type_p (t))
+	{
+	  if (explain)
+	    inform (location_of (t), "%qT is not a class or scalar type", t);
+	  return false;
+	}
+      return true;
+    }
 
   t = TYPE_MAIN_VARIANT (t);
-  if (CLASSTYPE_TRIVIALLY_RELOCATABLE_COMPUTED (t))
+  if (!explain && CLASSTYPE_TRIVIALLY_RELOCATABLE_COMPUTED (t))
     return CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT (t);
   if (!COMPLETE_TYPE_P (t))
-    return false;
-
-  if (!CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT (t)
-      && !union_with_no_declared_special_member_fns (t)
-      && !default_movable_type_p (t))
     {
+      if (explain)
+	inform (location_of (t), "%qT is not complete", t);
+      return false;
+    }
+
+  if (CLASSTYPE_VBASECLASSES (t))
+    {
+      if (explain)
+	inform (location_of (t), "%qT has virtual bases", t);
     nontriv:
       CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT (t) = 0;
       CLASSTYPE_TRIVIALLY_RELOCATABLE_COMPUTED (t) = 1;
       return false;
     }
 
-  if (CLASSTYPE_VBASECLASSES (t))
-    goto nontriv;
-
   if (CLASSTYPE_LAZY_DESTRUCTOR (t))
     lazily_declare_fn (sfk_destructor, t);
   if (tree dtor = CLASSTYPE_DESTRUCTOR (t))
     if (DECL_DELETED_FN (dtor))
-      goto nontriv;
+      {
+	if (explain && !maybe_explain_implicit_delete (dtor))
+	  inform (DECL_SOURCE_LOCATION (dtor),
+		  "%qD is defined as deleted", dtor);
+	goto nontriv;
+      }
 
   tree binfo, base_binfo;
   unsigned int i;
@@ -4963,7 +4999,13 @@ trivially_relocatable_type_p (tree t)
     {
       tree basetype = TREE_TYPE (base_binfo);
       if (!trivially_relocatable_type_p (basetype))
-	goto nontriv;
+	{
+	  if (explain)
+	    inform (location_of (t),
+		    "base class of type %qT is not trivially relocatable",
+		    basetype);
+	  goto nontriv;
+	}
     }
 
   for (tree field = TYPE_FIELDS (t); field; field = DECL_CHAIN (field))
@@ -4973,13 +5015,107 @@ trivially_relocatable_type_p (tree t)
       {
 	tree type = TREE_TYPE (field);
 	if (type == error_mark_node)
-	  goto nontriv;
+	  {
+	    if (explain)
+	      inform (DECL_SOURCE_LOCATION (field),
+		      "field %qD is not trivially relocatable", field);
+	    goto nontriv;
+	  }
 	if (!TYPE_REF_P (type) && !trivially_relocatable_type_p (type))
-	  goto nontriv;
+	  {
+	    if (explain)
+	      inform (DECL_SOURCE_LOCATION (field),
+		      "field %qD of type %qT is not trivially relocatable",
+		      field, type);
+	    goto nontriv;
+	  }
       }
 
+  if (!CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT (t)
+      && !union_with_no_declared_special_member_fns (t)
+      && !default_movable_type_p (t))
+    {
+      if (explain)
+	{
+	  /* At this point CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT will only
+	     be cleared if we failed a condition above.  */
+	  if (TREE_CODE (t) == UNION_TYPE)
+	    inform (location_of (t),
+		    "%qT is not marked %<trivially_relocatable_if_eligible%>, "
+		    "has user-declared special member functions, "
+		    "and is not default-movable because:", t);
+	  else
+	    inform (location_of (t),
+		    "%qT is not marked %<trivially_relocatable_if_eligible%>, "
+		    "and is not default-movable because:", t);
+	  auto_diagnostic_nesting_level adnl;
+	  default_movable_type_p (t, /*explain=*/true);
+	}
+      goto nontriv;
+    }
+
+  if (explain)
+    gcc_checking_assert (CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT (t));
   CLASSTYPE_TRIVIALLY_RELOCATABLE_BIT (t) = 1;
   CLASSTYPE_TRIVIALLY_RELOCATABLE_COMPUTED (t) = 1;
+  return true;
+}
+
+/* True iff type T is a nothrow relocatable type, as defined in
+   [meta.unary.prop].  */
+
+bool
+nothrow_relocatable_type_p (tree t, bool explain/*=false*/)
+{
+  if (trivially_relocatable_type_p (t))
+    return true;
+
+  t = strip_array_types (t);
+  if (!referenceable_type_p (t))
+    {
+      if (explain)
+	inform (location_of (t), "%qT is not an object, reference, or "
+		"unqualified function type", t);
+      return false;
+    }
+
+  tree arg = make_tree_vec (1);
+  TREE_VEC_ELT (arg, 0)
+    = cp_build_reference_type (t, /*rval=*/true);
+  bool movable = is_nothrow_xible (INIT_EXPR, t, arg);
+  bool destructable = is_nothrow_xible (BIT_NOT_EXPR, t, NULL_TREE);
+  if (!(movable && destructable))
+    {
+      if (explain)
+	{
+	  inform (location_of (t),
+		  "%qT is not either trivially relocatable, "
+		  "or nothrow move-constructible and nothrow destructible", t);
+	  {
+	    inform (location_of (t),
+		    "%qT is not trivially relocatable because:", t);
+	    auto_diagnostic_nesting_level adnl;
+	    trivially_relocatable_type_p (t, /*explain=*/true);
+	  }
+	  if (!movable)
+	    {
+	      inform (location_of (t),
+		      "%qT is not nothrow move constructible because:", t);
+	      auto_diagnostic_nesting_level adnl;
+	      is_nothrow_xible (INIT_EXPR, t, arg, /*explain=*/true);
+	    }
+	  else if (!destructable)
+	    {
+	      /* We should never reach here, but see LWG2116.  */
+	      inform (location_of (t),
+		      "%qT is not nothrow destructible because:", t);
+	      auto_diagnostic_nesting_level adnl;
+	      is_nothrow_xible (BIT_NOT_EXPR, t, NULL_TREE, /*explain=*/true);
+	    }
+	}
+      return false;
+    }
+
   return true;
 }
 
@@ -4987,88 +5123,79 @@ trivially_relocatable_type_p (tree t)
    and [class].  */
 
 bool
-replaceable_type_p (tree t)
+replaceable_type_p (tree t, bool explain/*=false*/)
 {
   t = strip_array_types (t);
 
   if (cv_qualified_p (t))
-    return false;
+    {
+      if (explain)
+	{
+	  inform (location_of (t),
+		  "%<const%> or %<volatile%> types are not replaceable");
+	}
+      return false;
+    }
 
   if (!CLASS_TYPE_P (t))
-    return scalarish_type_p (t);
+    {
+      if (!scalarish_type_p (t))
+	{
+	  if (explain)
+	    inform (location_of (t), "%qT is not a class or scalar type", t);
+	  return false;
+	}
+      return true;
+    }
 
   t = TYPE_MAIN_VARIANT (t);
-  if (CLASSTYPE_REPLACEABLE_COMPUTED (t))
+  if (!explain && CLASSTYPE_REPLACEABLE_COMPUTED (t))
     return CLASSTYPE_REPLACEABLE_BIT (t);
   if (!COMPLETE_TYPE_P (t))
-    return false;
-
-  if (!CLASSTYPE_REPLACEABLE_BIT (t)
-      && !union_with_no_declared_special_member_fns (t)
-      && !default_movable_type_p (t))
     {
+      if (explain)
+	inform (location_of (t), "%qT is not complete", t);
+      return false;
+    }
+
+  if (CLASSTYPE_LAZY_DESTRUCTOR (t))
+    lazily_declare_fn (sfk_destructor, t);
+  tree dtor = CLASSTYPE_DESTRUCTOR (t);
+  if (dtor && DECL_DELETED_FN (dtor))
+    {
+      if (explain && !maybe_explain_implicit_delete (dtor))
+	inform (DECL_SOURCE_LOCATION (dtor),
+		"%qD is defined as deleted", dtor);
     nonrepl:
       CLASSTYPE_REPLACEABLE_BIT (t) = 0;
       CLASSTYPE_REPLACEABLE_COMPUTED (t) = 1;
       return false;
     }
 
-  if (CLASSTYPE_LAZY_DESTRUCTOR (t))
-    lazily_declare_fn (sfk_destructor, t);
-  if (tree dtor = CLASSTYPE_DESTRUCTOR (t))
-    if (DECL_DELETED_FN (dtor))
-      goto nonrepl;
+  {
+    deferring_access_check_sentinel dacs (dk_no_check);
+    if (!get_move_ctor (t, tf_none))
+      {
+	if (explain)
+	  {
+	    inform (location_of (t), "%qT is not move-constructible", t);
+	    auto_diagnostic_nesting_level adnl;
+	    get_move_ctor (t, tf_error);
+	  }
+	goto nonrepl;
+      }
 
-  tree copy_ctor = NULL_TREE, move_ctor = NULL_TREE;
-  tree copy_assign = NULL_TREE, move_assign = NULL_TREE;
-  if (CLASSTYPE_LAZY_MOVE_CTOR (t))
-    move_ctor = lazily_declare_fn (sfk_move_constructor, t);
-  if (CLASSTYPE_LAZY_MOVE_ASSIGN (t))
-    move_assign = lazily_declare_fn (sfk_move_assignment, t);
-  if (!move_ctor)
-    for (ovl_iterator iter (CLASSTYPE_CONSTRUCTORS (t)); iter; ++iter)
-      if (TREE_CODE (*iter) == FUNCTION_DECL)
-	{
-	  if (copy_fn_p (*iter))
-	    copy_ctor = *iter;
-	  else if (move_fn_p (*iter))
-	    {
-	      move_ctor = *iter;
-	      break;
-	    }
-	}
-  if (!move_assign)
-    for (ovl_iterator iter (get_class_binding_direct (t,
-						      assign_op_identifier));
-	 iter; ++iter)
-      if (TREE_CODE (*iter) == FUNCTION_DECL)
-	{
-	  if (copy_fn_p (*iter))
-	    copy_assign = *iter;
-	  else if (move_fn_p (*iter))
-	    {
-	      move_assign = *iter;
-	      break;
-	    }
-	}
-  if (!move_ctor)
-    {
-      if (CLASSTYPE_LAZY_COPY_CTOR (t))
-	copy_ctor = lazily_declare_fn (sfk_copy_constructor, t);
-      if (!copy_ctor || DECL_DELETED_FN (copy_ctor))
+    if (!get_move_assign (t, tf_none))
+      {
+	if (explain)
+	  {
+	    inform (location_of (t), "%qT is not move-assignable", t);
+	    auto_diagnostic_nesting_level adnl;
+	    get_move_assign (t, tf_error);
+	  }
 	goto nonrepl;
-    }
-  else if (DECL_DELETED_FN (move_ctor))
-    goto nonrepl;
-  if (!move_assign)
-    {
-      if (CLASSTYPE_LAZY_COPY_ASSIGN (t))
-	copy_assign = lazily_declare_fn (sfk_copy_assignment, t);
-      if (!copy_assign || DECL_DELETED_FN (copy_assign))
-	goto nonrepl;
-    }
-  else if (DECL_DELETED_FN (move_assign))
-    goto nonrepl;
+      }
+  }
 
   tree binfo, base_binfo;
   unsigned int i;
@@ -5077,7 +5204,12 @@ replaceable_type_p (tree t)
     {
       tree basetype = TREE_TYPE (base_binfo);
       if (!replaceable_type_p (basetype))
-	goto nonrepl;
+	{
+	  if (explain)
+	    inform (location_of (t),
+		    "base class of type %qT is not replaceable", basetype);
+	  goto nonrepl;
+	}
     }
 
   for (tree field = TYPE_FIELDS (t); field; field = DECL_CHAIN (field))
@@ -5087,11 +5219,46 @@ replaceable_type_p (tree t)
       {
 	tree type = TREE_TYPE (field);
 	if (type == error_mark_node)
-	  goto nonrepl;
+	  {
+	    if (explain)
+	      inform (DECL_SOURCE_LOCATION (field),
+		      "field %qD is not replaceable", field);
+	    goto nonrepl;
+	  }
 	if (!replaceable_type_p (type))
-	  goto nonrepl;
+	  {
+	    if (explain)
+	      inform (DECL_SOURCE_LOCATION (field),
+		      "field %qD of type %qT is not replaceable", field, type);
+	    goto nonrepl;
+	  }
       }
 
+  if (!CLASSTYPE_REPLACEABLE_BIT (t)
+      && !union_with_no_declared_special_member_fns (t)
+      && !default_movable_type_p (t))
+    {
+      if (explain)
+	{
+	  /* At this point CLASSTYPE_REPLACEABLE_BIT will only
+	     be cleared if we failed a condition above.  */
+	  if (TREE_CODE (t) == UNION_TYPE)
+	    inform (location_of (t),
+		    "%qT is not marked %<replaceable_if_eligible%>, "
+		    "has user-declared special member functions, "
+		    "and is not default-movable because:", t);
+	  else
+	    inform (location_of (t),
+		    "%qT is not marked %<replaceable_if_eligible%>, "
+		    "and is not default-movable because:", t);
+	  auto_diagnostic_nesting_level adnl;
+	  default_movable_type_p (t, /*explain=*/true);
+	}
+      goto nonrepl;
+    }
+
+  if (explain)
+    gcc_checking_assert (CLASSTYPE_REPLACEABLE_BIT (t));
   CLASSTYPE_REPLACEABLE_BIT (t) = 1;
   CLASSTYPE_REPLACEABLE_COMPUTED (t) = 1;
   return true;
