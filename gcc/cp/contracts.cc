@@ -1424,6 +1424,63 @@ maybe_declare_violation_handler_wrappers ()
 					     uint16_type_node);
 }
 
+static GTY(()) tree tu_terminate_wrapper = NULL_TREE;
+
+/* Define a noipa wrapper around the call to std::terminate */
+
+static void build_terminate_wrapper()
+{
+  start_preparsed_function (tu_terminate_wrapper,
+			    DECL_ATTRIBUTES(tu_terminate_wrapper),
+			    SF_DEFAULT | SF_PRE_PARSED);
+  tree body = begin_function_body ();
+  tree compound_stmt = begin_compound_stmt (BCS_FN_BODY);
+  finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
+  finish_return_stmt (NULL_TREE);
+  finish_compound_stmt (compound_stmt);
+  finish_function_body (body);
+  tu_terminate_wrapper = finish_function (false);
+  expand_or_defer_fn (tu_terminate_wrapper);
+}
+
+/* Get the decl for the noipa wrapper around the call to std::terminate */
+
+static tree
+get_terminate_wrapper ()
+{
+  if (tu_terminate_wrapper)
+    return tu_terminate_wrapper;
+
+  iloc_sentinel ils (input_location);
+  input_location = BUILTINS_LOCATION;
+
+  tree fn_type = build_function_type_list (void_type_node, NULL_TREE);
+  if (!TREE_NOTHROW (terminate_fn))
+    fn_type = build_exception_variant (fn_type, noexcept_true_spec);
+  tree fn_name = get_identifier ("__tu_terminate_wrapper");
+
+  tu_terminate_wrapper
+    = build_lang_decl_loc (input_location, FUNCTION_DECL, fn_name, fn_type);
+  DECL_CONTEXT (tu_terminate_wrapper) = FROB_CONTEXT(global_namespace);
+  DECL_ARTIFICIAL (tu_terminate_wrapper) = true;
+  DECL_INITIAL (tu_terminate_wrapper) = error_mark_node;
+  /* Let the start function code fill in the result decl.  */
+  DECL_RESULT (tu_terminate_wrapper) = NULL_TREE;
+
+  /* Make this function internal.  */
+  TREE_PUBLIC (tu_terminate_wrapper) = false;
+  DECL_EXTERNAL (tu_terminate_wrapper) = false;
+  DECL_WEAK (tu_terminate_wrapper) = false;
+
+  DECL_ATTRIBUTES (tu_terminate_wrapper)
+    = tree_cons (get_identifier ("noipa"), NULL, NULL_TREE);
+  cplus_decl_attributes (&tu_terminate_wrapper,
+			 DECL_ATTRIBUTES (tu_terminate_wrapper), 0);
+  build_terminate_wrapper();
+
+  return tu_terminate_wrapper;
+}
+
 /* Lookup a name in std::contracts, or inject it.  */
 
 static tree
@@ -1519,6 +1576,8 @@ maybe_emit_violation_handler_wrappers ()
     return;
 
   tree terminate_wrapper = terminate_fn;
+  if (flag_contracts_conservative_ipa)
+    terminate_wrapper = get_terminate_wrapper ();
 
   /* tu_has_violation */
   start_preparsed_function (tu_has_violation, NULL_TREE,
