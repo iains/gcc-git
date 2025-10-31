@@ -20706,7 +20706,7 @@ finish_function (bool inline_p)
 
   /* If we have used outlined contracts checking functions, build and emit
      them here.  */
-  finish_function_contracts (fndecl);
+  finish_function_outlined_contracts (fndecl);
 
   return fndecl;
 }

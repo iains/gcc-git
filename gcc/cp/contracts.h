@@ -132,13 +132,13 @@ enum detection_mode : uint16_t {
 
 /* True iff the FUNCTION_DECL is the pre function for a guarded function.  */
 #define DECL_IS_PRE_FN_P(NODE) \
-  (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
-   CONTRACT_HELPER (NODE) == ldf_contract_pre)
+  (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) \
+   && CONTRACT_HELPER (NODE) == ldf_contract_pre)
 
 /* True iff the FUNCTION_DECL is the post function for a guarded function.  */
 #define DECL_IS_POST_FN_P(NODE) \
-  (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
-   CONTRACT_HELPER (NODE) == ldf_contract_post)
+  (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) \
+   && CONTRACT_HELPER (NODE) == ldf_contract_post)
 
 /* contracts.cc */
 
@@ -173,11 +173,11 @@ extern bool contract_any_deferred_p 		(tree);
 
 extern tree get_precondition_function		(tree);
 extern tree get_postcondition_function		(tree);
-extern tree get_orig_for_outlined 		(tree);
+extern tree get_orig_for_outlined		(tree);
 
 extern void start_function_contracts		(tree);
 extern void maybe_apply_function_contracts	(tree);
-extern void finish_function_contracts		(tree);
+extern void finish_function_outlined_contracts	(tree);
 extern void set_contract_functions		(tree, tree, tree);
 
 extern void maybe_emit_violation_handler_wrappers (void);
