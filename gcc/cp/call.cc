@@ -45,6 +45,7 @@ along with GCC; see the file COPYING3.  If not see
 #include "c-family/c-type-mismatch.h"
 #include "tristate.h"
 #include "tree-pretty-print-markup.h"
+#include "contracts.h"
 
 /* The various kinds of conversion.  */
 
@@ -5305,9 +5306,7 @@ build_new_function_call (tree fn, vec<tree, va_gc> **args,
       result = error_mark_node;
     }
   else
-    {
-      result = build_over_call (cand, LOOKUP_NORMAL, complain);
-    }
+    result = build_over_call (cand, LOOKUP_NORMAL, complain);
 
   if (flag_coroutines
       && result
@@ -11029,6 +11028,7 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
       && DECL_BUILT_IN_CLASS (fn) == BUILT_IN_NORMAL)
     maybe_warn_class_memaccess (input_location, fn, args);
 
+  tree orig_fn = fn;
   if (DECL_VINDEX (fn) && (flags & LOOKUP_NONVIRTUAL) == 0)
     {
       tree t;
@@ -11062,7 +11062,7 @@ build_over_call (struct z_candidate *cand, int flags, tsubst_flags_t complain)
       ADDR_EXPR_DENOTES_CALL_P (fn) = true;
     }
 
-  tree call = build_cxx_call (fn, nargs, argarray, complain|decltype_flag);
+  tree call = build_cxx_call (fn, nargs, argarray, complain|decltype_flag, orig_fn);
   if (call == error_mark_node)
     return call;
   if (cand->flags & LOOKUP_LIST_INIT_CTOR)
@@ -11534,7 +11534,9 @@ build_cxx_call (tree fn, int nargs, tree *argarray,
   SET_EXPR_LOCATION (fn, loc);
 
   fndecl = get_callee_fndecl (fn);
-  if (!orig_fndecl)
+  if (!fndecl && orig_fndecl)
+    fndecl = orig_fndecl;
+  else if (!orig_fndecl)
     orig_fndecl = fndecl;
 
   /* Check that arguments to builtin functions match the expectations.  */
