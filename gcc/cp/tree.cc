@@ -6523,6 +6523,7 @@ cp_free_lang_data (tree t)
       DECL_EXTERNAL (t) = 1;
       TREE_STATIC (t) = 0;
     }
+
   if (TREE_CODE (t) == NAMESPACE_DECL)
     /* We do not need the leftover chaining of namespaces from the
        binding level.  */
