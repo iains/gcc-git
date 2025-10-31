@@ -3190,6 +3190,13 @@ struct GTY(()) lang_decl_min {
   tree access;
 };
 
+enum lang_contract_helper
+{
+  ldf_contract_none = 0,
+  ldf_contract_pre,
+  ldf_contract_post
+};
+
 /* Additional DECL_LANG_SPECIFIC information for functions.  */
 
 struct GTY(()) lang_decl_fn {
@@ -3219,8 +3226,9 @@ struct GTY(()) lang_decl_fn {
   unsigned escalated_p : 1;
 
   unsigned xobj_func : 1;
+  ENUM_BITFIELD(lang_contract_helper) contract_helper : 2;
 
-  unsigned spare : 7;
+  unsigned spare : 5;
 
   /* 32-bits padding on 64-bit host.  */
 
@@ -3367,6 +3375,9 @@ struct GTY(()) lang_decl {
   (&DECL_LANG_SPECIFIC (NODE)->u.decomp)
 
 #endif /* ENABLE_TREE_CHECKING */
+
+#define CONTRACT_HELPER(NODE) \
+ (LANG_DECL_FN_CHECK (NODE)->contract_helper)
 
 /* For a FUNCTION_DECL or a VAR_DECL, the language linkage for the
    declaration.  Some entities (like a member function in a local
@@ -9024,6 +9035,7 @@ extern tree mangle_tls_wrapper_fn		(tree);
 extern bool decl_tls_wrapper_p			(tree);
 extern tree mangle_ref_init_variable		(tree);
 extern tree mangle_template_parm_object		(tree);
+extern tree mangle_decl_string                  (const tree);
 extern char *get_mangled_vtable_map_var_name    (tree);
 extern bool mangle_return_type_p		(tree);
 extern tree mangle_decomp			(tree, vec<tree> &);
