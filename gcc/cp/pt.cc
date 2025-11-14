@@ -27736,14 +27736,14 @@ regenerate_decl_from_template (tree decl, tree tmpl, tree args)
 	    DECL_CONTEXT (t) = decl;
 	}
 
-      if (tree attr = GET_FN_CONTRACT_SPECIFIERS (decl))
+      if (tree attr = get_fn_contract_specifiers (decl))
 	{
 	  /* If we're regenerating a specialization, the contracts will have
 	     been copied from the most general template. Replace those with
 	     the ones from the actual specialization.  */
 	  tree tmpl = DECL_TI_TEMPLATE (decl);
 	  if (DECL_TEMPLATE_SPECIALIZATION (tmpl))
-	    attr = GET_FN_CONTRACT_SPECIFIERS (code_pattern);
+	    attr = get_fn_contract_specifiers (code_pattern);
 
 	  tsubst_contract_attributes (attr, decl, args,
 				      tf_warning_or_error, code_pattern);

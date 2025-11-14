@@ -32146,7 +32146,7 @@ void cp_parser_late_contracts (cp_parser *parser,
 {
 
   tree new_contracts = NULL_TREE;
-  tree old_contracts = GET_FN_CONTRACT_SPECIFIERS(fndecl);
+  tree old_contracts = get_fn_contract_specifiers(fndecl);
 
   if (old_contracts == NULL_TREE || !contract_any_deferred_p (old_contracts))
     return;

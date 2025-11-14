@@ -83,16 +83,11 @@ mismatched_contracts_p (tree old_contract, tree new_contract)
   if (CONTRACT_CONDITION_DEFERRED_P (new_contract))
     return false;
 
-  /* Compare the conditions of the contracts.  We fold immediately to avoid
-     issues comparing contracts on overrides that use parameters -- see
-     contracts-pre3.  */
+  /* Compare the conditions of the contracts.  */
   tree t1 = cp_fully_fold_init (CONTRACT_CONDITION (old_contract));
   tree t2 = cp_fully_fold_init (CONTRACT_CONDITION (new_contract));
 
-  /* Compare the contracts. The fold doesn't eliminate conversions to members.
-     Set the comparing_override_contracts flag to ensure that references
-     through 'this' are equal if they designate the same member, regardless of
-     the path those members.  */
+  /* Compare the contracts. */
 
   bool matching_p = cp_tree_equal (t1, t2);
 
@@ -168,7 +163,7 @@ contract_active_p (tree contract)
 static bool
 has_active_contract_condition (tree fndecl, tree_code c)
 {
-  tree as = GET_FN_CONTRACT_SPECIFIERS (fndecl);
+  tree as = get_fn_contract_specifiers (fndecl);
   for (; as != NULL_TREE; as = NEXT_CONTRACT_ATTR (as))
     {
       tree contract = TREE_VALUE (TREE_VALUE (as));
@@ -200,7 +195,7 @@ has_active_postconditions (tree fndecl)
 static bool
 contract_any_active_p (tree fndecl)
 {
-  tree as = GET_FN_CONTRACT_SPECIFIERS (fndecl);
+  tree as = get_fn_contract_specifiers (fndecl);
   for (; as; as = NEXT_CONTRACT_ATTR (as))
     if (contract_active_p (TREE_VALUE (TREE_VALUE (as))))
       return true;
@@ -380,6 +375,7 @@ get_evaluation_semantic (const_tree contract)
   return CES_INVALID;
 }
 
+/* Get location of the last contract in the CONTRACTS tree chain.  */
 
 static location_t
 get_contract_end_loc (tree contracts)
@@ -532,7 +528,7 @@ parm_used_in_post_p (const_tree decl)
 void
 check_postconditions_in_redecl (tree olddecl, tree newdecl)
 {
-  tree attr = GET_FN_CONTRACT_SPECIFIERS (olddecl);
+  tree attr = get_fn_contract_specifiers (olddecl);
   if (!attr)
     return;
 
@@ -579,7 +575,7 @@ start_function_contracts (tree fndecl)
 
   /* Check that the user did not try to shadow a function parameter with the
      specified postcondition result name.  */
-  for (tree ca = GET_FN_CONTRACT_SPECIFIERS (fndecl); ca; ca = TREE_CHAIN (ca))
+  for (tree ca = get_fn_contract_specifiers (fndecl); ca; ca = TREE_CHAIN (ca))
     if (POSTCONDITION_P (CONTRACT_STATEMENT (ca)))
       if (tree id = POSTCONDITION_IDENTIFIER (CONTRACT_STATEMENT (ca)))
 	{
@@ -621,7 +617,7 @@ start_function_contracts (tree fndecl)
 static tree
 copy_contracts (tree fndecl, contract_match_kind remap_kind = cmk_all)
 {
-  tree attr = GET_FN_CONTRACT_SPECIFIERS (fndecl);
+  tree attr = get_fn_contract_specifiers (fndecl);
   return copy_contracts_list (attr, fndecl, remap_kind);
 }
 
@@ -875,7 +871,7 @@ tree
 copy_and_remap_contracts (tree dest, tree source)
 {
   tree last = NULL_TREE, contract_attrs = NULL_TREE;
-  tree attr = GET_FN_CONTRACT_SPECIFIERS (source);
+  tree attr = get_fn_contract_specifiers (source);
   for (; attr; attr = NEXT_CONTRACT_ATTR (attr))
     {
       tree c = copy_node (attr);
@@ -1079,8 +1075,8 @@ check_redecl_contract (tree newdecl, tree olddecl)
   definition. We need to update the contracts accordingly.  */
 void update_contract_arguments(tree srcdecl, tree destdecl)
 {
-  tree src_contracts = GET_FN_CONTRACT_SPECIFIERS (srcdecl);
-  tree dest_contracts = GET_FN_CONTRACT_SPECIFIERS (destdecl);
+  tree src_contracts = get_fn_contract_specifiers (srcdecl);
+  tree dest_contracts = get_fn_contract_specifiers (destdecl);
 
   if (!src_contracts && !dest_contracts)
     return;
@@ -1199,7 +1195,7 @@ rebuild_postconditions (tree fndecl)
     return;
 
   tree type = TREE_TYPE (TREE_TYPE (fndecl));
-  tree attributes = GET_FN_CONTRACT_SPECIFIERS (fndecl);
+  tree attributes = get_fn_contract_specifiers (fndecl);
 
   for (; attributes ; attributes = NEXT_CONTRACT_ATTR (attributes))
     {

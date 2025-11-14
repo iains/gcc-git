@@ -6474,7 +6474,7 @@ start_decl (const cp_declarator *declarator,
       && !processing_template_decl
       && DECL_RESULT (decl)
       && is_auto (TREE_TYPE (DECL_RESULT (decl))))
-    for (tree ca = GET_FN_CONTRACT_SPECIFIERS (decl); ca; ca = TREE_CHAIN (ca))
+    for (tree ca = get_fn_contract_specifiers (decl); ca; ca = TREE_CHAIN (ca))
       if (POSTCONDITION_P (CONTRACT_STATEMENT (ca))
 	  && POSTCONDITION_IDENTIFIER (CONTRACT_STATEMENT (ca)))
 	{
@@ -12382,7 +12382,7 @@ grokfndecl (tree ctype,
   if (check < 0)
     {
       if (decl && decl != error_mark_node && contract_specifiers)
-	SET_FN_CONTRACT_SPECIFIERS (decl, contract_specifiers);
+	set_fn_contract_specifiers (decl, contract_specifiers);
       return decl;
     }
 
@@ -12421,7 +12421,7 @@ grokfndecl (tree ctype,
       tree t = decl;
       if (TREE_CODE (decl) == TEMPLATE_DECL)
 	t = DECL_TEMPLATE_RESULT (decl);
-      SET_FN_CONTRACT_SPECIFIERS (t, contract_specifiers);
+      set_fn_contract_specifiers (t, contract_specifiers);
       rebuild_postconditions (t);
     }
 

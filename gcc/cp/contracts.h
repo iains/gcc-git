@@ -90,15 +90,7 @@ enum detection_mode : uint16_t {
 
 /* True iff the FUNCTION_DECL NODE currently has any contracts.  */
 #define DECL_HAS_CONTRACTS_P(NODE) \
-  (GET_FN_CONTRACT_SPECIFIERS (NODE) != NULL_TREE)
-
-/* For a function decl, get the head of the contract_specifiers list.  */
-#define GET_FN_CONTRACT_SPECIFIERS(NODE) \
-  get_fn_contract_specifiers (NODE)
-
-/* For a function decl, get the head of the contract_specifiers list.  */
-#define SET_FN_CONTRACT_SPECIFIERS(NODE, LIST) \
-  set_fn_contract_specifiers ((NODE), (LIST))
+  (get_fn_contract_specifiers (NODE) != NULL_TREE)
 
 /* The wrapper of the original source location of a list of contracts.  */
 #define CONTRACT_SOURCE_LOCATION_WRAPPER(NODE) \
