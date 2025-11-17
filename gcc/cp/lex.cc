@@ -423,6 +423,8 @@ cxx_init (void)
 	  if (flag_contracts)
 	    cpp_warn (parse_in, "contract_assert");
 	  cpp_warn (parse_in, "indeterminate");
+	  cpp_warn (parse_in, "replaceable_if_eligible");
+	  cpp_warn (parse_in, "trivially_relocatable_if_eligible");
 	}
     }
 
