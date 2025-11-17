@@ -6242,6 +6242,11 @@ trees_out::lang_type_bools (tree t, bits_out& bits)
   gcc_checking_assert (!lang->erroneous);
   WB (lang->non_pod_aggregate);
   WB (lang->non_aggregate_pod);
+  WB (lang->trivially_relocatable);
+  WB (lang->trivially_relocatable_computed);
+
+  WB (lang->replaceable);
+  WB (lang->replaceable_computed);
 #undef WB
 }
 
@@ -6315,6 +6320,11 @@ trees_in::lang_type_bools (tree t, bits_in& bits)
   gcc_checking_assert (!lang->erroneous);
   RB (lang->non_pod_aggregate);
   RB (lang->non_aggregate_pod);
+  RB (lang->trivially_relocatable);
+  RB (lang->trivially_relocatable_computed);
+
+  RB (lang->replaceable);
+  RB (lang->replaceable_computed);
 #undef RB
   return !get_overrun ();
 }
