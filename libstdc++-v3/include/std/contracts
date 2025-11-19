@@ -1,6 +1,6 @@
 // Contracts support header for -*- C++ -*-
 
-// Copyright (C) 2019-2024 Free Software Foundation, Inc.
+// Copyright (C) 2025 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -32,6 +32,10 @@
 
 #pragma GCC system_header
 
+#define __glibcxx_want_contracts
+#include <bits/version.h>
+
+#ifdef __cpp_lib_contracts
 #include <source_location>
 #include <cstdint>
 #include <bits/exception_ptr.h>
@@ -108,4 +112,5 @@ namespace contracts
 _GLIBCXX_END_NAMESPACE_VERSION
 } // namespace std
 
+#endif // __cpp_lib_contracts
 #endif // _GLIBCXX_CONTRACTS
