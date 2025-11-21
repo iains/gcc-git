@@ -16,7 +16,7 @@
 // <http://www.gnu.org/licenses/>.
 
 // { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
-// { dg-do run { target c++2a } }
+// { dg-do run { target c++26 } }
 
 #include <contracts>
 #include <testsuite_hooks.h>

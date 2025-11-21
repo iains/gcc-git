@@ -43,6 +43,12 @@ sources = \
 
 # vpath % $(top_srcdir)/src/experimental
 
+
+contract26.lo: contract26.cc
+	$(LTCXXCOMPILE) -std=gnu++26 -fcontracts -c $<
+contract26.o: contract26.cc
+	$(CXXCOMPILE) -std=gnu++26 -fcontracts -c $<
+
 libstdc__exp_la_SOURCES = $(sources)
 
 libstdc__exp_la_LIBADD = \

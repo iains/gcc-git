@@ -460,8 +460,6 @@ headers =
 sources = \
 	contract26.cc
 
-
-# vpath % $(top_srcdir)/src/experimental
 libstdc__exp_la_SOURCES = $(sources)
 libstdc__exp_la_LIBADD = \
 	$(top_builddir)/src/c++23/libc++23convenience.la \
@@ -807,6 +805,13 @@ uninstall-am: uninstall-toolexeclibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
+
+# vpath % $(top_srcdir)/src/experimental
+
+contract26.lo: contract26.cc
+	$(LTCXXCOMPILE) -std=gnu++26 -fcontracts -c $<
+contract26.o: contract26.cc
+	$(CXXCOMPILE) -std=gnu++26 -fcontracts -c $<
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

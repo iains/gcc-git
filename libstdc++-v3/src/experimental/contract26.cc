@@ -1,6 +1,6 @@
 // -*- C++ -*- std::experimental::contract_violation and friends
 
-// Copyright (C) 2019-2024 Free Software Foundation, Inc.
+// Copyright (C) 2025 Free Software Foundation, Inc.
 //
 // This file is part of GCC.
 //
@@ -24,6 +24,8 @@
 // <http://www.gnu.org/licenses/>.
 
 #include <contracts>
+
+#ifdef __cpp_lib_contracts
 #if _GLIBCXX_HOSTED && _GLIBCXX_VERBOSE
 # include <iostream>
 # include <cxxabi.h>
@@ -152,3 +154,4 @@ _Z41invoke_default_contract_violation_handlerRKNSt9contracts18contract_violation
 { invoke_default_contract_violation_handler(violation); }
 
 #endif
+#endif // __cpp_lib_contracts

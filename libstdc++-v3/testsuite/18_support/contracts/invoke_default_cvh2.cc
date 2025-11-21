@@ -17,7 +17,7 @@
 
 // check that default contract violation is not invoked if not explicitly invoked
 // { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
-// { dg-do run { target c++2a } }
+// { dg-do run { target c++26 } }
 
 #include <contracts>
 #include <testsuite_hooks.h>
