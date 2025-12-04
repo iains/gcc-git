@@ -4007,6 +4007,9 @@ bool
 cp_tree_equal (tree t1, tree t2)
 {
   enum tree_code code1, code2;
+  tree type1, type2;
+  bool invisiref1 = false;
+  bool invisiref2 = false;
 
   if (t1 == t2)
     return true;
@@ -4015,6 +4018,28 @@ cp_tree_equal (tree t1, tree t2)
 
   code1 = TREE_CODE (t1);
   code2 = TREE_CODE (t2);
+
+  if (comparing_contracts)
+    {
+      /* When comparing contracts, one declaration may already be
+	 genericized. Check for invisible references and unravel them
+	 for comparison purposes. Remember that a parameter is an invisible
+	 reference so we can compare the parameter types accordingly.  */
+      if (code1 == VIEW_CONVERT_EXPR
+	  && is_invisiref_parm (TREE_OPERAND(t1, 0)))
+	{
+	  t1 = TREE_OPERAND(t1, 0);
+	  code1 = TREE_CODE(t1);
+	  invisiref1 = true;
+	}
+      if (code2 == VIEW_CONVERT_EXPR
+	  && is_invisiref_parm (TREE_OPERAND(t2, 0)))
+	{
+	  t2 = TREE_OPERAND(t2, 0);
+	  code2 = TREE_CODE(t2);
+	  invisiref2 = true;
+	}
+    }
 
   if (code1 != code2)
     return false;
@@ -4178,8 +4203,12 @@ cp_tree_equal (tree t1, tree t2)
 	   with parameters with identical contexts.  */
 	return false;
 
-      if (same_type_p (TREE_TYPE (t1), TREE_TYPE (t2)))
+      if (same_type_p (invisiref1? TREE_TYPE (TREE_TYPE (t1)):TREE_TYPE (t1),
+		       invisiref2? TREE_TYPE (TREE_TYPE (t2)):TREE_TYPE (t2)))
 	{
+	  /* If either invisiref is true, we have an argument that has been
+	     genericized. For such arguments, use the type the reference is
+	     refering to.  */
 	  if (DECL_ARTIFICIAL (t1) ^ DECL_ARTIFICIAL (t2))
 	    return false;
 	  if (CONSTRAINT_VAR_P (t1) ^ CONSTRAINT_VAR_P (t2))
