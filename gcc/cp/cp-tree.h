@@ -6016,6 +6016,11 @@ extern int comparing_specializations;
    FIXME we should always do this except during deduction/ordering.  */
 extern int comparing_dependent_aliases;
 
+/* Nonzero if we are matching contracts of two functions.  Depending on
+   whether a decl has been genericized or not, PARM_DECL may be adjusted
+   to be an invisible reference.  */
+extern int comparing_contracts;
+
 /* In parser.cc.  */
 
 /* Nonzero if we are parsing an unevaluated operand: an operand to
@@ -8899,6 +8904,7 @@ extern tree get_source_location_impl_type	();
 extern tree cp_fold_immediate			(tree *, mce_value,
 						 tree = current_function_decl);
 extern void process_and_check_pending_immediate_escalating_fns ();
+extern bool is_invisiref_parm 			(const_tree);
 
 /* in name-lookup.cc */
 extern tree strip_using_decl                    (tree);
