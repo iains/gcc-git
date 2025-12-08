@@ -1992,6 +1992,8 @@ struct GTY(()) saved_scope {
   /* Nonzero if we are parsing the substatement of expansion-statement.  */
   BOOL_BITFIELD expansion_stmt : 1;
 
+  BOOL_BITFIELD x_comparing_contracts : 1;
+
   int unevaluated_operand;
   int inhibit_evaluation_warnings;
   int noexcept_operand;
@@ -2065,6 +2067,11 @@ extern GTY(()) struct saved_scope *scope_chain;
   (scope_chain->bindings->kind == sk_contract)
 
 #define processing_postcondition scope_chain->x_processing_postcondition
+
+/* Nonzero if we are matching contracts of two functions.  Depending on
+   whether a decl has been genericized or not, PARM_DECL may be adjusted
+   to be an invisible reference.  */
+#define comparing_contracts scope_chain->x_comparing_contracts
 
 #define in_discarded_stmt scope_chain->discarded_stmt
 #define in_consteval_if_p scope_chain->consteval_if_p
@@ -6015,11 +6022,6 @@ extern int comparing_specializations;
 /* Nonzero if we want different dependent aliases to compare as unequal.
    FIXME we should always do this except during deduction/ordering.  */
 extern int comparing_dependent_aliases;
-
-/* Nonzero if we are matching contracts of two functions.  Depending on
-   whether a decl has been genericized or not, PARM_DECL may be adjusted
-   to be an invisible reference.  */
-extern int comparing_contracts;
 
 /* In parser.cc.  */
 

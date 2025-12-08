@@ -169,8 +169,6 @@ contract_attribute_valid_p (tree attribute)
   return contract_valid_p (TREE_VALUE (TREE_VALUE (attribute)));
 }
 
-int comparing_contracts;
-
 /* Compare the contract conditions of OLD_CONTRACT and NEW_CONTRACT.
    Returns false if the conditions are equivalent, and true otherwise.  */
 
@@ -197,9 +195,10 @@ mismatched_contracts_p (tree old_contract, tree new_contract)
 
   /* Compare the contracts. */
 
-  ++comparing_contracts;
+  bool saved_comparing_contracts = comparing_contracts;
+  comparing_contracts = true;
   bool matching_p = cp_tree_equal (t1, t2);
-  --comparing_contracts;
+  comparing_contracts = saved_comparing_contracts;
 
   if (!matching_p)
     {
