@@ -29,11 +29,6 @@ along with GCC; see the file COPYING3.  If not see
 
 #include <cstdint>
 
-/* Now our contracts are stored separately from other attributes we
-   can iterate simply... */
-#define NEXT_CONTRACT_ATTR(NODE) \
-  TREE_CHAIN (NODE)
-
 /* Contract assertion kind */
 /* Must match relevant enums in <contracts> header  */
 
@@ -100,7 +95,7 @@ enum detection_mode : uint16_t {
 #define CONTRACT_SOURCE_LOCATION(NODE) \
   (EXPR_LOCATION (CONTRACT_SOURCE_LOCATION_WRAPPER (NODE)))
 
-/* The actual code _STMT for a contract attribute.  */
+/* The actual code _STMT for a contract specifier.  */
 #define CONTRACT_STATEMENT(NODE) \
   (TREE_VALUE (TREE_VALUE (NODE)))
 
@@ -159,7 +154,7 @@ enum contract_match_kind
 /* contracts.cc */
 
 extern tree grok_contract			(tree, tree, tree, cp_expr, location_t);
-extern tree finish_contract_attribute		(tree, tree);
+extern tree finish_contract_specifier 		(tree, tree);
 extern tree finish_contract_condition		(cp_expr);
 extern void update_late_contract		(tree, tree, cp_expr);
 extern void check_redecl_contract		(tree, tree);

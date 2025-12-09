@@ -12243,7 +12243,7 @@ tsubst_contract_attributes (tree attributes, tree decl, tree args,
 {
   tree subst_contract_list = NULL_TREE;
   for (tree attr = attributes; attr;
-      attr = NEXT_CONTRACT_ATTR (attr))
+      attr = TREE_CHAIN (attr))
   {
       tree nc = copy_node (attr);
       tsubst_contract_attribute (decl, nc, args, complain, in_decl);
