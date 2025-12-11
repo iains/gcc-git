@@ -2534,6 +2534,8 @@ struct GTY(()) lang_type {
 
   bool replaceable : 1;
   bool replaceable_computed : 1;
+  bool has_explicitly_deleted_dtor : 1;
+
 
   /* When adding a flag here, consider whether or not it ought to
      apply to a template instance if it applies to the template.  If
@@ -7679,7 +7681,9 @@ extern tree make_alias_for			(tree, tree);
 extern tree get_copy_ctor			(tree, tsubst_flags_t);
 extern tree get_copy_assign			(tree);
 extern tree get_move_ctor			(tree, tsubst_flags_t);
+extern tree get_move_ctor_decl			(tree, tsubst_flags_t);
 extern tree get_move_assign			(tree, tsubst_flags_t);
+extern tree get_move_assign_decl		(tree, tsubst_flags_t);
 extern tree get_default_ctor			(tree);
 extern tree get_dtor				(tree, tsubst_flags_t);
 extern tree build_stub_object			(tree);

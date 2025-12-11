@@ -150,7 +150,7 @@ static_assert (std::is_replaceable_v <A []>, "");
 
 struct M { const int i; };
 
-static_assert (!std::is_trivially_relocatable_v <M>, "");
+static_assert (std::is_trivially_relocatable_v <M>, "");
 static_assert (!std::is_replaceable_v <M>, "");
 
 struct N trivially_relocatable_if_eligible { const int i; };
@@ -180,7 +180,7 @@ static_assert (!std::is_replaceable_v <R>, "");
 
 struct S { S (S &&) = default; };
 
-static_assert (!std::is_trivially_relocatable_v <S>, "");
+static_assert (std::is_trivially_relocatable_v <S>, "");
 static_assert (!std::is_replaceable_v <S>, "");
 
 struct T { T (T &&) = default; T &operator= (T &&) = default; };
