@@ -36,11 +36,11 @@ struct B : virtual A {};  // { dg-message "virtual base" }
 static_assert(relocatable<B>);  // { dg-error "assert" }
 
 struct C {
-  ~C() = delete;  // { dg-message "deleted|declared here" }
+  ~C() = delete;
 };
 static_assert(relocatable<C>);  // { dg-error "assert" }
 
-struct D {  // { dg-error "deleted" }
+struct D {
   C c;
 };
 static_assert(relocatable<D>);  // { dg-error "assert" }

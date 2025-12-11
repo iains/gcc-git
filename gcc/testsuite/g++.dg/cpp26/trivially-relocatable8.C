@@ -167,8 +167,8 @@ static_assert (std::is_replaceable_v <R>, "");
 
 struct S : public R { using R::R; S &operator= (S &&) = default; int b; };
 
-static_assert (!std::is_trivially_relocatable_v <S>, "");
-static_assert (!std::is_nothrow_relocatable_v <S>, "");
+static_assert (std::is_trivially_relocatable_v <S>, "");
+static_assert (std::is_nothrow_relocatable_v <S>, "");
 static_assert (!std::is_replaceable_v <S>, "");
 
 struct T { T (T &&) = default; T &operator= (T &&) = default; ~T (); int a; };

@@ -80,7 +80,7 @@ static_assert (!std::is_replaceable_v <G>, "");
 
 union H { H (const H &) = default; int a; A b; };
 
-static_assert (!std::is_trivially_relocatable_v <H>, "");
+static_assert (std::is_trivially_relocatable_v <H>, "");
 static_assert (!std::is_replaceable_v <H>, "");
 
 union I { I (I &&); int a; A b; };
@@ -90,7 +90,7 @@ static_assert (!std::is_replaceable_v <I>, "");
 
 union J { J (J &&) = default; int a; A b; };
 
-static_assert (!std::is_trivially_relocatable_v <J>, "");
+static_assert (std::is_trivially_relocatable_v <J>, "");
 static_assert (!std::is_replaceable_v <J>, "");
 
 union K { K &operator= (const K &); int a; A b; };
@@ -100,7 +100,7 @@ static_assert (!std::is_replaceable_v <K>, "");
 
 union L { L &operator= (const L &) = default; int a; A b; };
 
-static_assert (!std::is_trivially_relocatable_v <L>, "");
+static_assert (std::is_trivially_relocatable_v <L>, "");
 static_assert (!std::is_replaceable_v <L>, "");
 
 union M { M &operator= (M &&); int a; A b; };
@@ -110,7 +110,7 @@ static_assert (!std::is_replaceable_v <M>, "");
 
 union N { N &operator= (N &&) = default; int a; A b; };
 
-static_assert (!std::is_trivially_relocatable_v <N>, "");
+static_assert (std::is_trivially_relocatable_v <N>, "");
 static_assert (!std::is_replaceable_v <N>, "");
 
 union O { ~O (); int a; A b; };
@@ -120,7 +120,7 @@ static_assert (!std::is_replaceable_v <O>, "");
 
 union P { ~P () = default; int a; A b; };
 
-static_assert (!std::is_trivially_relocatable_v <P>, "");
+static_assert (std::is_trivially_relocatable_v <P>, "");
 static_assert (!std::is_replaceable_v <P>, "");
 
 union Q { int a; const A b; };

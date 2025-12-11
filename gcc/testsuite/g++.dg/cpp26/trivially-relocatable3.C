@@ -89,11 +89,11 @@ struct I { int s; T t; };
 
 static_assert (std::is_trivially_relocatable_v <I<int>>, "");
 static_assert (std::is_trivially_relocatable_v <I<volatile int>>, "");
-static_assert (!std::is_trivially_relocatable_v <I<const int>>, "");
-static_assert (!std::is_trivially_relocatable_v <I<const int &>>, "");
-static_assert (!std::is_trivially_relocatable_v <I<int &>>, "");
+static_assert (std::is_trivially_relocatable_v <I<const int>>, "");
+static_assert (std::is_trivially_relocatable_v <I<const int &>>, "");
+static_assert (std::is_trivially_relocatable_v <I<int &>>, "");
 static_assert (std::is_trivially_relocatable_v <I<int [2]>>, "");
-static_assert (!std::is_trivially_relocatable_v <I<const int [2]>>, "");
+static_assert (std::is_trivially_relocatable_v <I<const int [2]>>, "");
 static_assert (std::is_trivially_relocatable_v <I<int []>>, "");
 static_assert (std::is_replaceable_v <I<int>>, "");
 static_assert (!std::is_replaceable_v <I<volatile int>>, "");
