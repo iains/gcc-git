@@ -2534,8 +2534,6 @@ struct GTY(()) lang_type {
 
   bool replaceable : 1;
   bool replaceable_computed : 1;
-  bool has_explicitly_deleted_dtor : 1;
-
 
   /* When adding a flag here, consider whether or not it ought to
      apply to a template instance if it applies to the template.  If
