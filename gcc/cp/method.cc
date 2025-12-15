@@ -2149,6 +2149,49 @@ locate_fn_flags (tree type, tree name, tree argtype, int flags,
     return fn;
 }
 
+/* Like locate_fn_flags, but does not check if the function can be
+   called. */
+
+static tree
+locate_fn_decl (tree type, tree name, tree argtype, int flags,
+		 tsubst_flags_t complain)
+{
+  tree ob, fn, fns, binfo;
+
+  if (TYPE_P (type))
+    binfo = TYPE_BINFO (type);
+  else
+    {
+      binfo = type;
+      type = BINFO_TYPE (binfo);
+    }
+
+  ob = build_stub_object (cp_build_reference_type (type, false));
+  releasing_vec args;
+  if (argtype)
+    {
+      if (TREE_CODE (argtype) == TREE_LIST)
+	{
+	  for (tree elt = argtype; elt && elt != void_list_node;
+	       elt = TREE_CHAIN (elt))
+	    {
+	      tree type = TREE_VALUE (elt);
+	      tree arg = build_stub_object (type);
+	      vec_safe_push (args, arg);
+	    }
+	}
+      else
+	{
+	  tree arg = build_stub_object (argtype);
+	  args->quick_push (arg);
+	}
+    }
+
+  fns = lookup_fnfields (binfo, name, 0, complain);
+  build_new_method_call (ob, fns, &args, binfo, flags, &fn, complain);
+  return fn;
+}
+
 /* Locate the dtor of TYPE.  */
 
 tree
@@ -2232,6 +2275,17 @@ get_move_ctor (tree type, tsubst_flags_t complain)
   return fn;
 }
 
+/* Locate the move ctor decl of TYPE.  */
+
+tree
+get_move_ctor_decl (tree type, tsubst_flags_t complain)
+{
+  tree argtype = build_stub_type (type, TYPE_UNQUALIFIED, /*rvalue=*/true);
+  tree fn = locate_fn_decl (type, complete_ctor_identifier, argtype,
+			     LOOKUP_NORMAL, complain);
+  return fn;
+}
+
 /* Locate the move assignment operator for an lvalue of TYPE.  */
 
 tree
@@ -2242,6 +2296,17 @@ get_move_assign (tree type, tsubst_flags_t complain)
 			     LOOKUP_NORMAL, complain);
   if (fn == error_mark_node)
     return NULL_TREE;
+  return fn;
+}
+
+/* Locate the move assignment operator decl for an lvalue of TYPE.  */
+
+tree
+get_move_assign_decl (tree type, tsubst_flags_t complain)
+{
+  tree argtype = build_stub_type (type, TYPE_UNQUALIFIED, /*rvalue=*/true);
+  tree fn = locate_fn_decl (type, assign_op_identifier, argtype,
+			     LOOKUP_NORMAL, complain);
   return fn;
 }
 

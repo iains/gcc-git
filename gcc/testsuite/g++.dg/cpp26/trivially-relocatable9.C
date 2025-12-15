@@ -105,7 +105,7 @@ static_assert (std::is_nothrow_relocatable_v <J>, "");
 
 struct K trivially_relocatable_if_eligible { K (K &&) noexcept; K &operator= (K &&); ~K (); union { A a; int b; char c; }; };
 
-static_assert (!std::is_trivially_relocatable_v <K>, "");
+static_assert (std::is_trivially_relocatable_v <K>, "");
 static_assert (std::is_nothrow_relocatable_v <K>, "");
 
 struct L trivially_relocatable_if_eligible { L (L &&); L &operator= (L &&); ~L (); union { int a; B b; short c; }; };

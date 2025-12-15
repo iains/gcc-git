@@ -121,8 +121,9 @@ struct L { L (L &&) = default; };
 // Note, P2786R13 says otherwise for both, but that looks like
 // a bug in the paper to me.  While move ctor is trivial here,
 // copy assignment operator is implicitly declared as deleted
-// and move assignent operator is not declared.
-static_assert (!std::is_trivially_relocatable_v <L>, "");
+// and move assignent operator is not declared. CWG3049
+// makes L trivially relocatable.
+static_assert (std::is_trivially_relocatable_v <L>, "");
 static_assert (!std::is_replaceable_v <L>, "");
 
 struct M { M (M &&); };

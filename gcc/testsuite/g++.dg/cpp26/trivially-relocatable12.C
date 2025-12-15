@@ -18,7 +18,7 @@ struct B {
   B& operator=(B&&) = default;
   template <typename = void> B& operator=(B&&);
 };
-static_assert(!trivially_relocatable<B>);
+static_assert(trivially_relocatable<B>);
 static_assert(!replaceable<B>);
 
 struct C {
@@ -41,7 +41,7 @@ struct E {
   // rvalue operator= is not fine
   E& operator=(E&&) && = default;
 };
-static_assert(!trivially_relocatable<E>);
+static_assert(trivially_relocatable<E>);
 static_assert(!replaceable<E>);
 
 struct F {
