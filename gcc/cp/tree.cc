@@ -4933,11 +4933,16 @@ default_movable_type_p (tree t, bool explain = false)
 		    "%qT has a user-provided destructor", t);
 	  return false;
 	}
-      if (DECL_DELETED_FN (dtor))
+      if (DECL_DELETED_FN (dtor) && !DECL_ARTIFICIAL(dtor)
+	  && !DECL_DEFAULTED_FN (dtor))
 	{
-	  if (explain && !maybe_explain_implicit_delete (dtor))
+	  /* DECL_DELETED_FN is set regardles if whether the function
+	     is implicitly or explicitly deleted. DECL_ARTIFICIAL is set
+	     if no declaration appears in the class. DECL_DEFAULTED_FN
+	     is set if the definition has been explcitly defaulted. */
+	  if (explain)
 	    inform (DECL_SOURCE_LOCATION (dtor),
-		    "%qD is defined as deleted", dtor);
+		    "%qD is explicitly defined as deleted", dtor);
 	  return false;
 	}
     }
@@ -4945,8 +4950,10 @@ default_movable_type_p (tree t, bool explain = false)
   /* We should actually perform overload resolution, in case the user has
      provided multiple candidate move constructors.  */
   deferring_access_check_sentinel dacs (dk_no_check);
-  tree move_ctor = get_move_ctor (t, tf_none);
-  if (!move_ctor)
+  tree move_ctor = get_move_ctor_decl (t, tf_none);
+  if ((move_ctor == error_mark_node) ||
+      (DECL_DELETED_FN (move_ctor) && !DECL_ARTIFICIAL(move_ctor)
+	  && !DECL_DEFAULTED_FN (move_ctor)))
     {
       if (explain)
 	get_move_ctor (t, tf_error);
@@ -4967,8 +4974,10 @@ default_movable_type_p (tree t, bool explain = false)
       return false;
     }
 
-  tree move_assign = get_move_assign (t, tf_none);
-  if (!move_assign)
+  tree move_assign = get_move_assign_decl (t, tf_none);
+  if ((move_assign == error_mark_node) ||
+      (DECL_DELETED_FN (move_assign) && !DECL_ARTIFICIAL(move_assign)
+	  && !DECL_DEFAULTED_FN (move_assign)))
     {
       if (explain)
 	get_move_assign (t, tf_error);
@@ -5060,14 +5069,17 @@ trivially_relocatable_type_p (tree t, bool explain/*=false*/)
       return false;
     }
 
+  if (CLASSTYPE_VBASECLASSES (t))
+    goto nontriv;
+
   if (CLASSTYPE_LAZY_DESTRUCTOR (t))
     lazily_declare_fn (sfk_destructor, t);
-  if (tree dtor = CLASSTYPE_DESTRUCTOR (t))
-    if (DECL_DELETED_FN (dtor))
+  if (tree dtor = CLASSTYPE_DESTRUCTOR(t))
+    if (DECL_DELETED_FN (dtor) && !DECL_ARTIFICIAL(dtor))
       {
-	if (explain && !maybe_explain_implicit_delete (dtor))
-	  inform (DECL_SOURCE_LOCATION (dtor),
-		  "%qD is defined as deleted", dtor);
+	if (explain)
+	  inform (location_of (t),
+		  "%qT has an explicitly deleted destructor", t);
 	goto nontriv;
       }
 
