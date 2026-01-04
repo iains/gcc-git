@@ -115,6 +115,18 @@ void f(const NonTrivial s) pre(s.x >0);
 void f(const NonTrivial g) {};
 void f(const NonTrivial t) pre(t.x >0);
 
+void g(const NonTrivial t, const NonTrivial t1) pre(t.x >0);
+void g(const NonTrivial t, const NonTrivial t1) pre(t1.x >0); // { dg-error "mismatched contract" }
+void g(const NonTrivial g, const NonTrivial t1) pre(g.x >0){};
+void g(const NonTrivial t, const NonTrivial t1) pre(t1.x >0); // { dg-error "mismatched contract" }
+
+template<typename T>
+bool somefunc(const T t){ return true;}
+
+void h(const NonTrivial t, const NonTrivial t1) pre(somefunc(t) == true){};
+void h(const NonTrivial t, const NonTrivial t1) pre(somefunc(t) == true);
+void h(const NonTrivial t, const NonTrivial t1) pre(somefunc(t1) == true); // { dg-error "mismatched contract" }
+
 double sqrt(const double x)
   post( r : r >= 0 );
 
