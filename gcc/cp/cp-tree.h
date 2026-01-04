@@ -1992,6 +1992,8 @@ struct GTY(()) saved_scope {
   /* Nonzero if we are parsing the substatement of expansion-statement.  */
   BOOL_BITFIELD expansion_stmt : 1;
 
+  BOOL_BITFIELD x_comparing_contracts : 1;
+
   int unevaluated_operand;
   int inhibit_evaluation_warnings;
   int noexcept_operand;
@@ -2065,6 +2067,11 @@ extern GTY(()) struct saved_scope *scope_chain;
   (scope_chain->bindings->kind == sk_contract)
 
 #define processing_postcondition scope_chain->x_processing_postcondition
+
+/* Nonzero if we are matching contracts of two functions.  Depending on
+   whether a decl has been genericized or not, PARM_DECL may be adjusted
+   to be an invisible reference.  */
+#define comparing_contracts scope_chain->x_comparing_contracts
 
 #define in_discarded_stmt scope_chain->discarded_stmt
 #define in_consteval_if_p scope_chain->consteval_if_p
@@ -8916,6 +8923,7 @@ extern tree get_source_location_impl_type	();
 extern tree cp_fold_immediate			(tree *, mce_value,
 						 tree = current_function_decl);
 extern void process_and_check_pending_immediate_escalating_fns ();
+extern bool is_invisiref_parm 			(const_tree);
 
 /* in name-lookup.cc */
 extern tree strip_using_decl                    (tree);
