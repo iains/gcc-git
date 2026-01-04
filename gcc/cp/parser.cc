@@ -32585,7 +32585,7 @@ void cp_parser_late_contracts (cp_parser *parser,
   if (old_contracts == NULL_TREE || !contract_any_deferred_p (old_contracts))
     return;
 
-  for (; old_contracts; old_contracts = NEXT_CONTRACT_ATTR(old_contracts))
+  for (; old_contracts; old_contracts = TREE_CHAIN(old_contracts))
     {
       tree contract = TREE_VALUE(TREE_VALUE (old_contracts));
 
@@ -32814,7 +32814,7 @@ cp_parser_function_contract_specifier (cp_parser *parser)
 static tree
 cp_parser_function_contract_specifier_seq (cp_parser *parser)
 {
-  tree attr_specs = NULL_TREE;
+  tree contract_specs = NULL_TREE;
 
   while (true)
     {
@@ -32832,15 +32832,15 @@ cp_parser_function_contract_specifier_seq (cp_parser *parser)
       tree contract_name = TREE_CODE (contract_spec) == PRECONDITION_STMT
 			   ? get_identifier ("pre")
 			   : get_identifier ("post");
-      tree attr_spec = finish_contract_attribute (contract_name, contract_spec);
+      contract_spec = finish_contract_specifier (contract_name, contract_spec);
       /* Arrange to build the list in the correct order.  */
-      if (attr_specs)
-	attr_specs = attr_chainon (attr_specs, attr_spec);
+      if (contract_specs)
+	contract_specs = attr_chainon (contract_specs, contract_spec);
       else
-	attr_specs = attr_spec;
+	contract_specs = contract_spec;
     }
 
-    return attr_specs;
+    return contract_specs;
 }
 
 /* Parse a standard C++-11 attribute specifier.
