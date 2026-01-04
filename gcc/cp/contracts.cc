@@ -164,9 +164,9 @@ contract_valid_p (tree contract)
 /* True if the contract specifier is valid.  */
 
 static bool
-contract_specifier_valid_p (tree specifier)
+contract_specifier_valid_p (tree contract)
 {
-  return contract_valid_p (TREE_VALUE (TREE_VALUE (specifier)));
+  return contract_valid_p (TREE_VALUE (TREE_VALUE (contract)));
 }
 
 /* Compare the contract conditions of OLD_CONTRACT and NEW_CONTRACT.
@@ -369,7 +369,7 @@ copy_contracts_list (tree contracts, tree fndecl,
 	       == POSTCONDITION_STMT))
 	  || (remap_kind == cmk_post
 	      && (TREE_CODE (CONTRACT_STATEMENT (contracts))
-	          == PRECONDITION_STMT)))
+		  == PRECONDITION_STMT)))
 	continue;
 
       tree c = copy_node (contracts);
@@ -1122,7 +1122,7 @@ emit_contract_statement (tree contract)
   return true;
 }
 
-/* Generate the statement for the given contract by adding the
+/* Generate the statement for the given contract by adding the contract
    statement to the current block. Returns the next contract in the chain.  */
 
 static tree
@@ -1917,16 +1917,16 @@ set_contract_functions (tree fndecl, tree pre, tree post)
 
 
 /* We're compiling the pre/postcondition function CONDFN; remap any FN
-   attributes that match CODE and emit them.  */
+   contracts that match CODE and emit them.  */
 
 static void
 remap_and_emit_conditions (tree fn, tree condfn, tree_code code)
 {
   gcc_assert (code == PRECONDITION_STMT || code == POSTCONDITION_STMT);
-  tree attr = get_fn_contract_specifiers (fn);
-  for (; attr; attr = TREE_CHAIN (attr))
+  tree contract_spec = get_fn_contract_specifiers (fn);
+  for (; contract_spec; contract_spec = TREE_CHAIN (contract_spec))
     {
-      tree contract = CONTRACT_STATEMENT (attr);
+      tree contract = CONTRACT_STATEMENT (contract_spec);
       if (TREE_CODE (contract) == code)
 	{
 	  contract = copy_node (contract);
@@ -1956,10 +1956,10 @@ finish_function_contracts (tree fndecl)
       || !flag_contract_checks_outlined)
     return;
 
-  tree attr = get_fn_contract_specifiers (fndecl);
-  for (; attr; attr = TREE_CHAIN (attr))
+  tree contract_spec = get_fn_contract_specifiers (fndecl);
+  for (; contract_spec; contract_spec = TREE_CHAIN (contract_spec))
     {
-      tree contract = CONTRACT_STATEMENT (attr);
+      tree contract = CONTRACT_STATEMENT (contract_spec);
       if (!CONTRACT_CONDITION (contract)
 	  || CONTRACT_CONDITION (contract) == error_mark_node)
 	return;
