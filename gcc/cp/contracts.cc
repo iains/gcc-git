@@ -161,12 +161,12 @@ contract_valid_p (tree contract)
   return CONTRACT_CONDITION (contract) != error_mark_node;
 }
 
-/* True if the contract attribute is valid.  */
+/* True if the contract specifier is valid.  */
 
 static bool
-contract_attribute_valid_p (tree attribute)
+contract_specifier_valid_p (tree specifier)
 {
-  return contract_valid_p (TREE_VALUE (TREE_VALUE (attribute)));
+  return contract_valid_p (TREE_VALUE (TREE_VALUE (specifier)));
 }
 
 /* Compare the contract conditions of OLD_CONTRACT and NEW_CONTRACT.
@@ -180,7 +180,7 @@ mismatched_contracts_p (tree old_contract, tree new_contract)
     {
       auto_diagnostic_group d;
       error_at (EXPR_LOCATION (new_contract),
-		"mismatched contract attribute in declaration");
+		"mismatched contract specifier in declaration");
       inform (EXPR_LOCATION (old_contract), "previous contract here");
       return true;
     }
@@ -213,42 +213,42 @@ mismatched_contracts_p (tree old_contract, tree new_contract)
   return false;
 }
 
-/* Compare the contract attributes of OLDDECL and NEWDECL. Returns true
+/* Compare the contract specifiers of OLDDECL and NEWDECL. Returns true
    if the contracts match, and false if they differ.  */
 
 static bool
-match_contract_attributes (location_t oldloc, tree old_attrs,
-			   location_t newloc, tree new_attrs)
+match_contract_specifiers (location_t oldloc, tree old_contracts,
+			   location_t newloc, tree new_contracts)
 {
   /* Contracts only match if they are both specified.  */
-  if (!old_attrs || !new_attrs)
+  if (!old_contracts || !new_contracts)
     return true;
 
   /* Compare each contract in turn.  */
-  while (old_attrs && new_attrs)
+  while (old_contracts && new_contracts)
     {
       /* If either contract is ill-formed, skip the rest of the comparison,
 	 since we've already diagnosed an error.  */
-      if (!contract_attribute_valid_p (new_attrs)
-	  || !contract_attribute_valid_p (old_attrs))
+      if (!contract_specifier_valid_p (new_contracts)
+	  || !contract_specifier_valid_p (old_contracts))
 	return false;
 
-      if (mismatched_contracts_p (CONTRACT_STATEMENT (old_attrs),
-				  CONTRACT_STATEMENT (new_attrs)))
+      if (mismatched_contracts_p (CONTRACT_STATEMENT (old_contracts),
+				  CONTRACT_STATEMENT (new_contracts)))
 	return false;
-      old_attrs = NEXT_CONTRACT_ATTR (old_attrs);
-      new_attrs = NEXT_CONTRACT_ATTR (new_attrs);
+      old_contracts = TREE_CHAIN (old_contracts);
+      new_contracts = TREE_CHAIN (new_contracts);
     }
 
-  /* If we didn't compare all attributes, the contracts don't match.  */
-  if (old_attrs || new_attrs)
+  /* If we didn't compare all specifiers, the contracts don't match.  */
+  if (old_contracts || new_contracts)
     {
       auto_diagnostic_group d;
       error_at (newloc,
 		"declaration has a different number of contracts than "
 		"previously declared");
       inform (oldloc,
-	      new_attrs
+	      new_contracts
 	      ? "previous declaration with fewer contracts here"
 	      : "previous declaration with more contracts here");
       return false;
@@ -273,7 +273,7 @@ static bool
 has_active_contract_condition (tree fndecl, tree_code c)
 {
   tree as = get_fn_contract_specifiers (fndecl);
-  for (; as != NULL_TREE; as = NEXT_CONTRACT_ATTR (as))
+  for (; as != NULL_TREE; as = TREE_CHAIN (as))
     {
       tree contract = TREE_VALUE (TREE_VALUE (as));
       if (TREE_CODE (contract) == c && contract_active_p (contract))
@@ -305,19 +305,19 @@ static bool
 contract_any_active_p (tree fndecl)
 {
   tree as = get_fn_contract_specifiers (fndecl);
-  for (; as; as = NEXT_CONTRACT_ATTR (as))
+  for (; as; as = TREE_CHAIN (as))
     if (contract_active_p (TREE_VALUE (TREE_VALUE (as))))
       return true;
   return false;
 }
 
-/* Return true if any contract in CONTRACT_ATTRs is not yet parsed.  */
+/* Return true if any contract in CONTRACTS is not yet parsed.  */
 
 bool
-contract_any_deferred_p (tree contract_attr)
+contract_any_deferred_p (tree contracts)
 {
-  for (; contract_attr; contract_attr = NEXT_CONTRACT_ATTR (contract_attr))
-    if (CONTRACT_CONDITION_DEFERRED_P (CONTRACT_STATEMENT (contract_attr)))
+  for (; contracts; contracts = TREE_CHAIN (contracts))
+    if (CONTRACT_CONDITION_DEFERRED_P (CONTRACT_STATEMENT (contracts)))
       return true;
   return false;
 }
@@ -355,22 +355,24 @@ enum contract_match_kind
   cmk_all
 };
 
-/* Copy all contracts from ATTR and apply them to FNDECL.  */
+/* Copy all contracts from CONTRACTS and apply them to FNDECL.  */
 
 static tree
-copy_contracts_list (tree attr, tree fndecl,
+copy_contracts_list (tree contracts, tree fndecl,
 		     contract_match_kind remap_kind = cmk_all)
 {
-  tree last = NULL_TREE, contract_attrs = NULL_TREE;
-  for (; attr; attr = NEXT_CONTRACT_ATTR (attr))
+  tree last = NULL_TREE, new_contracts = NULL_TREE;
+  for (; contracts; contracts = TREE_CHAIN (contracts))
     {
       if ((remap_kind == cmk_pre
-	   && (TREE_CODE (CONTRACT_STATEMENT (attr)) == POSTCONDITION_STMT))
+	   && (TREE_CODE (CONTRACT_STATEMENT (contracts))
+	       == POSTCONDITION_STMT))
 	  || (remap_kind == cmk_post
-	      && (TREE_CODE (CONTRACT_STATEMENT (attr)) == PRECONDITION_STMT)))
+	      && (TREE_CODE (CONTRACT_STATEMENT (contracts))
+	          == PRECONDITION_STMT)))
 	continue;
 
-      tree c = copy_node (attr);
+      tree c = copy_node (contracts);
       TREE_VALUE (c) = build_tree_list (TREE_PURPOSE (TREE_VALUE (c)),
 					copy_node (CONTRACT_STATEMENT (c)));
 
@@ -408,10 +410,10 @@ copy_contracts_list (tree attr, tree fndecl,
 
       chainon (last, c);
       last = c;
-      if (!contract_attrs)
-	contract_attrs = c;
+      if (!new_contracts)
+	new_contracts = c;
     }
-  return contract_attrs;
+  return new_contracts;
 }
 
 /* Lookup a name in std::, or inject it.  */
@@ -603,8 +605,8 @@ start_function_contracts (tree fndecl)
 static tree
 copy_contracts (tree fndecl, contract_match_kind remap_kind = cmk_all)
 {
-  tree attr = get_fn_contract_specifiers (fndecl);
-  return copy_contracts_list (attr, fndecl, remap_kind);
+  tree contracts = get_fn_contract_specifiers (fndecl);
+  return copy_contracts_list (contracts, fndecl, remap_kind);
 }
 
 /* Add the contract statement CONTRACT to the current block if valid.  */
@@ -624,17 +626,17 @@ emit_contract_statement (tree contract)
   return true;
 }
 
-/* Generate the statement for the given contract attribute by adding the
+/* Generate the statement for the given contract by adding the
    statement to the current block. Returns the next contract in the chain.  */
 
 static tree
-emit_contract_attr (tree attr)
+emit_contract (tree contract)
 {
-  gcc_assert (TREE_CODE (attr) == TREE_LIST);
+  gcc_assert (TREE_CODE (contract) == TREE_LIST);
 
-  emit_contract_statement (CONTRACT_STATEMENT (attr));
+  emit_contract_statement (CONTRACT_STATEMENT (contract));
 
-  return TREE_CHAIN (attr);
+  return TREE_CHAIN (contract);
 }
 
 /* Add a call or a direct evaluation of the pre checks.  */
@@ -643,8 +645,8 @@ static void
 apply_preconditions (tree fndecl)
 {
   tree contract_copy = copy_contracts (fndecl, cmk_pre);
-  for (; contract_copy; contract_copy = NEXT_CONTRACT_ATTR (contract_copy))
-    emit_contract_attr (contract_copy);
+  for (; contract_copy; contract_copy = TREE_CHAIN (contract_copy))
+    emit_contract (contract_copy);
 }
 
 /* Add a call or a direct evaluation of the post checks.  */
@@ -653,8 +655,8 @@ static void
 apply_postconditions (tree fndecl)
 {
   tree contract_copy = copy_contracts (fndecl, cmk_post);
-  for (; contract_copy; contract_copy = NEXT_CONTRACT_ATTR (contract_copy))
-    emit_contract_attr (contract_copy);
+  for (; contract_copy; contract_copy = TREE_CHAIN (contract_copy))
+    emit_contract (contract_copy);
 }
 
 /* Add contract handling to the function in FNDECL.
@@ -856,11 +858,11 @@ remap_contract (tree src, tree dst, tree contract, bool duplicate_p)
 tree
 copy_and_remap_contracts (tree dest, tree source)
 {
-  tree last = NULL_TREE, contract_attrs = NULL_TREE;
-  tree attr = get_fn_contract_specifiers (source);
-  for (; attr; attr = NEXT_CONTRACT_ATTR (attr))
+  tree last = NULL_TREE, contracts_copy= NULL_TREE;
+  tree contracts = get_fn_contract_specifiers (source);
+  for (; contracts; contracts = TREE_CHAIN (contracts))
     {
-      tree c = copy_node (attr);
+      tree c = copy_node (contracts);
       TREE_VALUE (c) = build_tree_list (TREE_PURPOSE (TREE_VALUE (c)),
 					copy_node (CONTRACT_STATEMENT (c)));
 
@@ -882,11 +884,11 @@ copy_and_remap_contracts (tree dest, tree source)
 
       chainon (last, c);
       last = c;
-      if (!contract_attrs)
-	contract_attrs = c;
+      if (!contracts_copy)
+	contracts_copy = c;
     }
 
-  return contract_attrs;
+  return contracts_copy;
 }
 
 /* Set the (maybe) parsed contract specifier LIST for DECL.  */
@@ -1030,7 +1032,7 @@ check_redecl_contract (tree newdecl, tree olddecl)
       location_t cont_end = get_contract_end_loc (new_contracts);
       cont_end = make_location (new_loc, new_loc, cont_end);
       /* We have two sets - they should match or we issue a diagnostic.  */
-      match_contract_attributes (rdp->note_loc, old_contracts,
+      match_contract_specifiers (rdp->note_loc, old_contracts,
 				 cont_end, new_contracts);
     }
 
@@ -1154,7 +1156,7 @@ check_postcondition_result (tree fndecl, tree type, location_t loc)
 }
 
 /* Instantiate each postcondition with the return type to finalize the
-   attribute on a function decl FNDECL.  */
+   contract specifiers on a function decl FNDECL.  */
 
 void
 rebuild_postconditions (tree fndecl)
@@ -1163,11 +1165,11 @@ rebuild_postconditions (tree fndecl)
     return;
 
   tree type = TREE_TYPE (TREE_TYPE (fndecl));
-  tree attributes = get_fn_contract_specifiers (fndecl);
+  tree contract_spec = get_fn_contract_specifiers (fndecl);
 
-  for (; attributes ; attributes = NEXT_CONTRACT_ATTR (attributes))
+  for (; contract_spec ; contract_spec = TREE_CHAIN (contract_spec))
     {
-      tree contract = TREE_VALUE (TREE_VALUE (attributes));
+      tree contract = TREE_VALUE (TREE_VALUE (contract_spec));
       if (TREE_CODE (contract) != POSTCONDITION_STMT)
 	continue;
       tree condition = CONTRACT_CONDITION (contract);
@@ -1258,7 +1260,7 @@ build_comment (cp_expr condition)
 /* Build a contract statement.  */
 
 tree
-grok_contract (tree attribute, tree mode, tree result, cp_expr condition,
+grok_contract (tree contract_spec, tree mode, tree result, cp_expr condition,
 	       location_t loc)
 {
   if (condition == error_mark_node)
@@ -1266,18 +1268,18 @@ grok_contract (tree attribute, tree mode, tree result, cp_expr condition,
 
   tree_code code;
   contract_assertion_kind kind = CAK_INVALID;
-  if (is_attribute_p ("assert", attribute)
-      || is_attribute_p ("contract_assert", attribute))
+  if (is_attribute_p ("assert", contract_spec)
+      || is_attribute_p ("contract_assert", contract_spec))
     {
       code = ASSERTION_STMT;
       kind = CAK_ASSERT;
     }
-  else if (is_attribute_p ("pre", attribute))
+  else if (is_attribute_p ("pre", contract_spec))
     {
       code = PRECONDITION_STMT;
       kind = CAK_PRE;
     }
-  else if (is_attribute_p ("post", attribute))
+  else if (is_attribute_p ("post", contract_spec))
     {
       code = POSTCONDITION_STMT;
       kind = CAK_POST;
@@ -1333,25 +1335,25 @@ grok_contract (tree attribute, tree mode, tree result, cp_expr condition,
   return contract;
 }
 
-/* Build the contract attribute specifier where IDENTIFIER is one of 'pre',
+/* Build the contract specifier where IDENTIFIER is one of 'pre',
    'post' or 'assert' and CONTRACT is the underlying statement.  */
 
 tree
-finish_contract_attribute (tree identifier, tree contract)
+finish_contract_specifier (tree identifier, tree contract)
 {
   if (contract == error_mark_node)
     return error_mark_node;
 
-  tree attribute = build_tree_list (build_tree_list (NULL_TREE, identifier),
-				    build_tree_list (NULL_TREE, contract));
+  tree contract_spec = build_tree_list (build_tree_list (NULL_TREE, identifier),
+					build_tree_list (NULL_TREE, contract));
 
-  /* Mark the attribute as dependent if the condition is dependent.  */
+  /* Mark the contract as dependent if the condition is dependent.  */
   tree condition = CONTRACT_CONDITION (contract);
   if (TREE_CODE (condition) != DEFERRED_PARSE
       && value_dependent_expression_p (condition))
-    ATTR_IS_DEPENDENT (attribute) = true;
+    ATTR_IS_DEPENDENT (contract_spec) = true;
 
-  return attribute;
+  return contract_spec;
 }
 
 /* Update condition of a late-parsed contract and postcondition variable,
