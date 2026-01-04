@@ -195,7 +195,10 @@ mismatched_contracts_p (tree old_contract, tree new_contract)
 
   /* Compare the contracts. */
 
+  bool saved_comparing_contracts = comparing_contracts;
+  comparing_contracts = true;
   bool matching_p = cp_tree_equal (t1, t2);
+  comparing_contracts = saved_comparing_contracts;
 
   if (!matching_p)
     {
@@ -352,7 +355,7 @@ enum contract_match_kind
   cmk_all
 };
 
-/* Copy all contracts from ATTR and apply them to FNDECL. */
+/* Copy all contracts from ATTR and apply them to FNDECL.  */
 
 static tree
 copy_contracts_list (tree attr, tree fndecl,
@@ -499,14 +502,13 @@ get_contract_end_loc (tree contracts)
   return EXPR_LOCATION (last);
 }
 
-struct GTY(()) contract_redecl
+struct GTY(()) contract_decl
 {
-  tree original_contracts;
   tree contract_specifiers;
   location_t note_loc;
 };
 
-static GTY(()) hash_map<tree, contract_redecl> *redeclared_contracts;
+static GTY(()) hash_map<tree, contract_decl> *contract_decl_map;
 
 /* Converts a contract condition to bool and ensures it has a location.  */
 
@@ -896,13 +898,13 @@ set_fn_contract_specifiers (tree decl, tree list)
     return;
 
   bool existed = false;
-  contract_redecl& rd
-    = hash_map_safe_get_or_insert<hm_ggc> (redeclared_contracts, decl, &existed);
+  contract_decl& rd
+    = hash_map_safe_get_or_insert<hm_ggc> (contract_decl_map, decl, &existed);
   if (!existed)
     {
-      /* This is the first time we encountered this decl, save the contracts
-	 and supporting data; to compare redeclarations with.  */
-      rd.original_contracts = list;
+      /* This is the first time we encountered this decl, save the location
+	 for error messages.  This will ensure all error messages refer to the
+	 contracts used for the function.  */
       location_t decl_loc = DECL_SOURCE_LOCATION (decl);
       location_t cont_end = decl_loc;
       if (list)
@@ -921,27 +923,13 @@ update_fn_contract_specifiers (tree decl, tree list)
     return;
 
   bool existed = false;
-  contract_redecl& rd
-    = hash_map_safe_get_or_insert<hm_ggc> (redeclared_contracts, decl, &existed);
+  contract_decl& rd
+    = hash_map_safe_get_or_insert<hm_ggc> (contract_decl_map, decl, &existed);
   gcc_checking_assert (existed);
 
   /* We should only get here when we parse deferred contracts.  */
   gcc_checking_assert(!contract_any_deferred_p (list));
 
-  /* Replace the original contracts if they were deferred */
-  if (contract_any_deferred_p (rd.original_contracts))
-    {
-      /* Because original_contracts are used for comparison with
-	 redeclarations, we need to create a copy of list to store in
-	 original_contracts so the contract conditions do not get
-	 modified as we apply them.  */
-      rd.original_contracts = copy_contracts_list (list, decl);
-      location_t decl_loc = DECL_SOURCE_LOCATION(decl);
-      location_t cont_end = decl_loc;
-      if (list)
-	cont_end = get_contract_end_loc (list);
-      rd.note_loc = make_location (decl_loc, decl_loc, cont_end);
-    }
   rd.contract_specifiers = list;
 }
 
@@ -950,11 +938,10 @@ update_fn_contract_specifiers (tree decl, tree list)
 void
 remove_decl_with_fn_contracts_specifiers (tree decl)
 {
-  if (contract_redecl *p = hash_map_safe_get (redeclared_contracts, decl))
+  if (contract_decl *p = hash_map_safe_get (contract_decl_map, decl))
     {
       p->contract_specifiers = NULL_TREE;
-      p->original_contracts = NULL_TREE;
-      redeclared_contracts->remove (decl);
+      contract_decl_map->remove (decl);
     }
 }
 
@@ -963,10 +950,9 @@ remove_decl_with_fn_contracts_specifiers (tree decl)
 void
 remove_fn_contract_specifiers (tree decl)
 {
-  if (contract_redecl *p = hash_map_safe_get (redeclared_contracts, decl))
+  if (contract_decl *p = hash_map_safe_get (contract_decl_map, decl))
     {
       p->contract_specifiers = NULL_TREE;
-      p->original_contracts = NULL_TREE;
     }
 }
 
@@ -975,7 +961,7 @@ remove_fn_contract_specifiers (tree decl)
 tree
 get_fn_contract_specifiers (tree decl)
 {
-  if (contract_redecl *p = hash_map_safe_get (redeclared_contracts, decl))
+  if (contract_decl *p = hash_map_safe_get (contract_decl_map, decl))
     return p->contract_specifiers;
   return NULL_TREE;
 }
@@ -1003,7 +989,7 @@ check_redecl_contract (tree newdecl, tree olddecl)
    have been recorded already (if it has contract specifiers).  However
    if the new decl is trying to add contracts, that is an error and we do
    not want to create a map entry yet.  */
-  contract_redecl *rdp = hash_map_safe_get (redeclared_contracts, olddecl);
+  contract_decl *rdp = hash_map_safe_get (contract_decl_map, olddecl);
   gcc_checking_assert(rdp || !old_contracts);
 
   location_t new_loc = DECL_SOURCE_LOCATION(newdecl);
@@ -1044,7 +1030,7 @@ check_redecl_contract (tree newdecl, tree olddecl)
       location_t cont_end = get_contract_end_loc (new_contracts);
       cont_end = make_location (new_loc, new_loc, cont_end);
       /* We have two sets - they should match or we issue a diagnostic.  */
-      match_contract_attributes (rdp->note_loc, rdp->original_contracts,
+      match_contract_attributes (rdp->note_loc, old_contracts,
 				 cont_end, new_contracts);
     }
 
