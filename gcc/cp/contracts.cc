@@ -636,8 +636,8 @@ parm_used_in_post_p (const_tree decl)
 void
 check_postconditions_in_redecl (tree olddecl, tree newdecl)
 {
-  tree attr = get_fn_contract_specifiers (olddecl);
-  if (!attr)
+  tree contract_spec = get_fn_contract_specifiers (olddecl);
+  if (!contract_spec)
     return;
 
   tree t1 = FUNCTION_FIRST_USER_PARM (olddecl);
