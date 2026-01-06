@@ -5,6 +5,15 @@
 #include <testsuite_hooks.h>
 #include <testsuite_allocator.h>
 
+// implicitly TR with implicitly deleted assignment
+struct R
+{
+  constexpr R() : s(0) {}
+  constexpr R(int x) : s(x) {}
+  const unsigned char s;
+};
+
+// explicitly TR; move-constructible but not *nothrow* move constructible
 struct S trivially_relocatable_if_eligible
 {
   constexpr S() : s(0) {}
@@ -14,6 +23,7 @@ struct S trivially_relocatable_if_eligible
   unsigned char s;
 };
 
+// not TR but nothrow move constructible
 struct T
 {
   constexpr T() : s(0) {}
@@ -23,9 +33,23 @@ struct T
   unsigned char s;
 };
 
+// TR but not move constructible
+struct U trivially_relocatable_if_eligible
+{
+  constexpr U() : s(0) {}
+  constexpr U(int x) : s(x) {}
+  constexpr U(const U&) = delete;
+  unsigned char s;
+};
+
+static_assert(std::is_trivially_relocatable_v<R>);
+static_assert(std::is_nothrow_relocatable_v<R>);
 static_assert(std::is_trivially_relocatable_v<S>);
 static_assert(std::is_nothrow_relocatable_v<S>);
+static_assert(!std::is_trivially_relocatable_v<T>);
 static_assert(std::is_nothrow_relocatable_v<T>);
+static_assert(std::is_trivially_relocatable_v<U>);
+static_assert(std::is_nothrow_relocatable_v<U>);
 
 template <typename _Tp>
 void
@@ -181,70 +205,72 @@ test_relocate_array()
     }
 }
 
+template <typename _Tp>
 void
 test_trivially_relocate()
 {
   unsigned char a[20], c[20];
-  S *sf, *sl, *sr;
-  sf = ::new(&a[2]) S(11);
+  _Tp *sf, *sl, *sr;
+  sf = ::new(&a[2]) _Tp(11);
   for (int i = 3; i < 8; ++i)
-    sl = ::new(&a[i]) S(i + 9);
+    sl = ::new(&a[i]) _Tp(i + 9);
   ++sl;
-  sr = ::new(&c[5]) S(42);
-  sr->~S();
+  sr = ::new(&c[5]) _Tp(42);
+  sr->~_Tp();
   VERIFY( std::trivially_relocate(sf, sl, sr) == sr + 6 );
   for (int i = 0; i < 6; ++i)
     {
       VERIFY( sr->s == i + 11 );
-      sr->~S();
+      sr->~_Tp();
       ++sr;
     }
-  sf = ::new(&a[2]) S(11);
+  sf = ::new(&a[2]) _Tp(11);
   for (int i = 3; i < 8; ++i)
-    sl = ::new(&a[i]) S(i + 9);
+    sl = ::new(&a[i]) _Tp(i + 9);
   ++sl;
-  sr = ::new(&a[1]) S(42);
-  sr->~S();
+  sr = ::new(&a[1]) _Tp(42);
+  sr->~_Tp();
   VERIFY( std::trivially_relocate(sf, sl, sr) == sr + 6 );
   for (int i = 0; i < 6; ++i)
     {
       VERIFY( sr->s == i + 11 );
-      sr->~S();
+      sr->~_Tp();
       ++sr;
     }
-  sf = ::new(&a[2]) S(11);
+  sf = ::new(&a[2]) _Tp(11);
   for (int i = 3; i < 8; ++i)
-    sl = ::new(&a[i]) S(i + 9);
+    sl = ::new(&a[i]) _Tp(i + 9);
   ++sl;
   sr = sf + 1;
   VERIFY( std::trivially_relocate(sf, sl, sr) == sr + 6 );
   for (int i = 0; i < 6; ++i)
     {
       VERIFY( sr->s == i + 11 );
-      sr->~S();
+      sr->~_Tp();
       ++sr;
     }
 }
 
+template <typename _Tp>
 void
 test_trivially_relocate_array()
 {
   unsigned char a[20], c[20];
-  using SA = S[2];
+  using SA = _Tp[2];
   SA *sf, *sl, *sr;
   sf = (SA *)(::new(&a[2]) SA{11, 12});
   for (int i = 0; i < 5; ++i)
     sl = (SA *)(::new(&a[4 + 2 * i]) SA{13 + 2 * i, 14 + 2 * i});
   ++sl;
   sr = (SA *)(::new(&c[6]) SA{42, 42});
-  (*sr)[0].~S();
-  (*sr)[1].~S();
+  (*sr)[0].~_Tp();
+  (*sr)[1].~_Tp();
   VERIFY( std::trivially_relocate(sf, sl, sr) == sr + 6 );
   for (int i = 0; i < 6; ++i)
     {
       VERIFY( (*sr)[0].s == 2 * i + 11 && (*sr)[1].s == 2 * i + 12 );
-      (*sr)[0].~S();
-      (*sr)[1].~S();
+      (*sr)[0].~_Tp();
+      (*sr)[1].~_Tp();
       ++sr;
     }
   sf = (SA *)(::new(&a[2]) SA{11, 12});
@@ -252,14 +278,14 @@ test_trivially_relocate_array()
     sl = (SA *)(::new(&a[4 + 2 * i]) SA{13 + 2 * i, 14 + 2 * i});
   ++sl;
   sr = (SA *)(::new(&a[0]) SA{42, 42});
-  (*sr)[0].~S();
-  (*sr)[1].~S();
+  (*sr)[0].~_Tp();
+  (*sr)[1].~_Tp();
   VERIFY( std::trivially_relocate(sf, sl, sr) == sr + 6 );
   for (int i = 0; i < 6; ++i)
     {
       VERIFY( (*sr)[0].s == 2 * i + 11 && (*sr)[1].s == 2 * i + 12 );
-      (*sr)[0].~S();
-      (*sr)[1].~S();
+      (*sr)[0].~_Tp();
+      (*sr)[1].~_Tp();
       ++sr;
     }
   sf = (SA *)(::new(&a[2]) SA{11, 12});
@@ -271,25 +297,37 @@ test_trivially_relocate_array()
   for (int i = 0; i < 6; ++i)
     {
       VERIFY( (*sr)[0].s == 2 * i + 11 && (*sr)[1].s == 2 * i + 12 );
-      (*sr)[0].~S();
-      (*sr)[1].~S();
+      (*sr)[0].~_Tp();
+      (*sr)[1].~_Tp();
       ++sr;
     }
 }
 
 int main()
 {
+  test_relocate<R>();
   test_relocate<S>();
   test_relocate<T>();
+  test_relocate<U>();
+  test_relocate_constexpr<R>();
   test_relocate_constexpr<S>();
   test_relocate_constexpr<T>();
+  test_relocate_constexpr<U>();
+  test_relocate_array<R>();
   test_relocate_array<S>();
   test_relocate_array<T>();
-  test_trivially_relocate();
-  test_trivially_relocate_array();
+  test_relocate_array<U>();
+  test_trivially_relocate<R>();
+  test_trivially_relocate<S>();
+  test_trivially_relocate<U>();
+  test_trivially_relocate_array<R>();
+  test_trivially_relocate_array<S>();
+  test_trivially_relocate_array<U>();
   static_assert([] {
+    test_relocate_constexpr<R>();
     test_relocate_constexpr<S>();
     test_relocate_constexpr<T>();
+    // test_relocate_constexpr<U>();  // NOT expected to be constexpr evaluable
     return true;
   }());
 }

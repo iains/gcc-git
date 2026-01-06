@@ -203,96 +203,99 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
     relocate(_Tp* __first, _Tp* __last, _Tp* __result) noexcept
     {
       static_assert(is_nothrow_relocatable_v<_Tp> && !is_const_v<_Tp>);
-      if !consteval
+
+      // Trivial relocation cannot happen in a `consteval` context. If `_Tp` is
+      // trivially relocatable, it might also have a move constructor usable in
+      // a `conteval` context, even if it might throw. That is why we test for
+      // `is_move_constructible` and not `is_nothrow_move_constructible`.
+      if constexpr (!is_move_constructible_v<remove_all_extents_t<_Tp>>)
+	{
+	  // Forces non-constexpr evaluation.
+	  return std::trivially_relocate(__first, __last, __result);
+	}
+      else if !consteval
 	{
 	  if constexpr (is_trivially_relocatable_v<_Tp>)
 	    return std::trivially_relocate(__first, __last, __result);
 	}
+
       if (__first == __result)
 	return __last;
       if (__first == __last)
 	return __result;
 
       size_t __n = __last - __first;
-      if constexpr (is_move_constructible_v<_Tp>)
+
+      // If got here, we know that _Tp is move constructible, but we need to
+      // ensure that compilation is not attempted for non-move-constructible
+      // types when we don't get to this point in the control flow.
+      if constexpr (is_move_constructible_v<remove_all_extents_t<_Tp>>)
 	{
-	  if !consteval
+	  bool __fwd = true;
+	  if consteval
 	    {
-	      // If there is no overlap, move everything first and then
-	      // destruct.
-	      if ((__UINTPTR_TYPE__)__last <= (__UINTPTR_TYPE__)__result
-		  || ((__UINTPTR_TYPE__)(__result + __n)
-		      <= (__UINTPTR_TYPE__)__first))
+	      // Use __builtin_constant_p to determine if __result and __first
+	      // point into the same object, if they don't, there is no overlap
+	      // and so either __fwd or !__fwd is fine.
+	      if (__builtin_constant_p (__result < __first)
+		  && __result > __first
+		  && __result < __last)
+		__fwd = false;
+	    }
+	  else
+	    {
+	      __fwd = ((__UINTPTR_TYPE__)__result - (__UINTPTR_TYPE__)__first
+		       >= (__UINTPTR_TYPE__)__last - (__UINTPTR_TYPE__)__first);
+	    }
+	  if (__fwd) [[likely]]
+	    {
+	      for (; __first != __last; ++__first, ++__result)
 		{
-		  __result = std::uninitialized_move(__first, __last,
-						     __result);
-		  std::destroy(__first, __last);
-		  return __result;
+		  if constexpr (is_array_v<_Tp>)
+		    {
+#if __cpp_lib_start_lifetime_as >= 202207L
+		      std::relocate(std::begin(*__first), std::end(*__first),
+				    *std::start_lifetime_as<_Tp>(__result));
+#else
+		      std::relocate(std::begin(*__first), std::end(*__first),
+				    std::addressof(*__result)[0]);
+#endif
+		    }
+		  else
+		    {
+		      ::new(__result) _Tp(std::move(*__first));
+		      __first->~_Tp();
+		    }
 		}
+	      return __result;
+	    }
+	  else
+	    {
+	      _Tp *__ret = __result + __n;
+	      for (__result = __ret; __last != __first; )
+		{
+		  --__last;
+		  --__result;
+		  if constexpr (is_array_v<_Tp>)
+		    {
+#if __cpp_lib_start_lifetime_as >= 202207L
+		      std::relocate(std::begin(*__last), std::end(*__last),
+				    *std::start_lifetime_as<_Tp>(__result));
+#else
+		      std::relocate(std::begin(*__last), std::end(*__last),
+				    std::addressof(*__result)[0]);
+#endif
+		    }
+		  else
+		    {
+		      ::new(__result) _Tp(std::move(*__last));
+		      __last->~_Tp();
+		    }
+		}
+	      return __ret;
 	    }
 	}
 
-      bool __fwd = true;
-      if consteval
-	{
-	  // Use __builtin_constant_p to determine if __result and __first
-	  // point into the same object, if they don't, there is no overlap
-	  // and so either __fwd or !__fwd is fine.
-	  if (__builtin_constant_p (__result < __first)
-	      && __result > __first
-	      && __result < __last)
-	    __fwd = false;
-	}
-      else
-	{
-	  __fwd = ((__UINTPTR_TYPE__)__result - (__UINTPTR_TYPE__)__first
-		   >= (__UINTPTR_TYPE__)__last - (__UINTPTR_TYPE__)__first);
-	}
-      if (__fwd) [[likely]]
-	{
-	  for (; __first != __last; ++__first, ++__result)
-	    {
-	      if constexpr (is_array_v<_Tp>)
-#if __cpp_lib_start_lifetime_as >= 202207L
-		std::relocate(std::begin(*__first), std::end(*__first),
-			      *std::start_lifetime_as<_Tp>(__result));
-#else
-		std::relocate(std::begin(*__first), std::end(*__first),
-			      std::addressof(*__result)[0]);
-#endif
-	      else
-		{
-		  ::new(__result) _Tp(std::move(*__first));
-		  __first->~_Tp();
-		}
-	    }
-	  return __result;
-	}
-      else
-	{
-	  _Tp *__ret = __result + __n;
-	  for (__result = __ret; __last != __first; )
-	    {
-	      --__last;
-	      --__result;
-	      if constexpr (is_array_v<_Tp>)
-#if __cpp_lib_start_lifetime_as >= 202207L
-		std::relocate(std::begin(*__last), std::end(*__last),
-			      *std::start_lifetime_as<_Tp>(__result));
-#else
-		std::relocate(std::begin(*__last), std::end(*__last),
-			      std::addressof(*__result)[0]);
-#endif
-	      else
-		{
-		  ::new(__result) _Tp(std::move(*__last));
-		  __last->~_Tp();
-		}
-	    }
-	  return __ret;
-	}
-      // If at constand evaluation is_trivially_relocatable_v<_Tp>
-      // but not is_move_constructible_V<_Tp>, fail.
       __builtin_unreachable();
     }
 
