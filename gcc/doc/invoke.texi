@@ -225,6 +225,7 @@ in the following sections.
 -fconstexpr-loop-limit=@var{n}  -fconstexpr-ops-limit=@var{n}
 -fcontracts -fcontract-disable-check-epochs
 -fcontract-evaluation-semantic=@r{[}ignore@r{|}observe@r{|}enforce@r{|}quick_enforce@r{]}
+-fcontracts-conservative-ipa
 -fcoroutines  -fdiagnostics-all-candidates
 -fno-elide-constructors
 -fno-enforce-eh-specs
@@ -3326,6 +3327,13 @@ By default, individual contract checks are delimited by a barrier that
 is intended to prevent so-called time-travelling undefined behaviour from
 causing checks to be unexpectedly elided.  This option allows the barriers
 to be omitted.
+
+@opindex fcontracts-conservative-ipa
+@item -fcontracts-conservative-ipa
+This prevents inter-procedural analysis from taking action when the body
+of an inline function is visible in a given TU.  This allows for the case
+that contract evaluation conditions are permitted to differ between TUs which
+means that such actions would be potentially incorrect.
 
 @opindex fcoroutines
 @item -fcoroutines
