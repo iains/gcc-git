@@ -15,8 +15,8 @@
 
 // Check that a case when NDEBUG is defined and ASSERT_USES_CONTRACTS isn't behaves correctly.
 // Semantic chosen is a non terminating one.
-// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=observe" }
-// { dg-do run { target c++2a } }
+// { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
+// { dg-do run { target c++26 } }
 
 #define NDEBUG
 #include <exception>

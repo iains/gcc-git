@@ -18,8 +18,8 @@
 // Check that a case of contract violation handler throwing an exception works as expected for
 // nothrow overload.
 // Semantic chosen is a non terminating one.
-// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=ignore" }
-// { dg-do run { target c++2a } }
+// { dg-options "-fcontracts -fcontract-evaluation-semantic=ignore" }
+// { dg-do run { target c++26 } }
 
 #include <contracts>
 #include <exception>

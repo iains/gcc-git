@@ -16,8 +16,8 @@
 // <http://www.gnu.org/licenses/>.
 
 // Check that nothrow overload of handle_observed_contract_violation works as expected.
-// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=quick_enforce" }
-// { dg-do run { target c++2a } }
+// { dg-options "-fcontracts -fcontract-evaluation-semantic=quick_enforce" }
+// { dg-do run { target c++26 } }
 
 #include <contracts>
 

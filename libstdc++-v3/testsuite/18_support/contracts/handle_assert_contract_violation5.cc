@@ -16,8 +16,8 @@
 // Check that a case when neither ASSERT_USES_CONTRACTS nor NDEBUG are defined
 // behaves correctly (i.e. falls back to the libc assert).
 // Semantic chosen is a non terminating one.
-// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=observe" }
-// { dg-do run { target c++2a } }
+// { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
+// { dg-do run { target c++26 } }
 
 #include <exception>
 #include <cstdlib>

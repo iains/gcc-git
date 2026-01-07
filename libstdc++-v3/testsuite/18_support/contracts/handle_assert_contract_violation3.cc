@@ -14,8 +14,8 @@
 // <http://www.gnu.org/licenses/>.
 
 // Check that assert behaves according to P2264R7
-// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=observe" }
-// { dg-do run { target c++2a } }
+// { dg-options "-fcontracts -fcontract-evaluation-semantic=observe" }
+// { dg-do run { target c++26 } }
 
 #include <exception>
 #include <cstdlib>

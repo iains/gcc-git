@@ -16,8 +16,8 @@
 // <http://www.gnu.org/licenses/>.
 
 // Check that handle_observed_contract_violation works as expected in presence of an exception.
-// { dg-options "-g0 -fcontracts -fcontract-evaluation-semantic=enforce" }
-// { dg-do run { target c++2a } }
+// { dg-options "-fcontracts -fcontract-evaluation-semantic=enforce" }
+// { dg-do run { target c++26 } }
 
 #include <contracts>
 #include <testsuite_hooks.h>
