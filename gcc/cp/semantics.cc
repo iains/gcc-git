@@ -4882,7 +4882,7 @@ finish_id_expression_1 (tree id_expression,
 	}
 
       if (flag_contracts && processing_contract_condition)
-	r = constify_contract_access(r);
+	r = constify_contract_access (r);
 
       return r;
     }
@@ -5086,7 +5086,7 @@ finish_id_expression_1 (tree id_expression,
 
   check_param_in_postcondition (decl, location);
   if (flag_contracts && processing_contract_condition)
-    decl = constify_contract_access(decl);
+    decl = constify_contract_access (decl);
 
   return cp_expr (decl, location);
 }

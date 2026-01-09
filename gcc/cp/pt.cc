@@ -22842,7 +22842,7 @@ tsubst_expr (tree t, tree args, tsubst_flags_t complain, tree in_decl)
 	check_param_in_postcondition (op, EXPR_LOCATION (t));
 
 	if (flag_contracts && processing_contract_condition)
-	    op = constify_contract_access(op);
+	    op = constify_contract_access (op);
 
 	/* Otherwise, we're dealing with a wrapper to make a C++20 template
 	   parameter object const.  */

@@ -548,7 +548,7 @@ view_as_const (tree decl)
 					       | TYPE_QUAL_CONST));
       decl = build1 (VIEW_CONVERT_EXPR, ctype, decl);
       /* Mark the VCE as contract const wrapper.  */
-      decl->base.private_flag = true;
+      CONTRACT_CONST_WRAPPER (decl) = true;
     }
   return decl;
 }
@@ -574,43 +574,13 @@ constify_contract_access (tree decl)
   return decl;
 }
 
-/* Indicate if PARM_DECL DECL is ODR used in a postcondition.  */
+/* Indicate that PARM_DECL DECL is ODR used in a postcondition.  */
 
 static void
 set_parm_used_in_post (tree decl, bool constify = true)
 {
   gcc_checking_assert (TREE_CODE (decl) == PARM_DECL);
   DECL_LANG_FLAG_4 (decl) = constify;
-}
-
-/* If declaration DECL is a PARM_DECL and it appears in a postcondition, then
-   check that it is not a non-const by-value param. LOCATION is where the
-   expression was found and is used for diagnostic purposes.  */
-
-void
-check_param_in_postcondition (tree decl, location_t location)
-{
-  if (TREE_CODE (decl) == PARM_DECL
-      && processing_postcondition
-      && !cp_unevaluated_operand
-      && !(REFERENCE_REF_P (decl)
-	   && TREE_CODE (TREE_OPERAND (decl, 0)) == PARM_DECL)
-	   /* Return value parameter has DECL_ARTIFICIAL flag set. The flag
-	    * presence of the flag should be sufficient to distinguish the
-	    * return value parameter in this context. */
-	   && !(DECL_ARTIFICIAL (decl)))
-    {
-      set_parm_used_in_post (decl);
-
-      if (!dependent_type_p (TREE_TYPE (decl))
-	  && !CP_TYPE_CONST_P (TREE_TYPE (decl))
-	  && !TREE_READONLY (decl))
-	{
-	  error_at (location,
-		    "a value parameter used in a postcondition must be const");
-	  inform (DECL_SOURCE_LOCATION (decl), "parameter declared here");
-	}
-    }
 }
 
 /* Test if PARM_DECL is ODR used in a postcondition.  */
@@ -620,6 +590,35 @@ parm_used_in_post_p (const_tree decl)
 {
   /* Check if this parameter is odr used within a function's postcondition  */
   return ((TREE_CODE (decl) == PARM_DECL) && DECL_LANG_FLAG_4 (decl));
+}
+
+/* If declaration DECL is a PARM_DECL and it appears in a postcondition, then
+   check that it is not a non-const by-value param. LOCATION is where the
+   expression was found and is used for diagnostic purposes.  */
+
+void
+check_param_in_postcondition (tree decl, location_t location)
+{
+  if (processing_postcondition
+      && TREE_CODE (decl) == PARM_DECL
+      /* TREE_CODE (decl) == PARM_DECL only holds for non-reference
+	 parameters.  */
+      && !cp_unevaluated_operand
+      /* Return value parameter has DECL_ARTIFICIAL flag set. The flag
+	 presence of the flag should be sufficient to distinguish the
+	 return value parameter in this context.  */
+      && !(DECL_ARTIFICIAL (decl)))
+    {
+      set_parm_used_in_post (decl);
+
+      if (!dependent_type_p (TREE_TYPE (decl))
+	  && !CP_TYPE_CONST_P (TREE_TYPE (decl)))
+	{
+	  error_at (location,
+		    "a value parameter used in a postcondition must be const");
+	  inform (DECL_SOURCE_LOCATION (decl), "parameter declared here");
+	}
+    }
 }
 
 /* Check if parameters used in postconditions are const qualified on
@@ -1727,6 +1726,7 @@ check_redecl_contract (tree newdecl, tree olddecl)
       match_contract_specifiers (rdp->note_loc, old_contracts,
 				 cont_end, new_contracts);
     }
+
   return;
 }
 
@@ -1755,8 +1755,8 @@ void update_contract_arguments(tree srcdecl, tree destdecl)
 	  return;
 	}
       else
-	set_fn_contract_specifiers (
-	    srcdecl, copy_and_remap_contracts (srcdecl, destdecl));
+	set_fn_contract_specifiers
+	  (srcdecl, copy_and_remap_contracts (srcdecl, destdecl));
     }
 
   /* For deferred contracts, we currently copy the tokens from the redeclaration
