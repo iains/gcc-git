@@ -1673,10 +1673,13 @@ init_builtin_contract_violation_type ()
     = builtin_contract_violation_type;
   DECL_CONTEXT (TYPE_NAME (builtin_contract_violation_type))
     = FROB_CONTEXT (global_namespace);
-  TREE_PUBLIC (TYPE_NAME (builtin_contract_violation_type)) = true;
   CLASSTYPE_LITERAL_P (builtin_contract_violation_type) = true;
   CLASSTYPE_LAZY_COPY_CTOR (builtin_contract_violation_type) = true;
   xref_basetypes (builtin_contract_violation_type, /*bases=*/NULL_TREE);
+  DECL_CONTEXT (TYPE_NAME (builtin_contract_violation_type))
+    = FROB_CONTEXT (global_namespace);
+  DECL_ARTIFICIAL (TYPE_NAME (builtin_contract_violation_type)) = true;
+  TYPE_ARTIFICIAL (builtin_contract_violation_type) = true;
   builtin_contract_violation_type
     = cp_build_qualified_type (builtin_contract_violation_type,
 			       TYPE_QUAL_CONST);
@@ -1739,13 +1742,12 @@ get_contracts_source_location_impl_type (tree context = NULL_TREE)
 
   iloc_sentinel ils (input_location);
   input_location = BUILTINS_LOCATION;
-  contracts_source_location_impl_type = make_class_type (RECORD_TYPE);
+  contracts_source_location_impl_type = cxx_make_type (RECORD_TYPE);
   finish_builtin_struct (contracts_source_location_impl_type,
 			 "__impl", fields, NULL_TREE);
-  CLASSTYPE_AS_BASE (contracts_source_location_impl_type)
-    = contracts_source_location_impl_type;
-  xref_basetypes (contracts_source_location_impl_type, /*bases=*/NULL_TREE);
   DECL_CONTEXT (TYPE_NAME (contracts_source_location_impl_type)) = context;
+  DECL_ARTIFICIAL (TYPE_NAME (contracts_source_location_impl_type)) = true;
+  TYPE_ARTIFICIAL (contracts_source_location_impl_type) = true;
   contracts_source_location_impl_type
     = cp_build_qualified_type (contracts_source_location_impl_type,
 			       TYPE_QUAL_CONST);
@@ -1841,17 +1843,14 @@ contracts_tu_local_named_var (location_t loc, const char *name, tree type,
 			      bool is_const)
 {
   tree var_ = build_decl (loc, VAR_DECL, NULL, type);
-  /* Generate name.uid to ensure unique entries.  */
-  char tmp_name[32];
-  ASM_GENERATE_INTERNAL_LABEL (tmp_name, name, DECL_UID (var_));
-  DECL_NAME (var_) = get_identifier (tmp_name);
-  /* TU-local and defined.  */
+  DECL_NAME (var_) = generate_internal_label (name);
   TREE_PUBLIC (var_) = false;
   DECL_EXTERNAL (var_) = false;
   TREE_STATIC (var_) = true;
-  /* compiler-generated, and constant.  */
+  /* Compiler-generated.  */
   DECL_ARTIFICIAL (var_) = true;
   DECL_IGNORED_P (var_) = true;
+  /* Possibly constant.  */
   TREE_CONSTANT (var_) = is_const;
   layout_decl (var_, 0);
   return var_;
