@@ -548,7 +548,7 @@ view_as_const (tree decl)
 					       | TYPE_QUAL_CONST));
       decl = build1 (VIEW_CONVERT_EXPR, ctype, decl);
       /* Mark the VCE as contract const wrapper.  */
-      CONTRACT_CONST_WRAPPER (decl) = true;
+      CONST_WRAPPER_P (decl) = true;
     }
   return decl;
 }
