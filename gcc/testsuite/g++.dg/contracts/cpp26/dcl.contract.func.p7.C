@@ -6,9 +6,9 @@
 // { dg-additional-options "-fcontracts" }
 #include <type_traits>
 struct NTClass {
-  //TODO, make non trivial when https://github.com/NinaRanns/gcc/issues/21 is solved
-//  NTClass(){};
-//  ~NTClass(){};
+    NTClass(){};
+    ~NTClass(){};
+    int x = 1;
 };
 
 template <typename... ARGS>

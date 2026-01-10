@@ -169,9 +169,9 @@ inline bool
 contract_const_wrapper_p (const_tree exp)
 {
   /* A wrapper node has code VIEW_CONVERT_EXPR, and the flag base.private_flag
-     is set. The wrapper node is used to Used to constify entities inside
+     is set. The wrapper node is used to used to constify entities inside
      contract assertions.  */
-  return ((TREE_CODE (exp) == VIEW_CONVERT_EXPR) && exp->base.private_flag);
+  return ((TREE_CODE (exp) == VIEW_CONVERT_EXPR) && CONST_WRAPPER_P (exp));
 }
 
 /* If EXP is a contract_const_wrapper_p, return the wrapped expression.

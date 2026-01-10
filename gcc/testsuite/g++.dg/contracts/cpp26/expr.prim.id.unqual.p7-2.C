@@ -41,7 +41,6 @@ int g = 0;
 struct X { bool m(); };
 struct Y {
   int z = 0;
-  //, int* p, int& r, X x, X* px)
 
   void f(int i)  pre (++g); // { dg-error "increment of read-only location" }
   void f2(int i) pre (++i); // { dg-error "increment of read-only location" }
