@@ -941,6 +941,8 @@ get_contract_wrapper_function (tree fndecl)
   return result ? *result : NULL_TREE;
 }
 
+/* Given a wrapper function WRAPPER finds the orignal function decl.  */
+
 static tree
 get_orig_func_for_wrapper (tree wrapper)
 {
@@ -949,11 +951,14 @@ get_orig_func_for_wrapper (tree wrapper)
   return result ? *result : NULL_TREE;
 }
 
+/* Make a wrapper name from a cdtor special name, by skipping the space and
+   appending '_'.  */
+
 static tree
 contracts_fixup_cdtorname (tree idin)
 {
   const char *n = IDENTIFIER_POINTER (idin);
-  size_t l = strlen (n);
+  size_t l = IDENTIFIER_LENGTH (idin);
   char *nn = xasprintf ("%.*s_", (int)l-1, n);
   tree nid = get_identifier (nn);
   free (nn);
@@ -973,39 +978,20 @@ build_contract_wrapper_function (tree fndecl)
   if (error_operand_p (fndecl))
     return error_mark_node;
 
+  /* We should not be trying to build wrappers for templates or functions that
+     are still dependent.  */
+  gcc_checking_assert (!processing_template_decl
+		       && !TYPE_DEPENDENT_P (TREE_TYPE (fndecl)));
+
   tree fnname;
   if (DECL_NAME (fndecl) && IDENTIFIER_CDTOR_P (DECL_NAME (fndecl)))
     fnname = contracts_fixup_cdtorname (DECL_NAME (fndecl));
   else
-    fnname = copy_node (DECL_NAME (fndecl));
+    fnname = DECL_NAME (fndecl);
   location_t loc = DECL_SOURCE_LOCATION (fndecl);
 
-  /* Handle the arg types list.  */
-  tree wrapper_args = NULL_TREE;
-  tree *last = &wrapper_args;
-  for (tree arg_type = TYPE_ARG_TYPES (TREE_TYPE (fndecl)); arg_type;
-       arg_type = TREE_CHAIN (arg_type))
-    {
-      if (arg_type == void_list_node)
-	{
-	  *last = void_list_node;
-	  break;
-	}
-      *last = build_tree_list (TREE_PURPOSE (arg_type), TREE_VALUE (arg_type));
-      last = &TREE_CHAIN (*last);
-    }
-
-  tree wrapper_return_type = copy_node (TREE_TYPE (TREE_TYPE (fndecl)));
-  tree wrapper_type = build_function_type (wrapper_return_type, wrapper_args);
-
-  /* Contract violation wrapper function is always noexcept. Otherwise,
-     the wrapper function is noexcept if the checked function is noexcept.  */
-
-  if (flag_exceptions && type_noexcept_p (TREE_TYPE (fndecl)))
-    wrapper_type = build_exception_variant (wrapper_type, noexcept_true_spec);
-
   tree wrapdecl
-    = build_lang_decl_loc (loc, FUNCTION_DECL, fnname, wrapper_type);
+    = build_lang_decl_loc (loc, FUNCTION_DECL, fnname, TREE_TYPE (fndecl));
 
   /* Put the wrapper in the same context as the callee.  */
   DECL_CONTEXT (wrapdecl) = DECL_CONTEXT (fndecl);
@@ -1040,10 +1026,9 @@ build_contract_wrapper_function (tree fndecl)
   /* Copy selected attributes from the original function.  */
   TREE_USED (wrapdecl) = TREE_USED (fndecl);
 
-  /* Copy any alignment that the FE added.  */
+  /* Copy any alignment added.  */
   if (DECL_ALIGN (fndecl))
     SET_DECL_ALIGN (wrapdecl, DECL_ALIGN (fndecl));
-  /* Copy any alignment the user added.  */
   DECL_USER_ALIGN (wrapdecl) = DECL_USER_ALIGN (fndecl);
 
   /* Make this function internal.  */
@@ -1051,14 +1036,8 @@ build_contract_wrapper_function (tree fndecl)
   DECL_EXTERNAL (wrapdecl) = false;
   DECL_WEAK (wrapdecl) = false;
 
-  /* ??? copied from build_contract_condition_function.  */
+  /* We know this is an internal function.  */
   DECL_INTERFACE_KNOWN (wrapdecl) = true;
-
-  /* Update various inline related declaration properties.  */
-  //DECL_DECLARED_INLINE_P (wrapdecl) = true;
-  DECL_DISREGARD_INLINE_LIMITS (wrapdecl) = true;
-  suppress_warning (wrapdecl);
-
   return wrapdecl;
 }
 
@@ -1355,7 +1334,7 @@ maybe_apply_function_contracts (tree fndecl)
   /* If this is not a client side check and definition side checks are
      disabled, do nothing.  */
   if (!flag_contracts_definition_check
-      && !DECL_CONTRACT_WRAPPER(fndecl))
+      && !DECL_CONTRACT_WRAPPER (fndecl))
     return;
 
   bool do_pre = has_active_preconditions (fndecl);
@@ -1845,9 +1824,7 @@ define_contract_wrapper_func (const tree& fndecl, const tree& wrapdecl, void*)
   if (DECL_INITIAL (wrapdecl) && DECL_INITIAL (wrapdecl) != error_mark_node)
     return true;
 
-  /* FIXME: Maybe we should check if fndecl is still dependent?  */
-
-  gcc_checking_assert(!DECL_HAS_CONTRACTS_P (wrapdecl));
+  gcc_checking_assert (!DECL_HAS_CONTRACTS_P (wrapdecl));
   /* We check postconditions if postcondition checks are enabled for clients.
     We should not get here unless there are some checks to make.  */
   bool check_post = flag_contract_client_check > 1;
@@ -1864,8 +1841,7 @@ define_contract_wrapper_func (const tree& fndecl, const tree& wrapdecl, void*)
 
   vec<tree, va_gc> * args = build_arg_list (wrapdecl);
 
-  /* We do not support contracts on virtual functions yet. Client side wrapping is
-   not supported for cxx2a contracts. */
+  /* We do not support contracts on virtual functions yet.  */
   gcc_checking_assert (!DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
 		       || !DECL_VIRTUAL_P (fndecl));
 
