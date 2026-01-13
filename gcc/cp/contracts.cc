@@ -941,7 +941,7 @@ get_contract_wrapper_function (tree fndecl)
   return result ? *result : NULL_TREE;
 }
 
-/* Given a wrapper function WRAPPER finds the orignal function decl.  */
+/* Given a wrapper function WRAPPER, find the original function decl.  */
 
 static tree
 get_orig_func_for_wrapper (tree wrapper)
