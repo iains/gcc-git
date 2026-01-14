@@ -2,6 +2,7 @@
 // dcl.contract.func/p7
 // If the predicate of a postcondition assertion of a function f odr-uses (6.3) a non-reference parameter of f,
 // that parameter and the corresponding parameter on all declarations of f shall have const type
+// These tests do not instantiate templates with diagnosable errors
 // { dg-do compile { target c++23 } }
 // { dg-additional-options "-fcontracts" }
 #include <type_traits>
@@ -31,12 +32,13 @@ int f (NTClass i, NTClass &j, NTClass *k, const NTClass * l, NTClass * const m)
   post ( check (m));
 
 template <class T>
-int f (T i, T &j, T *k, const T * l, T * const m)
+void ft1 (T i, T &j, T *k, const T * l, T * const m)
   post ( check (i))
   post ( check (j))
   post ( check (k))
   post ( check (l))
-  post ( check (m));
+  post ( check (m)){};
+
 
 struct PostCond {
 
@@ -63,7 +65,7 @@ struct PostCond {
     post ( check (m));
 
   template <class T>
-  int f (T i, T &j, T *k, const T * l, T * const m)
+  int ft1 (T i, T &j, T *k, const T * l, T * const m)
     post ( check (i))
     post ( check (j))
     post ( check (k))
@@ -71,6 +73,7 @@ struct PostCond {
     post ( check (m));
 };
 
+/* Never instantiated to check errors without an instantiation.  */
 template <typename T>
 struct PostCondT
 {
@@ -80,6 +83,13 @@ struct PostCondT
     post ( check (j))
     post ( check (k)) // { dg-error "used in a postcondition must be const" }
     post ( check (l)) // { dg-error "used in a postcondition must be const" }
+    post ( check (m));
+
+  PostCondT (T i, T &j, T *k, const T * l, T * const m)
+    post ( check (i))
+    post ( check (j))
+    post ( check (k))
+    post ( check (l))
     post ( check (m));
 
   template <class U>
@@ -122,16 +132,6 @@ template <typename T>
 int f(const T i[10])
 post(r : r == i[0]);
 
-template <typename T>
-int f2(const T i[10]) // { dg-error "used in a postcondition must be const" }
-post(r : r == i[0]);
-
-void foo()
-{
-  int i[10];
-  f2<const int>(i);
-}
-
 }
 
 // P3520
@@ -143,19 +143,7 @@ void f4(std::add_const_t<T> t) post(t > 0); //ok
 
 template <typename T>
 void f5(T t) post (t > 0);
-template <typename T>
-void f6(T t) post (t > 0);
-template <typename T>
-void f7(T t) post (t > 0);
 
-
-void bar(){
-  f3(1);
-  f4<int>(1);
-  f5(1); // { dg-error "used in a postcondition must be const" "" { target *-*-* } 145 }
-  f6<int>(1); // { dg-error "used in a postcondition must be const" "" { target *-*-* } 147  }
-  f7<const int>(1); // OK
-}
 
 namespace nonFirstDeclaration
 {
