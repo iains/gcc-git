@@ -1078,6 +1078,11 @@ start_function_contracts (tree fndecl)
     if (POSTCONDITION_P (CONTRACT_STATEMENT (ca)))
       if (tree id = POSTCONDITION_IDENTIFIER (CONTRACT_STATEMENT (ca)))
 	{
+	  if (id == error_mark_node)
+	    {
+	      CONTRACT_CONDITION (CONTRACT_STATEMENT (ca)) = error_mark_node;
+	      continue;
+	    }
 	  tree r_name = tree_strip_any_location_wrapper (id);
 	  if (TREE_CODE (id) == PARM_DECL)
 	    r_name = DECL_NAME (id);

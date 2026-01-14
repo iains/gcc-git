@@ -12137,6 +12137,9 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
   if (type && POSTCONDITION_P (t) && POSTCONDITION_IDENTIFIER (t))
     {
       oldvar = POSTCONDITION_IDENTIFIER (t);
+      if (oldvar == error_mark_node)
+	return invalidate_contract (r);
+
       newvar = copy_node (oldvar);
       TREE_TYPE (newvar) = type;
       DECL_CONTEXT (newvar) = decl;
