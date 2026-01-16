@@ -10,8 +10,10 @@
 void f(const int i) post (r: i > 2); // { dg-error "function does not return a value to test" }
 
 template <typename T>
-void g() post (r: true ); // { dg-error "function does not return a value to test" }
+void g() post (r: true ){}; // { dg-error "function does not return a value to test" }
 
+template
+void g<int>();
 
 struct S{
 
