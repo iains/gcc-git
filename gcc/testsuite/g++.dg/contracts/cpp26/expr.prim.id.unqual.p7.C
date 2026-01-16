@@ -12,6 +12,7 @@ static_assert (__cpp_contracts >= 202502L);
 
 int gi = 7;
 int &gri = gi;
+int *gpi = &gi;
 
 bool f(int&&){ return true;}
 int temporary(){ return 4;}
@@ -23,9 +24,6 @@ void f4(int *i) pre((*i)++); // ok, not deep const
 void f5(int *i) pre(gi++); // { dg-error "increment of read-only location" }
 void f6() pre(f(temporary())); // ok, lifetime started within pre condition
 
-// todo structured binding test
-// lambda tests
-// template tests
 
 struct S{
 
@@ -36,9 +34,15 @@ struct S{
   int &rmi = mi;
   int *pmi = &mi;
 
+
   void f(){
+    int array[2] = {1,2};
+    auto [sb1, sb2] = array;
+
     contract_assert(i++); // { dg-error "increment of member" }
     contract_assert(mi++); // ok, mutable
+    contract_assert(sb1++); // { dg-error "increment of read-only location" }
+
 
     contract_assert(ri++); // ok, not deep const
     contract_assert(rmi++); // ok, not deep const
@@ -49,6 +53,10 @@ struct S{
 
     contract_assert(pmi++); // { dg-error "increment of member" }
     contract_assert((*pmi)++); // ok, not deep const
+
+    contract_assert(gi++); // { dg-error "increment of read-only location" }
+    contract_assert(gpi++); // { dg-error "increment of read-only location" }
+    contract_assert((*gpi)++); // ok, not deep const
   }
 
 };
@@ -77,13 +85,30 @@ void template_related_tests()
   ((const S2&&)S2()).perfect_forward();
 }
 
-void class_related_tests()
-{
+int n = 0;
+struct X { bool m(); };
 
+struct Y {
+  int z = 0;
 
+  void f(int i, int* p, int& r, X x, X* px)
+    pre (++n)       // { dg-error "increment of read-only location" }
+    pre (++i)       // { dg-error "increment of read-only location" }
+    pre (++(*p))    // OK
+    pre (++r)       // { dg-error "increment of read-only location" }
+    pre (x.m())     // { dg-error "discards qualifiers" }
+    pre (px->m());  // OK
 
+  template <int N, int& R, int* P>
+  void g()
+    pre(++N)        // { dg-error "increment of read-only location" }
+    // { dg-error {lvalue required as increment operand} "" { target *-*-* } .-1 }
+    pre(++R)        // { dg-error "increment of read-only location" }
+    pre(++(*P));    // OK
 
-}
+  int& k()
+    post(r : ++r);  // { dg-error "increment of read-only location" }
+};
 
 int main()
 {

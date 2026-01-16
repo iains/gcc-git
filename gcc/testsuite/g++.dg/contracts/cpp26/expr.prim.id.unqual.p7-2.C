@@ -47,26 +47,7 @@ struct Y {
   void f3(int* p) pre (++(*p)); // OK
   void f4(int& r) pre (++r); // { dg-error "increment of read-only location" }
   void f5(X x) pre (x.m()); // { dg-error " argument discards qualifiers" }
-  void f6(X* px) pre (px->m()) // OK
-
-  // TODO when lambdas are fixed
- /*void f7 pre ([=,&i,*this] mutable
-	 {
-	    ++g;	// error: attempting to modify const lvalue
-	    ++i;	// error: attempting to modify const lvalue
-	    ++p;	// OK, refers to member of closure type
-	    ++r;	// OK, refers to non−reference member of closure type
-	    ++this->z; // OK, captured *this
-	    ++z;	// OK, captured *this
-	    int j = 17;
-	    [&]{
-	      int k = 34;
-	      ++i; // error: attempting to modify const lvalue
-	      ++j; // OK
-	      ++k; // OK
-	    }();
-	    return true;
-	 }())*/;
+  void f6(X* px) pre (px->m()); // OK
 
   template <int N, int& R, int* P>
   void tf1() pre(++N); 	// { dg-error "increment of read-only location" }
@@ -80,11 +61,5 @@ struct Y {
 
   int h1() post(r : ++r); // { dg-error "increment of read-only" }
 
-  // TODO when lambdas are fixed
-/*  int h2() post(r : [=]() mutable {
-			++r;	// OK, refers to member of closure type
-			return true;
-	    }());
-*/
   int& k() post(r : ++r); // { dg-error "increment of read-only" }
 };
