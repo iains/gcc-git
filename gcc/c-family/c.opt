@@ -1923,10 +1923,6 @@ fcontract-evaluation-semantic=
 C++ ObjC++ Joined RejectNegative Enum(contract_semantic) Var(flag_contract_evaluation_semantic) Init(3)
 -fcontract-evaluation-semantic=[ignore|observe|enforce|quick_enforce]	Select the contract evaluation semantic (defaults to enforce).
 
-fcontract-disable-check-epochs
-C++ ObjC++ Var(flag_contract_disable_check_epochs) Init(0)
--fcontract-disable-epoch-checks	Disable insertion of epoch markers after each contract check.
-
 fcoroutines
 C++ ObjC++ LTO Var(flag_coroutines)
 Enable C++ coroutines (experimental).

@@ -1566,8 +1566,7 @@ maybe_emit_violation_handler_wrappers ()
   cond = build2 (EQ_EXPR, uint16_type_node, semantic,
 		 build_int_cst (uint16_type_node, (uint16_t)CES_OBSERVE));
   finish_if_stmt_cond (cond, if_observe);
-  if (!flag_contract_disable_check_epochs)
-    emit_builtin_observable_checkpoint ();
+  emit_builtin_observable_checkpoint ();
   finish_return_stmt (NULL_TREE);
   finish_then_clause (if_observe);
   finish_if_stmt (if_observe);
@@ -1986,8 +1985,7 @@ build_contract_check (tree contract)
   tree cc_bind = build3 (BIND_EXPR, void_type_node, NULL, NULL, NULL);
   BIND_EXPR_BODY (cc_bind) = push_stmt_list ();
 
-  if (!flag_contract_disable_check_epochs
-      && TREE_CODE (contract) == ASSERTION_STMT)
+  if (TREE_CODE (contract) == ASSERTION_STMT)
     emit_builtin_observable_checkpoint ();
   tree cond = build_x_unary_op (loc, TRUTH_NOT_EXPR, condition, NULL_TREE,
 				tf_warning_or_error);

@@ -224,7 +224,7 @@ in the following sections.
 -fconcepts  -fconcepts-diagnostics-depth=@var{n}
 -fconstexpr-depth=@var{n}  -fconstexpr-cache-depth=@var{n}
 -fconstexpr-loop-limit=@var{n}  -fconstexpr-ops-limit=@var{n}
--fcontracts -fcontract-disable-check-epochs
+-fcontracts
 -fcontract-evaluation-semantic=@r{[}ignore@r{|}observe@r{|}enforce@r{|}quick_enforce@r{]}
 -fcoroutines  -fdiagnostics-all-candidates
 -fno-elide-constructors
@@ -3328,13 +3328,6 @@ an error will be emitted.
 fails, the execution is terminated immediately (without calling any handler).
 At compile-time there is no difference in behaviour between this option and
 the @code{enforce} case, since no handler is invoked at compile time.
-
-@opindex fcontract-disable-epoch-checks
-@item -fcontract-disable-epoch-checks
-By default, individual contract checks are delimited by a barrier that
-is intended to prevent so-called time-travelling undefined behaviour from
-causing checks to be unexpectedly elided.  This option allows the barriers
-to be omitted.
 
 @opindex fcoroutines
 @item -fcoroutines
