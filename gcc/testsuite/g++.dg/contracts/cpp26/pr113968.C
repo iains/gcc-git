@@ -1,5 +1,5 @@
 // check that an invalid contract condition doesn't cause an ICE
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts" }
 struct A {
   A(A &);

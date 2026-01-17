@@ -3,7 +3,7 @@
 // There is an observable checkpoint ([intro.abstract]) C that happens before
 // (evaluation of a contract assertion ) A such that any other operation O
 // that happens before A also happens before C
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts -O -fdump-tree-original -fdump-tree-optimized -Wno-return-type" }
 int f(int& i)
 {

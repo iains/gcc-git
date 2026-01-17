@@ -1,6 +1,6 @@
 // check that we do not optimise based on contract_asssert
 // { dg-additional-options "-O3 -fcontracts -fcontract-evaluation-semantic=quick_enforce -fdump-tree-optimized " }
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 
 [[gnu::used, gnu::noinline]]
 inline int* f(int *y) {

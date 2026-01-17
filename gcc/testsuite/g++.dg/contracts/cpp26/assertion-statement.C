@@ -2,7 +2,7 @@
 // N5008
 // assertion-statement :
 // contract_assert attribute-specifier-seq opt ( conditional-expression ) ;
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts" }
 
 static_assert (__cpp_contracts >= 202502L);

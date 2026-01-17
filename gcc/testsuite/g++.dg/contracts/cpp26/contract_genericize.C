@@ -1,5 +1,5 @@
 // Check that we do not get a crash
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=enforce" }
 
 

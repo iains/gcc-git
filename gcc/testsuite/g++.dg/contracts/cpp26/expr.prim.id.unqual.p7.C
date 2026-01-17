@@ -4,7 +4,7 @@
 // (7.2) — a variable or template parameter declared outside of C of type “reference to T”, or
 // (7.3) — a structured binding of type T whose corresponding variable is declared outside of C,
 // then the type of the expression is const T
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts" }
 
 

@@ -8,7 +8,7 @@
 //
 // Check the contract violation information in observe semantic
 //
-// { dg-do run { target c++23 } }
+// { dg-do run { target c++26 } }
 // { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe" }
 
 int f(int i, int j = 1) pre(i > 0) post(r: r < 5)

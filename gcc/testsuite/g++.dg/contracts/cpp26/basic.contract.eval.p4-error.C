@@ -2,7 +2,7 @@
 // basic.contract.eval/p4
 // The evaluation of a contract assertion using the ignore semantic has no effect.
 // [Note 2 : The predicate is potentially evaluated (6.3), but not evaluated. — end note]
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=ignore" }
 
 struct S;

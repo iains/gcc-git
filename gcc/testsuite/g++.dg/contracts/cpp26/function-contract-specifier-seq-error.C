@@ -8,7 +8,7 @@
 // precondition-specifier : pre attribute-specifier-seq opt ( conditional-expression )
 // postcondition-specifier :
 //	post attribute-specifier-seq opt ( result-name-introducer opt conditional-expression )
-// { dg-do compile { target c++23 } }
+// { dg-do compile { target c++26 } }
 // { dg-additional-options "-fcontracts" }
 
 int f(int);
