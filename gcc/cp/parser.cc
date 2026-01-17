@@ -1184,6 +1184,20 @@ cp_lexer_get_preprocessor_token (unsigned flags, cp_token *token)
 		 particular identifier-turned-keyword again.  */
 	      C_SET_RID_CODE (token->u.value, RID_MAX);
 	    }
+	  if (warn_cxx26_compat
+	      && C_RID_CODE (token->u.value) >= RID_FIRST_CXX26
+	      && C_RID_CODE (token->u.value) <= RID_LAST_CXX26)
+	    {
+	      /* Warn about the C++26 keyword (but still treat it as
+		 an identifier).  */
+	      warning_at (token->location, OPT_Wc__26_compat,
+			  "identifier %qE is a keyword in C++26",
+			  token->u.value);
+
+	      /* Clear out the C_RID_CODE so we don't warn about this
+		 particular identifier-turned-keyword again.  */
+	      C_SET_RID_CODE (token->u.value, RID_MAX);
+	    }
 
 	  token->keyword = RID_MAX;
 	}
