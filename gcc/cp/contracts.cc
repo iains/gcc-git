@@ -353,9 +353,8 @@ retain_decl (tree decl, copy_body_data *)
 static tree
 lookup_std_type (tree name_id)
 {
-  tree res_type = lookup_qualified_name (std_node, name_id,
-					 LOOK_want::TYPE
-					 | LOOK_want::HIDDEN_FRIEND);
+  tree res_type = lookup_qualified_name
+    (std_node, name_id, LOOK_want::TYPE | LOOK_want::HIDDEN_FRIEND);
 
   if (TREE_CODE (res_type) == TYPE_DECL)
     res_type = TREE_TYPE (res_type);
@@ -1116,9 +1115,7 @@ make_postcondition_variable (cp_expr id, tree type)
   tree decl = build_lang_decl (PARM_DECL, id, type);
   DECL_ARTIFICIAL (decl) = true;
   DECL_SOURCE_LOCATION (decl) = id.get_location ();
-
-  pushdecl (decl);
-  return decl;
+  return pushdecl (decl);
 }
 
 /* As above, except that the type is unknown.  */
@@ -1189,7 +1186,9 @@ rebuild_postconditions (tree fndecl)
       if (!oldvar)
 	continue;
 
-      gcc_checking_assert (DECL_CONTEXT (oldvar) == fndecl);
+      gcc_checking_assert (!DECL_CONTEXT (oldvar)
+			   || DECL_CONTEXT (oldvar) == fndecl);
+      DECL_CONTEXT (oldvar) = fndecl;
 
       /* Check the postcondition variable.  */
       location_t loc = DECL_SOURCE_LOCATION (oldvar);
@@ -1294,14 +1293,11 @@ grok_contract (tree contract_spec, tree mode, tree result, cp_expr condition,
   /* Determine the assertion kind.  */
   CONTRACT_ASSERTION_KIND (contract) = build_int_cst (uint16_type_node, kind);
 
-  /* Determine the evaluation semantic.  */
-  /* This is now an override, so that if not set we will get the default
-	 (currently enforce).  */
-  contract_evaluation_semantic ev_semantic
-    = static_cast<contract_evaluation_semantic>
-		  (flag_contract_evaluation_semantic);
+  /* Determine the evaluation semantic.  This is now an override, so that if
+     not set we will get the default (currently enforce).  */
   CONTRACT_EVALUATION_SEMANTIC (contract)
-    = build_int_cst (uint16_type_node, (uint16_t) ev_semantic);
+    = build_int_cst (uint16_type_node, (uint16_t)
+		     flag_contract_evaluation_semantic);
 
   /* If the contract is deferred, don't do anything with the condition.  */
   if (TREE_CODE (condition) == DEFERRED_PARSE)
@@ -1404,13 +1400,13 @@ declare_one_violation_handler_wrapper (tree fn_name, tree fn_type,
   return fn_decl;
 }
 
-static GTY(()) tree __tu_has_violation = NULL_TREE;
-static GTY(()) tree __tu_has_violation_exception = NULL_TREE;
+static GTY(()) tree tu_has_violation = NULL_TREE;
+static GTY(()) tree tu_has_violation_exception = NULL_TREE;
 
 static void
 maybe_declare_violation_handler_wrappers ()
 {
-  if (__tu_has_violation && __tu_has_violation_exception)
+  if (tu_has_violation && tu_has_violation_exception)
     return;
 
   iloc_sentinel ils (input_location);
@@ -1421,16 +1417,16 @@ maybe_declare_violation_handler_wrappers ()
   tree fn_type = build_function_type_list (void_type_node, v_obj_type,
 					   uint16_type_node, NULL_TREE);
   tree fn_name = get_identifier ("__tu_has_violation_exception");
-  __tu_has_violation_exception
+  tu_has_violation_exception
     = declare_one_violation_handler_wrapper (fn_name, fn_type, v_obj_type,
 					     uint16_type_node);
   fn_name = get_identifier ("__tu_has_violation");
-  __tu_has_violation
+  tu_has_violation
     = declare_one_violation_handler_wrapper (fn_name, fn_type, v_obj_type,
 					     uint16_type_node);
 }
 
-/* Lookup a name in std::contracts/experimental, or inject it.  */
+/* Lookup a name in std::contracts, or inject it.  */
 
 static tree
 lookup_std_contracts_type (tree name_id)
@@ -1440,8 +1436,8 @@ lookup_std_contracts_type (tree name_id)
 
   tree res_type = error_mark_node;
   if (TREE_CODE (ns) == NAMESPACE_DECL)
-    res_type = lookup_qualified_name (ns, name_id, LOOK_want::TYPE
-						   | LOOK_want::HIDDEN_FRIEND);
+    res_type = lookup_qualified_name
+      (ns, name_id, LOOK_want::TYPE | LOOK_want::HIDDEN_FRIEND);
 
   if (TREE_CODE (res_type) == TYPE_DECL)
     res_type = TREE_TYPE (res_type);
@@ -1510,30 +1506,28 @@ declare_handle_contract_violation ()
 static void
 build_contract_handler_call (tree violation)
 {
-  /* We may need to declare new types, ensure they are not considered
-     attached to a named module.  */
-  auto module_kind_override = make_temp_override
-    (module_kind, module_kind & ~(MK_PURVIEW | MK_ATTACH | MK_EXPORTING));
-
   tree violation_fn = declare_handle_contract_violation ();
   tree call = build_call_n (violation_fn, 1, violation);
   finish_expr_stmt (call);
 }
 
+/* If we have emitted any contracts in this TU that will call a violation
+   handler, then emit the wrappers for the handler.  */
+
 void
 maybe_emit_violation_handler_wrappers ()
 {
-  if (!__tu_has_violation && !__tu_has_violation_exception)
+  if (!tu_has_violation && !tu_has_violation_exception)
     return;
 
   tree terminate_wrapper = terminate_fn;
 
-  /* __tu_has_violation */
-  start_preparsed_function (__tu_has_violation, NULL_TREE,
+  /* tu_has_violation */
+  start_preparsed_function (tu_has_violation, NULL_TREE,
 			    SF_DEFAULT | SF_PRE_PARSED);
   tree body = begin_function_body ();
   tree compound_stmt = begin_compound_stmt (BCS_FN_BODY);
-  tree v = DECL_ARGUMENTS (__tu_has_violation);
+  tree v = DECL_ARGUMENTS (tu_has_violation);
   tree semantic = DECL_CHAIN (v);
 
   /* We might be done.  */
@@ -1560,17 +1554,17 @@ maybe_emit_violation_handler_wrappers ()
   finish_expr_stmt (build_call_a (terminate_wrapper, 0, nullptr));
   finish_compound_stmt (compound_stmt);
   finish_function_body (body);
-  __tu_has_violation = finish_function (false);
-  expand_or_defer_fn (__tu_has_violation);
+  tu_has_violation = finish_function (false);
+  expand_or_defer_fn (tu_has_violation);
 
-  /* __tu_has_violation_exception */
-  start_preparsed_function (__tu_has_violation_exception, NULL_TREE,
+  /* tu_has_violation_exception */
+  start_preparsed_function (tu_has_violation_exception, NULL_TREE,
 			    SF_DEFAULT | SF_PRE_PARSED);
   body = begin_function_body ();
   compound_stmt = begin_compound_stmt (BCS_FN_BODY);
-  v = DECL_ARGUMENTS (__tu_has_violation_exception);
+  v = DECL_ARGUMENTS (tu_has_violation_exception);
   semantic = DECL_CHAIN (v);
-  location_t loc = DECL_SOURCE_LOCATION (__tu_has_violation_exception);
+  location_t loc = DECL_SOURCE_LOCATION (tu_has_violation_exception);
   tree a_type = strip_top_quals (non_reference (TREE_TYPE (v)));
   tree v2 = build_decl (loc, VAR_DECL, NULL_TREE, a_type);
   DECL_SOURCE_LOCATION (v2) = loc;
@@ -1590,12 +1584,12 @@ maybe_emit_violation_handler_wrappers ()
     build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
     tf_warning_or_error);
   finish_expr_stmt (r);
-  finish_expr_stmt (build_call_n (__tu_has_violation, 2, build_address (v2), semantic));
+  finish_expr_stmt (build_call_n (tu_has_violation, 2, build_address (v2), semantic));
   finish_return_stmt (NULL_TREE);
   finish_compound_stmt (compound_stmt);
   finish_function_body (body);
-  __tu_has_violation_exception = finish_function (false);
-  expand_or_defer_fn (__tu_has_violation_exception);
+  tu_has_violation_exception = finish_function (false);
+  expand_or_defer_fn (tu_has_violation_exception);
 }
 
 /* Build a layout-compatible internal version of contract_violation type.  */
@@ -1674,7 +1668,6 @@ init_builtin_contract_violation_type ()
   return builtin_contract_violation_type;
 }
 
-/* tree that holds the internal representation source location _impl */
 static GTY(()) tree contracts_source_location_impl_type;
 
 /* Build a layout-compatible internal version of source location __impl
@@ -2032,13 +2025,13 @@ build_contract_check (tree contract)
 				build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
 				tf_warning_or_error);
 	  finish_expr_stmt (r);
-	  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
+	  finish_expr_stmt (build_call_n (tu_has_violation, 2,
 					  build_address (violation),
 					  s_const));
 	}
       else
 	/* We need to make a copy of the violation object to update.  */
-	finish_expr_stmt (build_call_n (__tu_has_violation_exception, 2,
+	finish_expr_stmt (build_call_n (tu_has_violation_exception, 2,
 					build_address (violation),
 					s_const));
       finish_handler (handler);
@@ -2049,7 +2042,7 @@ build_contract_check (tree contract)
 
   tree do_check = begin_if_stmt ();
   finish_if_stmt_cond (cond, do_check);
-  finish_expr_stmt (build_call_n (__tu_has_violation, 2,
+  finish_expr_stmt (build_call_n (tu_has_violation, 2,
 				  build_address (violation),
 				  build_int_cst (uint16_type_node, semantic)));
   finish_then_clause (do_check);
