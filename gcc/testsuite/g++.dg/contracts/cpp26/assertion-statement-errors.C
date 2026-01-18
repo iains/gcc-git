@@ -35,7 +35,7 @@ int main()
     contract_assert(true) // { dg-error  "expected .;. before .g." }
     g();
 
-    contract_assert [[deprecated]] (i == 3);  // { dg-warning "attributes are ignored on contract assertions" }
+    contract_assert [[deprecated]] (i == 3);  // { dg-warning {attributes are ignored on 'contract_assert'} }
 
     return 0;
 }
