@@ -1,6 +1,6 @@
 // Check that contract asserts are checked when the definition side contracts
 // are turned off
-// { dg-do run { target c++20 } }
+// { dg-do run { target c++26 } }
 // { dg-options "-fcontracts -fcontracts-definition-check=off -fcontract-evaluation-semantic=observe" }
 
 #include <cstdlib>
