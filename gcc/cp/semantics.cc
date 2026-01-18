@@ -3667,9 +3667,9 @@ finish_this_expr (void)
   else if (fn && DECL_STATIC_FUNCTION_P (fn))
     error ("%<this%> is unavailable for static member functions");
   else if (fn && processing_contract_condition && DECL_CONSTRUCTOR_P (fn))
-    error ("invalid use of %<this%> before it is valid");
+    error ("invalid use of %<this%> in a constructor %<pre%> condition");
   else if (fn && processing_contract_condition && DECL_DESTRUCTOR_P (fn))
-    error ("invalid use of %<this%> after it is valid");
+    error ("invalid use of %<this%> a destructor %<post%> condition");
   else if (fn)
     error ("invalid use of %<this%> in non-member function");
   else
@@ -5021,9 +5021,6 @@ finish_id_expression_1 (tree id_expression,
 	     Access checking has been performed during name lookup
 	     already.  Turn off checking to avoid duplicate errors.  */
 	  push_deferring_access_checks (dk_no_check);
-
-
-
 	  decl = finish_non_static_data_member (decl, NULL_TREE,
 						/*qualifying_scope=*/NULL_TREE);
 	  pop_deferring_access_checks ();

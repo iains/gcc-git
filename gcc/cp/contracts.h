@@ -122,6 +122,8 @@ enum detection_mode : uint16_t {
 
 /* contracts.cc */
 
+extern void init_contracts			(void);
+
 extern tree grok_contract			(tree, tree, tree, cp_expr, location_t);
 extern tree finish_contract_specifier 		(tree, tree);
 extern tree finish_contract_condition		(cp_expr);
@@ -152,7 +154,6 @@ extern void maybe_apply_function_contracts	(tree);
 
 extern void maybe_emit_violation_handler_wrappers (void);
 
-extern tree init_builtin_contract_violation_type (void);
 extern tree build_contract_check		(tree);
 
 inline void

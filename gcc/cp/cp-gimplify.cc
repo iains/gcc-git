@@ -2144,8 +2144,8 @@ cp_genericize_r (tree *stmt_p, int *walk_subtrees, void *data)
 	  check = void_node;
 	*stmt_p = check;
 	*walk_subtrees = 0;
-	/* Return early and do not add the contract statement into the cache.
-	*/
+	/* Return early and do not add the contract statement into the
+	   cache.  */
 	return NULL_TREE;
       }
       break;

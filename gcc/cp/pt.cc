@@ -3365,13 +3365,10 @@ check_explicit_specialization (tree declarator,
 					      is_friend, 0);
 	    }
 
-	  /* If this is a specialization, splice any contracts that may have
-	     been inherited from the template, removing them.  */
-	  if (decl != error_mark_node && DECL_TEMPLATE_SPECIALIZATION (decl))
-	    {
-	      if (flag_contracts)
-		remove_fn_contract_specifiers (decl);
-	    }
+	  if (flag_contracts
+	      && decl != error_mark_node
+	      && DECL_TEMPLATE_SPECIALIZATION (decl))
+	    remove_fn_contract_specifiers (decl);
 
 	  /* A 'structor should already have clones.  */
 	  gcc_assert (decl == error_mark_node
@@ -12224,15 +12221,15 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
     register_local_specialization (newvar, oldvar);
 
   /* Contract conditions have a wider application of location wrappers than
-     other trees which will not work with the generic handling in tsubst_expr,
+     other trees (which will not work with the generic handling in tsubst_expr),
      remove the wrapper here...  */
   location_t cond_l = EXPR_LOCATION (CONTRACT_CONDITION (t));
   tree cond_t = tree_strip_any_location_wrapper (CONTRACT_CONDITION (t));
 
-  /* ... and substitute with the contained expression.  */
+  /* ... and substitute the contained expression.  */
   cond_t = tsubst_expr (cond_t, args, complain, in_decl);
 
-  /* Converted to bool, if possible, and then re-apply a location wrapper
+  /* Convert to bool, if possible, and then re-apply a location wrapper
      when required.  */
   cp_expr new_condition (cond_t, cond_l);
   CONTRACT_CONDITION (r) = finish_contract_condition (new_condition);
@@ -12263,10 +12260,10 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
   return r;
 }
 
-/* Update T by instantiating its contract attribute.  */
+/* Update T instantiating a contract specifier.  */
 
 static void
-tsubst_contract_attribute (tree decl, tree t, tree args,
+tsubst_contract_specifier (tree decl, tree t, tree args,
 			   tsubst_flags_t complain, tree in_decl)
 {
   /* For non-specializations, adjust the current declaration to the most general
@@ -12306,28 +12303,24 @@ tsubst_contract_attribute (tree decl, tree t, tree args,
   TREE_VALUE (t) = build_tree_list (NULL_TREE, contract);
 }
 
-/* For unsubstituted list of contracts in ATTRIBUTES, instantiate contracts
- for DECL and set the list as contracts for decl. Original attributes are not
- modified. Substitution creates a deep copy of the contract.
- Note that ATTRIBUTES may contain attributes other than contracts, and that
- they may belong to a decl other than DECL.
- */
+/* For unsubstituted list of contracts in SPECIFIERS, instantiate contracts
+ for DECL and set the list as contracts for decl. Substitution creates a deep
+ copy of the contract.  */
 
 void
-tsubst_contract_attributes (tree attributes, tree decl, tree args,
+tsubst_contract_specifiers (tree specfiers, tree decl, tree args,
 			    tsubst_flags_t complain, tree in_decl)
 {
   tree subst_contract_list = NULL_TREE;
-  for (tree attr = attributes; attr;
-      attr = TREE_CHAIN (attr))
-  {
-      tree nc = copy_node (attr);
-      tsubst_contract_attribute (decl, nc, args, complain, in_decl);
+  for (tree spec = specfiers; spec; spec = TREE_CHAIN (spec))
+    {
+      tree nc = copy_node (spec);
+      tsubst_contract_specifier (decl, nc, args, complain, in_decl);
       TREE_CHAIN (nc) = subst_contract_list;
       subst_contract_list = nc;
-  }
+    }
   if (flag_contracts)
-    set_fn_contract_specifiers (decl, nreverse(subst_contract_list));
+    set_fn_contract_specifiers (decl, nreverse (subst_contract_list));
 }
 
 /* Instantiate a single dependent attribute T (a TREE_LIST), and return either
@@ -15285,7 +15278,6 @@ tsubst_function_decl (tree t, tree args, tsubst_flags_t complain,
      substituted at this point.  */
   if (tree ctrct = get_fn_contract_specifiers (t))
     set_fn_contract_specifiers (r, ctrct);
-
 
   if (DECL_FRIEND_CONTEXT (t))
     SET_DECL_FRIEND_CONTEXT (r,
@@ -22731,7 +22723,6 @@ tsubst_expr (tree t, tree args, tsubst_flags_t complain, tree in_decl)
 	    /* If the original type was a reference, we'll be wrapped in
 	       the appropriate INDIRECT_REF.  */
 	    r = convert_from_reference (r);
-
 	}
       RETURN (r);
 
@@ -28012,7 +28003,7 @@ regenerate_decl_from_template (tree decl, tree tmpl, tree args)
 	  if (DECL_TEMPLATE_SPECIALIZATION (tmpl))
 	    attr = get_fn_contract_specifiers (code_pattern);
 
-	  tsubst_contract_attributes (attr, decl, args,
+	  tsubst_contract_specifiers (attr, decl, args,
 				      tf_warning_or_error, code_pattern);
 	}
 

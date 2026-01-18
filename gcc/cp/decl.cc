@@ -2681,7 +2681,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  DECL_INITIAL (old_result) = DECL_INITIAL (new_result);
 	  if (DECL_FUNCTION_TEMPLATE_P (newdecl))
 	    {
-	      update_contract_arguments(new_result, old_result);
+	      update_contract_arguments (new_result, old_result);
 
 	      DECL_ARGUMENTS (old_result) = DECL_ARGUMENTS (new_result);
 	      for (tree p = DECL_ARGUMENTS (old_result); p; p = DECL_CHAIN (p))
@@ -3211,7 +3211,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
       if (! types_match || new_defines_function)
 	{
 	  /* Update the contracts to reflect the new parameter names. */
-	  update_contract_arguments(newdecl, olddecl);
+	  update_contract_arguments (newdecl, olddecl);
 
 	  /* Mark the old PARM_DECLs in case std::meta::parameters_of has
 	     been called on the old declaration and reflections of those
@@ -5725,10 +5725,7 @@ cxx_init_decl_processing (void)
     init_exception_processing ();
 
   if (flag_contracts)
-    {
-      init_terminate_fn ();
-      init_builtin_contract_violation_type ();
-    }
+    init_contracts ();
 
   if (modules_p ())
     init_modules (parse_in);
@@ -12523,7 +12520,6 @@ grokfndecl (tree ctype,
 	}
     }
 
-
   /* Caller will do the rest of this.  */
   if (check < 0)
     {
@@ -16791,8 +16787,7 @@ grokdeclarator (const cp_declarator *declarator,
 		   || storage_class != sc_static);
 
 	decl = grokfndecl (ctype, type, original_name, parms, unqualified_id,
-			   declspecs,
-			   reqs, virtualp, flags, memfn_quals, rqual, raises,
+			   declspecs, reqs, virtualp, flags, memfn_quals, rqual, raises,
 			   1, friendp,
 			   publicp,
 			   inlinep | (2 * constexpr_p) | (4 * concept_p)

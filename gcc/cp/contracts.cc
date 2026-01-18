@@ -147,9 +147,7 @@ along with GCC; see the file COPYING3.  If not see
   store constant data objects that represent the read-only data for the
   violation.  The exact form of this is subject to revision as it represents
   ABI that must be agreed between implementations (as of this point, that
-  discussion is not yet concluded).
-
-*/
+  discussion is not yet concluded).  */
 
 /* Contract matching.  */
 
@@ -1638,7 +1636,9 @@ get_contract_violation_fields ()
  return fields;
 }
 
-tree
+/* Build a type to represent contract violation objects.  */
+
+static tree
 init_builtin_contract_violation_type ()
 {
   if (builtin_contract_violation_type)
@@ -1666,6 +1666,14 @@ init_builtin_contract_violation_type ()
     = cp_build_qualified_type (builtin_contract_violation_type,
 			       TYPE_QUAL_CONST);
   return builtin_contract_violation_type;
+}
+
+/* Early initialisation of types and functions we will use.  */
+void
+init_contracts ()
+{
+  init_terminate_fn ();
+  init_builtin_contract_violation_type ();
 }
 
 static GTY(()) tree contracts_source_location_impl_type;
@@ -1820,8 +1828,7 @@ build_contract_violation_ctor (tree contract)
 /* Build a named TU-local constant of TYPE.  */
 
 static tree
-contracts_tu_local_named_var (location_t loc, const char *name, tree type,
-			      bool is_const)
+contracts_tu_local_named_var (location_t loc, const char *name, tree type)
 {
   tree var_ = build_decl (loc, VAR_DECL, NULL, type);
   DECL_NAME (var_) = generate_internal_label (name);
@@ -1830,26 +1837,29 @@ contracts_tu_local_named_var (location_t loc, const char *name, tree type,
   TREE_STATIC (var_) = true;
   /* Compiler-generated.  */
   DECL_ARTIFICIAL (var_) = true;
-  DECL_IGNORED_P (var_) = true;
-  /* Possibly constant.  */
-  TREE_CONSTANT (var_) = is_const;
+  TREE_CONSTANT (var_) = true;
   layout_decl (var_, 0);
   return var_;
 }
 
+/* Create a read-only violation object.  */
+
 static tree
-build_contract_violation_constant (tree ctor, tree contract, bool is_const)
+build_contract_violation_constant (tree ctor, tree contract)
 {
   tree viol_ = contracts_tu_local_named_var
     (EXPR_LOCATION (contract), "Lcontract_violation",
-     builtin_contract_violation_type, /*is_const*/true);
+     builtin_contract_violation_type);
 
-  TREE_CONSTANT (viol_) = is_const;
+  TREE_CONSTANT (viol_) = true;
   DECL_INITIAL (viol_) = ctor;
   varpool_node::finalize_decl (viol_);
 
   return viol_;
 }
+
+/* Create a writable violation object (this is done when we need to be able
+   to update the object if an exception is thrown).  */
 
 static tree
 build_contract_violation_var (tree ctor, tree contract)
@@ -1858,6 +1868,10 @@ build_contract_violation_var (tree ctor, tree contract)
   tree a_type
     = strip_top_quals (non_reference (builtin_contract_violation_type));
   tree viol_ = build_decl (loc, VAR_DECL, NULL_TREE, a_type);
+  char *name = xasprintf ("%s%s%u", "__contract_violation_data", JOIN_STR,
+			  DECL_UID (viol_));
+  DECL_NAME (viol_) = get_identifier (name);
+  free (name);
   DECL_SOURCE_LOCATION (viol_) = loc;
   DECL_CONTEXT (viol_) = current_function_decl;
   DECL_ARTIFICIAL (viol_) = true;
@@ -1928,8 +1942,6 @@ remap_retval (tree fndecl, tree contract)
 tree
 build_contract_check (tree contract)
 {
-  maybe_declare_violation_handler_wrappers ();
-
   contract_evaluation_semantic semantic = get_evaluation_semantic (contract);
   if (semantic == CES_INVALID)
     return NULL_TREE;
@@ -1953,10 +1965,11 @@ build_contract_check (tree contract)
 	return NULL_TREE;
     }
 
-  bool check_might_throw = flag_exceptions
-			   && !expr_noexcept_p (condition, tf_none);
+  maybe_declare_violation_handler_wrappers ();
 
-  /* Build a read-only violation object, with the contract settings.  */
+  bool check_might_throw = (flag_exceptions
+			    && !expr_noexcept_p (condition, tf_none));
+
   /* Build a statement expression to hold a contract check, with the check
      potentially wrapped in a try-catch expr.  */
   tree cc_bind = build3 (BIND_EXPR, void_type_node, NULL, NULL, NULL);
@@ -1969,9 +1982,9 @@ build_contract_check (tree contract)
   tree ctor = build_contract_violation_ctor (contract);
   tree violation = NULL_TREE;
   bool viol_is_var = false;
+  /* Build a violation object, with the contract settings.  */
   if (TREE_CONSTANT (ctor))
-    violation = build_contract_violation_constant (ctor, contract, /*is_const*/
-						   true);
+    violation = build_contract_violation_constant (ctor, contract);
   else
     {
       violation = build_contract_violation_var (ctor, contract);
