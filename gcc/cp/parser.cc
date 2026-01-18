@@ -2922,15 +2922,13 @@ static tree cp_parser_asm_clobber_list
 static tree cp_parser_asm_label_list
   (cp_parser *);
 static bool cp_next_tokens_can_be_attribute_p
-  (cp_parser *, bool nonattr_allowed = false);
+  (cp_parser *);
 static bool cp_next_tokens_can_be_gnu_attribute_p
   (cp_parser *);
-static bool cp_next_tokens_can_be_contract_attribute_p
-  (cp_parser *, bool nonattr_allowed);
 static bool cp_next_tokens_can_be_std_attribute_p
-  (cp_parser *, bool nonattr_allowed = false);
+  (cp_parser *);
 static bool cp_nth_tokens_can_be_std_attribute_p
-  (cp_parser *, size_t, bool nonattr_allowed = false);
+  (cp_parser *, size_t);
 static bool cp_nth_tokens_can_be_gnu_attribute_p
   (cp_parser *, size_t);
 static bool cp_nth_tokens_can_be_attribute_p
@@ -2948,9 +2946,9 @@ static tree cp_parser_std_attribute_spec
 static tree cp_parser_std_attribute_spec_seq
   (cp_parser *);
 static size_t cp_parser_skip_std_attribute_spec_seq
-  (cp_parser *, size_t, bool nonattr_allowed = false);
+  (cp_parser *, size_t);
 static size_t cp_parser_skip_attributes_opt
-  (cp_parser *, size_t, bool nonattr_allowed = false);
+  (cp_parser *, size_t);
 static bool cp_parser_extension_opt
   (cp_parser *, int *, int *);
 static void cp_parser_label_declaration
@@ -3003,6 +3001,9 @@ static tree cp_parser_yield_expression
 
 static tree cp_parser_contract_assert
   (cp_parser *parser, cp_token *token);
+
+static tree cp_maybe_function_contract_specifier
+  (cp_parser *parser);
 
 static tree cp_parser_function_contract_specifier
   (cp_parser *);
@@ -25680,16 +25681,6 @@ omp_maybe_record_variant_base (cp_parser* parser, tree decl)
     }
 }
 
-/* True if and only if the name is one of the contract types.  */
-
-static bool
-contract_attribute_p (const_tree id)
-{
-  return is_attribute_p ("assert", id)
-    || is_attribute_p ("pre", id)
-    || is_attribute_p ("post", id);
-}
-
 /* Declarators [gram.dcl.decl] */
 
 /* Parse an init-declarator.
@@ -26070,9 +26061,7 @@ cp_parser_init_declarator (cp_parser* parser,
 	  contract_attr_name = canonicalize_attr_name (contract_attr_name);
 	}
 
-      /* Handle contract-attribute-specs specially: FIXME is this needed now?  */
-      if (contract_attr_name && contract_attribute_p (contract_attr_name));
-      else if (token->type != CPP_COMMA
+      if (token->type != CPP_COMMA
 	  && token->type != CPP_SEMICOLON)
 	{
 	  if (maybe_range_for_decl && *maybe_range_for_decl != error_mark_node)
@@ -27877,16 +27866,15 @@ cp_parser_type_specifier_seq (cp_parser* parser,
       bool is_cv_qualifier;
 
       /* Check for attributes first.  */
-      if (cp_next_tokens_can_be_attribute_p (parser, (seen_type_specifier && is_trailing_return)))
+      if (cp_next_tokens_can_be_attribute_p (parser))
 	{
 	  /* GNU attributes at the end of a declaration apply to the
 	     declaration as a whole, not to the trailing return type.  So look
 	     ahead to see if these attributes are at the end.  */
 	  if (seen_type_specifier && is_trailing_return
-	      && (cp_next_tokens_can_be_gnu_attribute_p (parser)
-		  || cp_next_tokens_can_be_contract_attribute_p (parser, (seen_type_specifier && is_trailing_return))))
+	      && cp_next_tokens_can_be_gnu_attribute_p (parser))
 	    {
-	      size_t n = cp_parser_skip_attributes_opt (parser, 1, (seen_type_specifier && is_trailing_return));
+	      size_t n = cp_parser_skip_attributes_opt (parser, 1);
 	      cp_token *tok = cp_lexer_peek_nth_token (parser->lexer, n);
 	      if (tok->type == CPP_SEMICOLON || tok->type == CPP_COMMA
 		  || tok->type == CPP_EQ || tok->type == CPP_OPEN_BRACE)
@@ -27912,6 +27900,12 @@ cp_parser_type_specifier_seq (cp_parser* parser,
 	    }
 	  continue;
 	}
+
+      /* We might have contract specifiers after a trailing return.  */
+      if (seen_type_specifier
+	  && is_trailing_return
+	  && cp_maybe_function_contract_specifier (parser))
+	break;
 
       /* record the token of the beginning of the type specifier seq,
          for error reporting purposes*/
@@ -32681,51 +32675,26 @@ cp_next_tokens_can_be_gnu_attribute_p (cp_parser *parser)
 }
 
 /* Return TRUE iff the next tokens in the stream are possibly the
-   beginning of a C++ contract attribute. */
-
-static bool
-cp_next_tokens_can_be_contract_attribute_p (cp_parser *parser,
-					    bool nonattr_allowed)
-{
-  tree attr_name = NULL_TREE;
-  cp_token *token = cp_lexer_peek_token (parser->lexer);
-  return (nonattr_allowed
-	  && (token->type == CPP_NAME
-	      && nonattr_allowed
-	      &&  (attr_name = token->u.value)
-	      &&  contract_attribute_p (attr_name)
-	      &&  cp_lexer_nth_token_is (parser->lexer, 2, CPP_OPEN_PAREN)));
-}
-
-/* Return TRUE iff the next tokens in the stream are possibly the
    beginning of a standard C++-11 attribute specifier.  */
 
 static bool
-cp_next_tokens_can_be_std_attribute_p (cp_parser *parser, bool nonattr_allowed)
+cp_next_tokens_can_be_std_attribute_p (cp_parser *parser)
 {
-  return cp_nth_tokens_can_be_std_attribute_p (parser, 1, nonattr_allowed);
+  return cp_nth_tokens_can_be_std_attribute_p (parser, 1);
 }
 
 /* Return TRUE iff the next Nth tokens in the stream are possibly the
    beginning of a standard C++-11 attribute specifier.  */
 
 static bool
-cp_nth_tokens_can_be_std_attribute_p (cp_parser *parser, size_t n,
-				      bool nonattr_allowed)
+cp_nth_tokens_can_be_std_attribute_p (cp_parser *parser, size_t n)
 {
   cp_token *token = cp_lexer_peek_nth_token (parser->lexer, n);
 
-  tree attr_name = NULL_TREE;
   return ((token->type == CPP_KEYWORD && token->keyword == RID_ALIGNAS)
 	   || (token->type == CPP_OPEN_SQUARE
 		&& (token = cp_lexer_peek_nth_token (parser->lexer, n + 1))
-		&& token->type == CPP_OPEN_SQUARE)
-	   || (token->type == CPP_NAME
-		&& nonattr_allowed
-		&&  (attr_name = token->u.value)
-		&&  contract_attribute_p (attr_name)
-		&&  cp_lexer_nth_token_is (parser->lexer, n + 1,
-					     CPP_OPEN_PAREN)));
+		&& token->type == CPP_OPEN_SQUARE));
 }
 
 /* Return TRUE iff the next Nth tokens in the stream are possibly the
@@ -32743,10 +32712,10 @@ cp_nth_tokens_can_be_gnu_attribute_p (cp_parser *parser, size_t n)
    GNU attribute list, or a standard C++11 attribute sequence.  */
 
 static bool
-cp_next_tokens_can_be_attribute_p (cp_parser *parser, bool nonattr_allowed)
+cp_next_tokens_can_be_attribute_p (cp_parser *parser)
 {
   return (cp_next_tokens_can_be_gnu_attribute_p (parser)
-	  || cp_next_tokens_can_be_std_attribute_p (parser, nonattr_allowed));
+	  || cp_next_tokens_can_be_std_attribute_p (parser));
 }
 
 /* Return true iff the next Nth tokens can be the beginning of either
@@ -33636,6 +33605,43 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
   return contract;
 }
 
+/* Can the next tokens introduce a function contract specifier.  */
+
+static tree
+cp_function_contract_specifier_intro (cp_parser *parser)
+{
+  cp_token *token = cp_lexer_peek_token (parser->lexer);
+
+  /* Look for the contextual keywords 'pre' and 'post' as an introducer.  */
+  if (token->type != CPP_NAME)
+    return NULL_TREE;
+
+  tree contract_name = token->u.value;
+
+  if (!id_equal (contract_name, "pre") && !id_equal (contract_name, "post"))
+    /* If we don't have a valid contract start, we are done.  */
+    return NULL_TREE;
+  return contract_name;
+}
+
+/* Look ahead to see if this might introduce a function contract specifier.
+   If not return NULL_TREE, if successful return the name (pre or post).  */
+
+static tree
+cp_maybe_function_contract_specifier (cp_parser *parser)
+{
+  tree contract_name = cp_function_contract_specifier_intro (parser);
+  if (!contract_name)
+    return NULL_TREE;
+
+  size_t n = 2;
+  if (cp_nth_tokens_can_be_std_attribute_p (parser, n))
+    n = cp_parser_skip_std_attribute_spec_seq (parser, n);
+  if (cp_lexer_nth_token_is (parser->lexer, n, CPP_OPEN_PAREN))
+    return contract_name;
+  return NULL_TREE;
+}
+
 /* Parse a contract specifier.
 
   function-contract-specifier :
@@ -33654,20 +33660,11 @@ cp_parser_contract_assert (cp_parser *parser, cp_token *token)
 static tree
 cp_parser_function_contract_specifier (cp_parser *parser)
 {
-  cp_token *token = cp_lexer_peek_token (parser->lexer);
-
-  tree contract_name = NULL_TREE;
-
-  /* Look for the contextual keywords 'pre' and 'post' as an introducer.  */
-  if (token->type == CPP_NAME)
-    contract_name = token->u.value;
-
-  if (!contract_name
-      || !(id_equal (contract_name, "pre")
-	   || id_equal (contract_name, "post")))
-    /* If we don't have a valid contract start, we are done.  */
+  tree contract_name = cp_function_contract_specifier_intro (parser);
+  if (!contract_name)
     return NULL_TREE;
 
+  cp_token *token = cp_lexer_peek_token (parser->lexer);
   cp_lexer_consume_token (parser->lexer);
   location_t loc = token->location;
   bool postcondition_p = id_equal (contract_name, "post");
@@ -34087,11 +34084,8 @@ cp_parser_skip_gnu_attributes_opt (cp_parser *parser, size_t n)
    attribute tokens, or N on failure.  */
 
 static size_t
-cp_parser_skip_std_attribute_spec_seq (cp_parser *parser, size_t n, bool nonattr_allowed)
+cp_parser_skip_std_attribute_spec_seq (cp_parser *parser, size_t n)
 {
-  tree attr_name = NULL;
-  cp_token *token = NULL;
-
   while (true)
     {
       if (cp_lexer_nth_token_is (parser->lexer, n, CPP_OPEN_SQUARE)
@@ -34112,18 +34106,6 @@ cp_parser_skip_std_attribute_spec_seq (cp_parser *parser, size_t n, bool nonattr
 	    break;
 	  n = n2;
 	}
-      else if (nonattr_allowed
-	       && (token = cp_lexer_peek_nth_token (parser->lexer, n))
-	       && token->type == CPP_NAME
-	       && (attr_name = token->u.value)
-	       && cp_lexer_nth_token_is (parser->lexer, n + 1, CPP_OPEN_PAREN))
-	{
-	  size_t n2 = cp_parser_skip_balanced_tokens (parser, n + 1);
-	  if (n2 == n + 1)
-	    break;
-	  n = n2;
-	}
-
       else
 	break;
     }
@@ -34135,11 +34117,11 @@ cp_parser_skip_std_attribute_spec_seq (cp_parser *parser, size_t n, bool nonattr
    tokens, or N on failure.  */
 
 static size_t
-cp_parser_skip_attributes_opt (cp_parser *parser, size_t n, bool nonattr_allowed)
+cp_parser_skip_attributes_opt (cp_parser *parser, size_t n)
 {
   if (cp_nth_tokens_can_be_gnu_attribute_p (parser, n))
     return cp_parser_skip_gnu_attributes_opt (parser, n);
-  return cp_parser_skip_std_attribute_spec_seq (parser, n, nonattr_allowed);
+  return cp_parser_skip_std_attribute_spec_seq (parser, n);
 }
 
 /* Parse an optional `__extension__' keyword.  Returns TRUE if it is
