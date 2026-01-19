@@ -1207,6 +1207,12 @@ public:
   unsigned heap_dealloc_count;
   /* Number of uncaught exceptions.  */
   unsigned uncaught_exceptions;
+  /* A contract statement that failed or was not constant, we only store the
+     first one that fails.  */
+  tree contract_statement;
+  /* [basic.contract.eval]/7.3 if this expression would otherwise be constant
+     then a non-const contract makes the program ill-formed.  */
+  bool contract_condition_non_const;
   /* Some metafunctions aren't dependent just on their arguments, but also
      on various other dependencies, e.g. has_identifier on a function parameter
      reflection can change depending on further declarations of corresponding
@@ -1222,7 +1228,8 @@ public:
   constexpr_global_ctx ()
     : constexpr_ops_count (0), cleanups (NULL), modifiable (nullptr),
       consteval_block (NULL_TREE), heap_dealloc_count (0),
-      uncaught_exceptions (0), metafns_called (false) {}
+      uncaught_exceptions (0), contract_statement (NULL_TREE),
+      contract_condition_non_const (false), metafns_called (false) {}
 
   bool is_outside_lifetime (tree t)
   {
@@ -10327,16 +10334,45 @@ cxx_eval_constant_expression (const constexpr_ctx *ctx, tree t,
     case PRECONDITION_STMT:
     case POSTCONDITION_STMT:
       {
-	if (contract_ignored_p (t))
+	r = void_node;
+	/* Only record the first fail, and do not go further is the semantic
+	   is 'ignore'.  */
+	if (*non_constant_p || ctx->global->contract_statement
+	    || contract_ignored_p (t))
 	  break;
 
-	if (!cxx_eval_assert (ctx, CONTRACT_CONDITION (t),
-			      G_("contract predicate is false in "
-				 "constant expression"),
-			      EXPR_LOCATION (t), contract_evaluated_p (t),
-			      non_constant_p, overflow_p))
-	  *non_constant_p = true;
-	r = void_node;
+	tree cond = CONTRACT_CONDITION (t);
+ 	if (!potential_rvalue_constant_expression (cond))
+ 	  {
+ 	    ctx->global->contract_statement = t;
+ 	    ctx->global->contract_condition_non_const = true;
+ 	    break;
+	  }
+
+	/* We need to evaluate and stash the result of this here, since whether
+	   it needs to be reported (and how) depends on whether the containing
+	   expression is otherwise const.  */
+	bool ctrct_non_const_p = false;
+	bool ctrct_overflow_p = false;
+	tree jmp_target = NULL_TREE;
+	constexpr_ctx new_ctx = *ctx;
+	new_ctx.quiet = true;
+	/* Avoid modification of existing values.  */
+	modifiable_tracker ms (new_ctx.global);
+	tree eval =
+	  cxx_eval_constant_expression (&new_ctx, cond, vc_prvalue,
+					&ctrct_non_const_p,
+					&ctrct_overflow_p, &jmp_target);
+	/* Not a constant.  */
+	if (ctrct_non_const_p)
+ 	  {
+ 	    ctx->global->contract_statement = t;
+ 	    ctx->global->contract_condition_non_const = true;
+ 	    break;
+	  }
+	/* Constant, but check failed.  */
+	if (integer_zerop (eval))
+	  ctx->global->contract_statement = t;
       }
       break;
 
@@ -10560,6 +10596,34 @@ mark_non_constant (tree t)
     t = build_nop (TREE_TYPE (t), t);
   TREE_CONSTANT (t) = false;
   return t;
+}
+
+/* If we have a successful constant evaluation, now check whether there is
+   a failed or non-constant contract that would invalidate this.  */
+
+static bool
+check_for_failed_contracts (constexpr_global_ctx *global_ctx)
+{
+  if (!flag_contracts || !global_ctx->contract_statement)
+    return false;
+
+  /* [basic.contract.eval]/7.3 */
+  location_t loc = EXPR_LOCATION (global_ctx->contract_statement);
+  if (global_ctx->contract_condition_non_const)
+    {
+      error_at (loc, "contract condition is not constant");
+      return true;
+    }
+
+  /* [basic.contract.eval]/8. */
+  if (contract_terminating_p (global_ctx->contract_statement))
+    {
+      error_at (loc, "contract predicate is false in constant expression");
+      return true;
+    }
+  /* [intro.compliance.general]/2.3.4. */
+  warning_at (loc, 0, "contract predicate is false in constant expression");
+  return false;
 }
 
 /* ALLOW_NON_CONSTANT is false if T is required to be a constant expression.
@@ -10910,7 +10974,10 @@ cxx_eval_outermost_constant_expr (tree t, bool allow_non_constant,
 
   if (constexpr_dtor)
     {
-      DECL_INITIALIZED_BY_CONSTANT_EXPRESSION_P (object) = true;
+      if (check_for_failed_contracts (&global_ctx))
+	r = mark_non_constant (r);
+      else
+        DECL_INITIALIZED_BY_CONSTANT_EXPRESSION_P (object) = true;
       return r;
     }
 
@@ -10960,6 +11027,8 @@ cxx_eval_outermost_constant_expr (tree t, bool allow_non_constant,
   if (location_t loc = EXPR_LOCATION (t))
     protected_set_expr_location (r, loc);
 
+  if (check_for_failed_contracts (&global_ctx))
+    r = mark_non_constant (r);
   return r;
 }
 
@@ -12722,9 +12791,9 @@ potential_constant_expression_1 (tree t, bool want_rval, bool strict, bool now,
     case ASSERTION_STMT:
     case PRECONDITION_STMT:
     case POSTCONDITION_STMT:
-      if (!contract_evaluated_p (t))
-	return true;
-      return RECUR (CONTRACT_CONDITION (t), rval);
+      /* Contracts are not supposed to alter this; we have to check that this
+	 is not violated at a later time.  */
+      return true;
 
     case LABEL_EXPR:
       t = LABEL_EXPR_LABEL (t);

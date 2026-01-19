@@ -180,4 +180,14 @@ contract_evaluated_p (const_tree contract)
 {
   return (get_evaluation_semantic (contract) >= CES_OBSERVE);
 }
+
+/* Is the contract terminating?  */
+
+inline bool
+contract_terminating_p (const_tree contract)
+{
+  return (get_evaluation_semantic (contract) == CES_ENFORCE
+	  || get_evaluation_semantic (contract) == CES_QUICK);
+}
+
 #endif /* ! GCC_CP_CONTRACT_H */
