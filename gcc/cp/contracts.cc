@@ -2340,7 +2340,8 @@ static GTY(()) tree tu_terminate_wrapper = NULL_TREE;
 
 /* Define a noipa wrapper around the call to std::terminate */
 
-static void build_terminate_wrapper()
+static void
+build_terminate_wrapper ()
 {
   start_preparsed_function (tu_terminate_wrapper,
 			    DECL_ATTRIBUTES(tu_terminate_wrapper),
@@ -2383,12 +2384,13 @@ get_terminate_wrapper ()
   TREE_PUBLIC (tu_terminate_wrapper) = false;
   DECL_EXTERNAL (tu_terminate_wrapper) = false;
   DECL_WEAK (tu_terminate_wrapper) = false;
+  DECL_INTERFACE_KNOWN (tu_terminate_wrapper) = true;
 
   DECL_ATTRIBUTES (tu_terminate_wrapper)
     = tree_cons (get_identifier ("noipa"), NULL, NULL_TREE);
   cplus_decl_attributes (&tu_terminate_wrapper,
 			 DECL_ATTRIBUTES (tu_terminate_wrapper), 0);
-  build_terminate_wrapper();
+  build_terminate_wrapper ();
 
   return tu_terminate_wrapper;
 }
