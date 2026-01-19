@@ -602,12 +602,6 @@ check_postconditions_in_redecl (tree olddecl, tree newdecl)
 static GTY(()) hash_map<tree, tree> *decl_pre_fn;
 static GTY(()) hash_map<tree, tree> *decl_post_fn;
 
-
-/* Given a pre or post function decl (for an outlined check function) return
-   the decl for the function for which the outlined checks are being
-   performed.  */
-static GTY(()) hash_map<tree, tree> *orig_from_outlined;
-
 /* Makes PRE the precondition function for FNDECL.  */
 
 static void
@@ -618,9 +612,7 @@ set_precondition_function (tree fndecl, tree pre)
   gcc_assert (!decl_pre_fn->get (fndecl));
   decl_pre_fn->put (fndecl, pre);
 
-  hash_map_maybe_create<hm_ggc> (orig_from_outlined);
-  gcc_assert (!orig_from_outlined->get (pre));
-  orig_from_outlined->put (pre, fndecl);
+  DECL_ABSTRACT_ORIGIN (pre) = fndecl;
 }
 
 /* Makes POST the postcondition function for FNDECL.  */
@@ -633,9 +625,7 @@ set_postcondition_function (tree fndecl, tree post)
   gcc_assert (!decl_post_fn->get (fndecl));
   decl_post_fn->put (fndecl, post);
 
-  hash_map_maybe_create<hm_ggc> (orig_from_outlined);
-  gcc_assert (!orig_from_outlined->get (post));
-  orig_from_outlined->put (post, fndecl);
+  DECL_ABSTRACT_ORIGIN (post) = fndecl;
 }
 
 /* For a given pre or post condition function, find the checked function. */
@@ -643,8 +633,7 @@ tree
 get_orig_for_outlined (tree fndecl)
 {
   gcc_checking_assert (fndecl);
-  tree *result = hash_map_safe_get (orig_from_outlined, fndecl);
-  return result ? *result : NULL_TREE;
+  return DECL_ABSTRACT_ORIGIN (fndecl);
 }
 
 /* For a given function decl name identifier, return identifier representing
@@ -677,10 +666,6 @@ static tree
 build_contract_condition_function (tree fndecl, bool pre)
 {
   if (error_operand_p (fndecl))
-    return error_mark_node;
-
-  if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
-      && !TYPE_METHOD_BASETYPE (TREE_TYPE (fndecl)))
     return error_mark_node;
 
   /* Start the copy.  */
@@ -796,8 +781,6 @@ build_contract_condition_function (tree fndecl, bool pre)
 
   DECL_ARTIFICIAL (fn) = true;
 
-  /* Always inline these functions. */
-  DECL_DISREGARD_INLINE_LIMITS (fn) = true;
   suppress_warning (fn);
 
   return fn;
@@ -1095,35 +1078,34 @@ build_arg_list (tree fndecl)
   return args;
 }
 
-/* Build and return a thunk like call to FUNCTION using the supplied
+/* Build and return a thunk like call to FUNC from CALLER using the supplied
  arguments.  The call is like a thunk call in the fact that we do not
- want to create additional copies of the arguments. However, we can
- not simply reuse the thunk machinery as it does more than we want.
- More specifically, we don't want to mark the calling function as
- `DECL_THUNK_P`, we only want the special treatment for the parameters
- of the call we are about to generate.
- We reuse most of build_call_a, modulo special handling for empty
- classes which relies on `DECL_THUNK_P` to know that the call we're building
- is going to be a thunk call.
- We also mark the call as a thunk call to allow for correct gimplification
- of the arguments.
+ want to create additional copies of the arguments.
  */
 
 static tree
-build_thunk_like_call (tree function, int n, tree *argarray)
+build_thunk_like_call (tree func, tree caller, int n, tree *argarray)
 {
 
-  function = build_call_a_1 (function, n, argarray);
+  /* We can not simply reuse the thunk machinery as it does more than we want.
+   More specifically, we don't want to mark the calling function as
+   `DECL_THUNK_P` for this particular purpose, we only want the special
+   treatment for the parameters of the call we are about to generate.
+   We temporarily mark the calling function as DECL_THUNK_P so build_call_a
+   does the right thing.  */
+  bool old_decl_thunk_p = DECL_THUNK_P (caller);
+  LANG_DECL_FN_CHECK (caller)->thunk_p = true;
 
-  tree decl = get_callee_fndecl (function);
+  tree call = build_call_a (func, n, argarray);
 
-  /* Set TREE_USED for the benefit of -Wunused.  */
-  if (decl && !TREE_USED (decl))
-    mark_used (decl);
+  /* Revert the `DECL_THUNK_P` flag.  */
+  LANG_DECL_FN_CHECK (caller)->thunk_p = old_decl_thunk_p;
 
-  CALL_FROM_THUNK_P (function) = true;
+  /* Mark the call as a thunk call to allow for correct gimplification
+     of the arguments.  */
+  CALL_FROM_THUNK_P (call) = true;
 
-  return function;
+  return call;
 }
 
 /* If we have a precondition function and it's valid, call it.  */
@@ -1137,8 +1119,8 @@ add_pre_condition_fn_call (tree fndecl)
 		       && DECL_PRE_FN (fndecl) != error_mark_node);
 
   releasing_vec args = build_arg_list (fndecl);
-  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl), args->length (),
-			    args->address ());
+  tree call = build_thunk_like_call (DECL_PRE_FN(fndecl), fndecl,
+				     args->length (), args->address ());
 
   finish_expr_stmt (call);
 }
@@ -1161,7 +1143,7 @@ get_postcondition_result_parameter (tree fndecl)
     return NULL_TREE;
 
   for (tree arg = DECL_ARGUMENTS (post); arg; arg = TREE_CHAIN (arg))
-    if (!TREE_CHAIN (arg))
+    if (tree_last (DECL_ARGUMENTS (post)))
       return arg;
 
   return NULL_TREE;
@@ -1179,8 +1161,8 @@ add_post_condition_fn_call (tree fndecl)
   releasing_vec args = build_arg_list (fndecl);
   if (get_postcondition_result_parameter (fndecl))
     vec_safe_push (args, DECL_RESULT (fndecl));
-  tree call = build_thunk_like_call (DECL_POST_FN (fndecl), args->length (),
-			    args->address ());
+  tree call = build_thunk_like_call (DECL_POST_FN(fndecl), fndecl,
+				     args->length (), args->address ());
   finish_expr_stmt (call);
 }
 
@@ -1842,7 +1824,8 @@ define_contract_wrapper_func (const tree& fndecl, const tree& wrapdecl, void*)
   gcc_checking_assert (!DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
 		       || !DECL_VIRTUAL_P (fndecl));
 
-  tree call = build_thunk_like_call (fndecl, args->length (), args->address ());
+  tree call = build_thunk_like_call (fndecl, wrapdecl, args->length (),
+				     args->address ());
 
   finish_return_stmt (call);
 
@@ -2178,7 +2161,6 @@ set_contract_functions (tree fndecl, tree pre, tree post)
   if (post)
     set_postcondition_function (fndecl, post);
 }
-
 
 /* We're compiling the pre/postcondition function CONDFN; remap any FN
    contracts that match CODE and emit them.  */

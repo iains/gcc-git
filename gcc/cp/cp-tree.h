@@ -7168,7 +7168,6 @@ extern tree build_conditional_expr		(const op_location_t &,
 extern tree build_addr_func			(tree, tsubst_flags_t);
 extern void set_flags_from_callee		(tree);
 extern tree build_call_a			(tree, int, tree*);
-extern tree build_call_a_1			(tree, int, tree*);
 extern tree build_call_n			(tree, int, ...);
 extern bool null_ptr_cst_p			(tree);
 extern bool null_member_pointer_value_p		(tree);

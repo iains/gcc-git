@@ -361,11 +361,12 @@ set_flags_from_callee (tree call)
 }
 
 tree
-build_call_a_1(tree function, int n, tree *argarray)
+build_call_a (tree function, int n, tree *argarray)
 {
   tree decl;
   tree result_type;
   tree fntype;
+  int i;
 
   function = build_addr_func (function, tf_warning_or_error);
 
@@ -383,23 +384,6 @@ build_call_a_1(tree function, int n, tree *argarray)
 
   decl = get_callee_fndecl (function);
 
-  require_complete_eh_spec_types (fntype, decl);
-
-  TREE_HAS_CONSTRUCTOR (function) = (decl && DECL_CONSTRUCTOR_P (decl));
-
-  return function;
-}
-
-tree
-build_call_a (tree function, int n, tree *argarray)
-{
-  int i;
-  tree decl;
-
-  function = build_call_a_1 (function, n, argarray);
-
-  decl = get_callee_fndecl (function);
-
   if (decl && !TREE_USED (decl))
     {
       /* We invoke build_call directly for several library
@@ -411,6 +395,10 @@ build_call_a (tree function, int n, tree *argarray)
 			       "__", 2));
       mark_used (decl);
     }
+
+  require_complete_eh_spec_types (fntype, decl);
+
+  TREE_HAS_CONSTRUCTOR (function) = (decl && DECL_CONSTRUCTOR_P (decl));
 
   /* Don't pass empty class objects by value.  This is useful
      for tags in STL, which are used to control overload resolution.
