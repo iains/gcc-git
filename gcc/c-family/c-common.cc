@@ -472,6 +472,7 @@ const struct c_common_resword c_common_reswords[] =
   { "__const",		RID_CONST,	0 },
   { "__const__",	RID_CONST,	0 },
   { "__constinit",	RID_CONSTINIT,	D_CXXONLY },
+  { "__contract_assert", RID_CONTASSERT, D_CXXONLY | D_CXXWARN  },
   { "__decltype",       RID_DECLTYPE,   D_CXXONLY },
   { "__extension__",	RID_EXTENSION,	0 },
   { "__func__",		RID_C99_FUNCTION_NAME, 0 },
