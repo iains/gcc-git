@@ -2034,9 +2034,10 @@ build_contract_check (tree contract)
 	  tree r
 	    = build_class_member_access_expr (violation, memb, NULL_TREE, false,
 					      tf_warning_or_error);
-	  r = cp_build_modify_expr (loc, r, NOP_EXPR,
-				build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
-				tf_warning_or_error);
+	  r = cp_build_modify_expr
+	    (loc, r, NOP_EXPR,
+	     build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
+	     tf_warning_or_error);
 	  finish_expr_stmt (r);
 	  finish_expr_stmt (build_call_n (tu_has_violation, 2,
 					  build_address (violation),

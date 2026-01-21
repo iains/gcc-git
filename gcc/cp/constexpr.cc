@@ -10607,23 +10607,30 @@ check_for_failed_contracts (constexpr_global_ctx *global_ctx)
   if (!flag_contracts || !global_ctx->contract_statement)
     return false;
 
-  /* [basic.contract.eval]/7.3 */
   location_t loc = EXPR_LOCATION (global_ctx->contract_statement);
-  if (global_ctx->contract_condition_non_const)
-    {
-      error_at (loc, "contract condition is not constant");
-      return true;
-    }
-
+  enum diagnostics::kind kind;
+  bool error = false;
+  /* [intro.compliance.general]/2.3.4. */
   /* [basic.contract.eval]/8. */
   if (contract_terminating_p (global_ctx->contract_statement))
     {
-      error_at (loc, "contract predicate is false in constant expression");
-      return true;
+      kind = diagnostics::kind::error;
+      error = true;
     }
-  /* [intro.compliance.general]/2.3.4. */
-  warning_at (loc, 0, "contract predicate is false in constant expression");
-  return false;
+  else
+    kind = diagnostics::kind::warning;
+
+  /* [basic.contract.eval]/7.3 */
+  if (global_ctx->contract_condition_non_const)
+    {
+      emit_diagnostic (kind, loc, 0, "contract condition is not constant");
+      return error;
+    }
+
+  /* Otherwise, the evaluation was const, but determined to be false.  */
+  emit_diagnostic (kind, loc, 0,
+		   "contract predicate is false in constant expression");
+  return error;
 }
 
 /* ALLOW_NON_CONSTANT is false if T is required to be a constant expression.
