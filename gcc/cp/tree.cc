@@ -4343,7 +4343,6 @@ cp_tree_equal (tree t1, tree t2)
 	  && DECL_TEMPLATE_TEMPLATE_PARM_P (t2))
 	return cp_tree_equal (TREE_TYPE (t1), TREE_TYPE (t2));
       /* Fall through.  */
-    case VAR_DECL:
     case CONST_DECL:
     case FIELD_DECL:
     case FUNCTION_DECL:
@@ -4353,6 +4352,19 @@ cp_tree_equal (tree t1, tree t2)
     case DEFERRED_PARSE:
     case NAMESPACE_DECL:
       return false;
+
+    case VAR_DECL:
+      if (!comparing_contracts)
+	return false;
+      /* Contract postcondition placeholder vars are considered equal (assuming
+	 that both have the same type, there can only be one in a given
+	 contract condition.  */
+      if (CONTRACT_RETVAL_PLACEHOLDER_P (t1)
+	  ^ CONTRACT_RETVAL_PLACEHOLDER_P (t2))
+	return false;
+      if (!same_type_p (TREE_TYPE (t1), TREE_TYPE (t2)))
+	return false;
+      return true;
 
     case BASELINK:
       return (BASELINK_BINFO (t1) == BASELINK_BINFO (t2)

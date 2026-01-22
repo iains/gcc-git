@@ -6799,6 +6799,8 @@ mark_used (tree decl, tsubst_flags_t complain /* = tf_warning_or_error */)
     maybe_instantiate_decl (decl);
 
   if (!decl_dependent_p (decl)
+      /* Do not require this when substituting a postcondition placeholder.  */
+      && !processing_postcondition
       /* Don't require this yet for an instantiation of a function template
 	 we're currently defining (c++/120555).  */
       && !fn_template_being_defined (decl)

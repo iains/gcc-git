@@ -2107,6 +2107,7 @@ struct GTY(()) saved_scope {
   int x_processing_specialization;
   int x_processing_constraint;
   int suppress_location_wrappers;
+  bool x_parsing_nsdmi_p : 1;
   bool x_processing_postcondition : 1;
   bool x_processing_explicit_instantiation : 1;
   bool need_pop_function_context : 1;
@@ -2157,6 +2158,10 @@ extern GTY(()) struct saved_scope *scope_chain;
 /* _TYPE: the type of the current class */
 
 #define current_class_type scope_chain->class_type
+
+/* When parsing an NSDMI.  */
+
+#define parsing_nsdmi_p scope_chain->x_parsing_nsdmi_p
 
 /* When parsing a class definition, the access specifier most recently
    given by the user, or, if no access specifier was given, the
@@ -3205,6 +3210,8 @@ struct GTY(()) lang_decl_base {
 
   unsigned module_keyed_decls_p : 1;	   /* has keys, applies to all decls */
 
+  unsigned contract_retval_placeholder_p : 1; /* Applies to var decls. */
+
   /* VAR_DECL being used to represent an OpenMP declared mapper.  */
   unsigned omp_declare_mapper_p : 1;
 
@@ -3433,6 +3440,9 @@ struct GTY(()) lang_decl {
 
 #define CONTRACT_HELPER(NODE) \
  (LANG_DECL_FN_CHECK (NODE)->contract_helper)
+
+#define CONTRACT_RETVAL_PLACEHOLDER_P(NODE) \
+  (DECL_LANG_SPECIFIC (VAR_DECL_CHECK (NODE))->u.base.contract_retval_placeholder_p)
 
 /* For a FUNCTION_DECL or a VAR_DECL, the language linkage for the
    declaration.  Some entities (like a member function in a local
