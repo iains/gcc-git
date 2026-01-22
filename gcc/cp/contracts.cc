@@ -1023,7 +1023,7 @@ start_function_contracts (tree fndecl)
 	      continue;
 	    }
 	  tree r_name = tree_strip_any_location_wrapper (id);
-	  if (TREE_CODE (id) == PARM_DECL)
+	  if (VAR_P (id))
 	    r_name = DECL_NAME (id);
 	  gcc_checking_assert (r_name && TREE_CODE (r_name) == IDENTIFIER_NODE);
 	  tree seen = lookup_name (r_name);
@@ -1894,10 +1894,7 @@ invalidate_contract (tree contract)
 }
 
 /* Returns an invented parameter declaration of the form 'TYPE ID' for the
-   purpose of parsing the postcondition.
-
-   We use a PARM_DECL instead of a VAR_DECL so that tsubst forces a lookup
-   in local specializations when we instantiate these things later.  */
+   purpose of parsing the postcondition.  */
 
 tree
 make_postcondition_variable (cp_expr id, tree type)
@@ -1907,7 +1904,7 @@ make_postcondition_variable (cp_expr id, tree type)
   gcc_checking_assert (scope_chain && scope_chain->bindings
 		       && scope_chain->bindings->kind == sk_contract);
 
-  tree decl = build_lang_decl (PARM_DECL, id, type);
+  tree decl = build_lang_decl (VAR_DECL, id, type);
   DECL_ARTIFICIAL (decl) = true;
   DECL_SOURCE_LOCATION (decl) = id.get_location ();
   return pushdecl (decl);
@@ -1993,26 +1990,44 @@ rebuild_postconditions (tree fndecl)
 	  continue;
 	}
 
-      /* "Instantiate" the result variable using the known type.  */
-      tree newvar = copy_node (oldvar);
-      TREE_TYPE (newvar) = type;
+      /* "Instantiate" the result variable using the known type
+	 This is a sub-set of the actions in tsubst_contract.  */
 
       /* Make parameters and result available for substitution.  */
       local_specialization_stack stack (lss_copy);
       for (tree t = DECL_ARGUMENTS (fndecl); t != NULL_TREE; t = TREE_CHAIN (t))
 	register_local_identity (t);
+
+      tree newvar = copy_node (oldvar);
+      TREE_TYPE (newvar) = type;
       register_local_specialization (newvar, oldvar);
 
       begin_scope (sk_contract, fndecl);
       bool old_pc = processing_postcondition;
       processing_postcondition = true;
 
-      condition = tsubst_expr (condition, make_tree_vec (0),
-			       tf_warning_or_error, fndecl);
-
+     /* Contract conditions have a wider application of location wrappers than
+	other trees (which will not work with the generic handling in tsubst_expr),
+	remove the wrapper here...  */
+      location_t cond_l = EXPR_LOCATION (condition);
+      tree cond_t = tree_strip_any_location_wrapper (condition);
+      /* tsubst_expr is expecting to be able to use current_function_decl to
+	 determine which entities belong to the current function, or to some
+	 outer scope.  However, this is not set when we are parsing declarations
+	 so temporarily set it here.  */
+      gcc_checking_assert (!current_function_decl
+			   || current_function_decl == fndecl);
+      tree saved_cfd = current_function_decl;
+      current_function_decl = fndecl;
+      cond_t = tsubst_expr (cond_t, make_tree_vec (0),
+			    tf_warning_or_error, fndecl);
+      current_function_decl = saved_cfd;
       /* Update the contract condition and result.  */
       POSTCONDITION_IDENTIFIER (contract) = newvar;
-      CONTRACT_CONDITION (contract) = finish_contract_condition (condition);
+      /* Convert to bool, if possible, and then re-apply a location wrapper
+	 when required.  */
+      cp_expr new_condition (cond_t, cond_l);
+      CONTRACT_CONDITION (contract) = finish_contract_condition (new_condition);
       processing_postcondition = old_pc;
       gcc_checking_assert (scope_chain && scope_chain->bindings
 			   && scope_chain->bindings->kind == sk_contract);
