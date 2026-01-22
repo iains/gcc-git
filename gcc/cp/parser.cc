@@ -27740,8 +27740,10 @@ bool
 parsing_nsdmi (void)
 {
   /* We recognize NSDMI context by the context-less 'this' pointer set up
-     by the function above.  */
-  if (current_class_ptr
+     by the function above, but need to gate it since class pointers with
+     no context also occur in instantiation.  */
+  if (parsing_nsdmi_p
+      && current_class_ptr
       && TREE_CODE (current_class_ptr) == PARM_DECL
       && DECL_CONTEXT (current_class_ptr) == NULL_TREE)
     return true;
@@ -30226,7 +30228,9 @@ cp_parser_class_specifier (cp_parser* parser)
 	  tree ctx = type_context_for_name_lookup (decl);
 	  switch_to_class (ctx);
 	  inject_this_parameter (class_type, TYPE_UNQUALIFIED);
+	  parsing_nsdmi_p = true;
 	  cp_parser_late_parsing_nsdmi (parser, decl);
+	  parsing_nsdmi_p = false;
 	}
       vec_safe_truncate (unparsed_nsdmis, 0);
 

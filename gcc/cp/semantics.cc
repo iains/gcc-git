@@ -4593,6 +4593,8 @@ baselink_for_fns (tree fns, bool ignore_current_class_p/*=false*/)
 bool
 parsing_lambda_declarator ()
 {
+  if (at_eof)
+    return false;
   cp_binding_level *b = current_binding_level;
   while (b->kind == sk_template_parms || b->kind == sk_function_parms)
     b = b->level_chain;
@@ -4607,7 +4609,9 @@ outer_var_p (tree decl)
 {
   /* These should have been stripped or otherwise handled by the caller.  */
   gcc_checking_assert (!REFERENCE_REF_P (decl));
-
+  /* Parsing should be complete at eof, we should just be instantiating.  */
+  gcc_checking_assert (!at_eof
+		       || !(parsing_nsdmi () || parsing_lambda_declarator ()));
   return ((VAR_P (decl) || TREE_CODE (decl) == PARM_DECL)
 	  && DECL_FUNCTION_SCOPE_P (decl)
 	  /* Don't get confused by temporaries.  */
@@ -4778,9 +4782,6 @@ process_outer_var_ref (tree decl, tsubst_flags_t complain,
 	}
       return error_mark_node;
     }
-  else if (processing_contract_condition && TREE_CODE (decl) == PARM_DECL)
-    /* Use of a parameter in a contract condition is fine.  */
-    return decl;
   else
     {
       if (complain & tf_error)
