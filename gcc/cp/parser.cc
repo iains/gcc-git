@@ -14163,18 +14163,6 @@ cp_parser_statement (cp_parser* parser, tree in_statement_expr,
   /* Peek at the next token.  */
   token = cp_lexer_peek_token (parser->lexer);
 
-  /* FIXME: is this relevant any more?  */
-  /* If we have contracts, check that they're valid in this context.  */
-  if (std_attrs != error_mark_node)
-    {
-      if (tree pre = lookup_attribute ("pre", std_attrs))
-	error_at (EXPR_LOCATION (TREE_VALUE (pre)),
-		  "preconditions cannot be statements");
-      else if (tree post = lookup_attribute ("post", std_attrs))
-	error_at (EXPR_LOCATION (TREE_VALUE (post)),
-		  "postconditions cannot be statements");
-    }
-
   bool omp_attrs_forbidden_p;
   omp_attrs_forbidden_p = parser->omp_attrs_forbidden_p;
 
@@ -26054,12 +26042,6 @@ cp_parser_init_declarator (cp_parser* parser,
     {
       /* If the init-declarator isn't initialized and isn't followed by a
 	 `,' or `;', it's not a valid init-declarator.  */
-      tree contract_attr_name = NULL_TREE;
-      if (token->type == CPP_NAME)
-	{
-	  contract_attr_name = token->u.value;
-	  contract_attr_name = canonicalize_attr_name (contract_attr_name);
-	}
 
       if (token->type != CPP_COMMA
 	  && token->type != CPP_SEMICOLON)
