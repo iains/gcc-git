@@ -602,6 +602,11 @@ check_postconditions_in_redecl (tree olddecl, tree newdecl)
 static GTY(()) hash_map<tree, tree> *decl_pre_fn;
 static GTY(()) hash_map<tree, tree> *decl_post_fn;
 
+/* Given a pre or post function decl (for an outlined check function) return
+   the decl for the function for which the outlined checks are being
+   performed.  */
+static GTY(()) hash_map<tree, tree> *orig_from_outlined;
+
 /* Makes PRE the precondition function for FNDECL.  */
 
 static void
@@ -612,7 +617,10 @@ set_precondition_function (tree fndecl, tree pre)
   gcc_assert (!decl_pre_fn->get (fndecl));
   decl_pre_fn->put (fndecl, pre);
 
-  DECL_ABSTRACT_ORIGIN (pre) = fndecl;
+  hash_map_maybe_create<hm_ggc> (orig_from_outlined);
+  gcc_assert(!orig_from_outlined->get (pre));
+  orig_from_outlined->put (pre, fndecl);
+
 }
 
 /* Makes POST the postcondition function for FNDECL.  */
@@ -625,7 +633,10 @@ set_postcondition_function (tree fndecl, tree post)
   gcc_assert (!decl_post_fn->get (fndecl));
   decl_post_fn->put (fndecl, post);
 
-  DECL_ABSTRACT_ORIGIN (post) = fndecl;
+  hash_map_maybe_create<hm_ggc> (orig_from_outlined);
+  gcc_assert(!orig_from_outlined->get (post));
+  orig_from_outlined->put (post, fndecl);
+
 }
 
 /* For a given pre or post condition function, find the checked function.  */
@@ -633,7 +644,9 @@ tree
 get_orig_for_outlined (tree fndecl)
 {
   gcc_checking_assert (fndecl);
-  return DECL_ABSTRACT_ORIGIN (fndecl);
+  tree *result = hash_map_safe_get (orig_from_outlined, fndecl);
+  return result ? *result : NULL_TREE ;
+
 }
 
 /* For a given function decl name identifier, return identifier representing
