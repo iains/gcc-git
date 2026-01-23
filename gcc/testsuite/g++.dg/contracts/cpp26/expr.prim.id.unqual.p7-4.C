@@ -4,9 +4,11 @@
 // (7.2) — a variable or template parameter declared outside of C of type “reference to T”, or
 // (7.3) — a structured binding of type T whose corresponding variable is declared outside of C,
 // then the type of the expression is const T
-// This tests modifications to the constified things if checks are outlined
-// { dg-do run { target c++26 } }
-// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe -O2 -g -fcontract-checks-outlined" }
+// This tests modifications to the constified things
+// { dg-do run { target c++23 } }
+// { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe -O2 -g" }
+
+#include <cassert>
 
 struct S{
   S(){};
@@ -24,8 +26,8 @@ int f2(int n,const S m) pre(const_cast<int&>(n)++)
 			post(r: const_cast<int&>(r)++)
 			post(r: const_cast<int&>(r)++)
 {
-  contract_assert (n == 3);
-  contract_assert (m.x == 5);
+  assert (n == 3);
+  assert (m.x == 5);
 
   return 1;
 };
@@ -40,15 +42,15 @@ int main()
 {
   i = 3;
   f1();
-  contract_assert (i == 4);
+  assert (i == 4);
 
   int j = 2;
   S s;
   int k = f2(j,s);
-  contract_assert (k == 3);
-  contract_assert (s.x == 0);
+  assert (k == 3);
+  assert (s.x == 0);
 
   s = f3(s);
-  contract_assert (s.x == 10);
+  assert (s.x == 10);
 
 }

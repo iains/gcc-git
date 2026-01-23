@@ -602,12 +602,6 @@ check_postconditions_in_redecl (tree olddecl, tree newdecl)
 static GTY(()) hash_map<tree, tree> *decl_pre_fn;
 static GTY(()) hash_map<tree, tree> *decl_post_fn;
 
-
-/* Given a pre or post function decl (for an outlined check function) return
-   the decl for the function for which the outlined checks are being
-   performed.  */
-static GTY(()) hash_map<tree, tree> *orig_from_outlined;
-
 /* Makes PRE the precondition function for FNDECL.  */
 
 static void
@@ -944,25 +938,24 @@ build_arg_list (tree fndecl)
 
 /* Build and return a thunk like call to FUNC from CALLER using the supplied
    arguments.  The call is like a thunk call in the fact that we do not
-   want to create additional copies of the arguments
- */
+   want to create additional copies of the arguments.  We can not simply reuse
+   the thunk machinery as it does more than we want.  More specifically, we
+   don't want to mark the calling function as `DECL_THUNK_P` for this
+   particular purpose, we only want the special treatment for the parameters
+   of the call we are about to generate.  We temporarily mark the calling
+   function as DECL_THUNK_P so build_call_a does the right thing.  */
 
 static tree
-build_thunk_like_call (tree func, tree caller, int n, tree *argarray)
+build_thunk_like_call (tree func, int n, tree *argarray)
 {
-  /* We can not simply reuse the thunk machinery as it does more than we want.
-   More specifically, we don't want to mark the calling function as
-   `DECL_THUNK_P` for this particular purpose, we only want the special
-   treatment for the parameters of the call we are about to generate.
-   We temporarily mark the calling function as DECL_THUNK_P so build_call_a
-   does the right thing.  */
-  bool old_decl_thunk_p = DECL_THUNK_P (caller);
-  LANG_DECL_FN_CHECK (caller)->thunk_p = true;
+
+  bool old_decl_thunk_p = DECL_THUNK_P (current_function_decl);
+  LANG_DECL_FN_CHECK (current_function_decl)->thunk_p = true;
 
   tree call = build_call_a (func, n, argarray);
 
   /* Revert the `DECL_THUNK_P` flag.  */
-  LANG_DECL_FN_CHECK (caller)->thunk_p = old_decl_thunk_p;
+  LANG_DECL_FN_CHECK (current_function_decl)->thunk_p = old_decl_thunk_p;
 
   /* Mark the call as a thunk call to allow for correct gimplification
    of the arguments.  */
@@ -982,7 +975,7 @@ add_pre_condition_fn_call (tree fndecl)
 		       && DECL_PRE_FN (fndecl) != error_mark_node);
 
   releasing_vec args = build_arg_list (fndecl);
-  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl), fndecl,
+  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl),
 				     args->length (), args->address ());
 
   finish_expr_stmt (call);
@@ -1024,7 +1017,7 @@ add_post_condition_fn_call (tree fndecl)
   releasing_vec args = build_arg_list (fndecl);
   if (get_postcondition_result_parameter (fndecl))
     vec_safe_push (args, DECL_RESULT (fndecl));
-  tree call = build_thunk_like_call (DECL_POST_FN (fndecl), fndecl,
+  tree call = build_thunk_like_call (DECL_POST_FN (fndecl),
 				     args->length (), args->address ());
   finish_expr_stmt (call);
 }
