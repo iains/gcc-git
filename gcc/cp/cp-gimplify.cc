@@ -2124,32 +2124,6 @@ cp_genericize_r (tree *stmt_p, int *walk_subtrees, void *data)
       wtd->bind_expr_stack.pop ();
       break;
 
-    case ASSERTION_STMT:
-    case PRECONDITION_STMT:
-    case POSTCONDITION_STMT:
-      {
-	tree check = build_contract_check (stmt);
-	if (check)
-	  /* We need to genericize the contract independently of everything
-	   else we genericized until now.  When recursively genericizing, we
-	   keep a track of all the statements that have been seen.  Building a
-	   contract check will create new statements, which may reuse an
-	   already freed statement.  If such an already freed statement has
-	   been cached in p_set, we will fail to correctly genericize newly
-	   created contract tree.  */
-	  cp_genericize_tree (&check, wtd->handle_invisiref_parm_p);
-	else
-	  /* If we didn't build a check, replace it with void_node so we don't
-	  leak contracts into GENERIC.  */
-	  check = void_node;
-	*stmt_p = check;
-	*walk_subtrees = 0;
-	/* Return early and do not add the contract statement into the
-	   cache.  */
-	return NULL_TREE;
-      }
-      break;
-
     case USING_STMT:
       {
 	tree block = NULL_TREE;
