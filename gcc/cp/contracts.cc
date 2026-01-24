@@ -1770,7 +1770,7 @@ get_src_loc_impl_ptr (location_t loc)
 
 /* Build a contract_violation layout compatible object. */
 
-/* Constructor - possibly not constant. */
+/* Constructor.  At present, this should always be constant. */
 
 static tree
 build_contract_violation_ctor (tree contract)
@@ -1790,7 +1790,7 @@ build_contract_violation_ctor (tree contract)
     can_be_const = false;
 
   tree eval_semantic = CONTRACT_EVALUATION_SEMANTIC (contract);
-  gcc_checking_assert (eval_semantic && "We should have set this.");
+  gcc_checking_assert (eval_semantic);
   if (!really_constant_p (eval_semantic))
     can_be_const = false;
 
@@ -1863,28 +1863,6 @@ build_contract_violation_constant (tree ctor, tree contract)
   DECL_INITIAL (viol_) = ctor;
   varpool_node::finalize_decl (viol_);
 
-  return viol_;
-}
-
-/* Create a writable violation object (this is done when we need to be able
-   to update the object if an exception is thrown).  */
-
-static tree
-build_contract_violation_var (tree ctor, tree contract)
-{
-  location_t loc = EXPR_LOCATION (contract);
-  tree a_type
-    = strip_top_quals (non_reference (builtin_contract_violation_type));
-  tree viol_ = build_decl (loc, VAR_DECL, NULL_TREE, a_type);
-  char *name = xasprintf ("%s%s%u", "__contract_violation_data", JOIN_STR,
-			  DECL_UID (viol_));
-  DECL_NAME (viol_) = get_identifier (name);
-  free (name);
-  DECL_SOURCE_LOCATION (viol_) = loc;
-  DECL_CONTEXT (viol_) = current_function_decl;
-  DECL_ARTIFICIAL (viol_) = true;
-  layout_decl (viol_, 0);
-  DECL_INITIAL (viol_) = ctor;
   return viol_;
 }
 
@@ -2001,21 +1979,14 @@ build_contract_check (tree contract)
   tree violation;
   bool viol_is_var = false;
   if (quick)
+    /* We will not be calling a handler.  */
     violation = build_zero_cst (nullptr_type_node);
   else
     {
-      tree ctor = build_contract_violation_ctor (contract);
       /* Build a violation object, with the contract settings.  */
-      if (TREE_CONSTANT (ctor))
-	violation = build_contract_violation_constant (ctor, contract);
-      else
-	{
-	  gcc_checking_assert (false);
-	  violation = build_contract_violation_var (ctor, contract);
-	  add_decl_expr (violation);
-	  BIND_EXPR_VARS (cc_bind) = violation;
-	  viol_is_var = true;
-	}
+      tree ctor = build_contract_violation_ctor (contract);
+      gcc_checking_assert (TREE_CONSTANT (ctor));
+      violation = build_contract_violation_constant (ctor, contract);
       violation = build_address (violation);
     }
 

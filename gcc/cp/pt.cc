@@ -12234,21 +12234,11 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
   cp_expr new_condition (cond_t, cond_l);
   CONTRACT_CONDITION (r) = finish_contract_condition (new_condition);
 
-  if (flag_contracts)
-    {
-      /* The semantic, if present.  */
-      CONTRACT_EVALUATION_SEMANTIC (r)
-	= tsubst_expr (CONTRACT_EVALUATION_SEMANTIC (r), args,
-		       complain, in_decl);
-
-      /* The assertion kind, if present.  */
-      CONTRACT_ASSERTION_KIND (r)
-	= tsubst_expr (CONTRACT_ASSERTION_KIND (r), args, complain, in_decl);
-    }
-
-  /* And the comment.  */
-  CONTRACT_COMMENT (r)
-      = tsubst_expr (CONTRACT_COMMENT (r), args, complain, in_decl);
+  /* At present, the semantic, kind and comment cannot be dependent.  */
+  gcc_checking_assert
+    (!type_dependent_expression_p (CONTRACT_EVALUATION_SEMANTIC (r))
+     && !type_dependent_expression_p (CONTRACT_ASSERTION_KIND (r))
+     && !type_dependent_expression_p (CONTRACT_COMMENT (r)));
 
   if (auto_p)
     --processing_template_decl;
