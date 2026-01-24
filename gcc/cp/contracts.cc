@@ -1402,7 +1402,7 @@ static GTY(()) tree tu_has_violation = NULL_TREE;
 static GTY(()) tree tu_has_violation_exception = NULL_TREE;
 
 static void
-maybe_declare_violation_handler_wrappers ()
+declare_violation_handler_wrappers ()
 {
   if (tu_has_violation && tu_has_violation_exception)
     return;
@@ -1426,27 +1426,10 @@ maybe_declare_violation_handler_wrappers ()
 
 static GTY(()) tree tu_terminate_wrapper = NULL_TREE;
 
-/* Define a noipa wrapper around the call to std::terminate */
-
-static void build_terminate_wrapper()
-{
-  start_preparsed_function (tu_terminate_wrapper,
-			    DECL_ATTRIBUTES(tu_terminate_wrapper),
-			    SF_DEFAULT | SF_PRE_PARSED);
-  tree body = begin_function_body ();
-  tree compound_stmt = begin_compound_stmt (BCS_FN_BODY);
-  finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
-  finish_return_stmt (NULL_TREE);
-  finish_compound_stmt (compound_stmt);
-  finish_function_body (body);
-  tu_terminate_wrapper = finish_function (false);
-  expand_or_defer_fn (tu_terminate_wrapper);
-}
-
-/* Get the decl for the noipa wrapper around the call to std::terminate */
+/* Declare a noipa wrapper around the call to std::terminate */
 
 static tree
-get_terminate_wrapper ()
+declare_terminate_wrapper ()
 {
   if (tu_terminate_wrapper)
     return tu_terminate_wrapper;
@@ -1476,9 +1459,28 @@ get_terminate_wrapper ()
     = tree_cons (get_identifier ("noipa"), NULL, NULL_TREE);
   cplus_decl_attributes (&tu_terminate_wrapper,
 			 DECL_ATTRIBUTES (tu_terminate_wrapper), 0);
-  build_terminate_wrapper();
-
   return tu_terminate_wrapper;
+}
+
+/* Define a noipa wrapper around the call to std::terminate */
+
+static void
+build_terminate_wrapper ()
+{
+  /* We should not be trying to build this if we never used it.  */
+  gcc_checking_assert (tu_terminate_wrapper);
+
+  start_preparsed_function (tu_terminate_wrapper,
+			    DECL_ATTRIBUTES(tu_terminate_wrapper),
+			    SF_DEFAULT | SF_PRE_PARSED);
+  tree body = begin_function_body ();
+  tree compound_stmt = begin_compound_stmt (BCS_FN_BODY);
+  finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
+  finish_return_stmt (NULL_TREE);
+  finish_compound_stmt (compound_stmt);
+  finish_function_body (body);
+  tu_terminate_wrapper = finish_function (false);
+  expand_or_defer_fn (tu_terminate_wrapper);
 }
 
 /* Lookup a name in std::contracts, or inject it.  */
@@ -1572,12 +1574,17 @@ build_contract_handler_call (tree violation)
 void
 maybe_emit_violation_handler_wrappers ()
 {
+  /* We might need the terminate wrapper, even if we do not use the violation
+     handler wrappers.  */
+  if (tu_terminate_wrapper && flag_contracts_conservative_ipa)
+    build_terminate_wrapper ();
+
   if (!tu_has_violation && !tu_has_violation_exception)
     return;
 
   tree terminate_wrapper = terminate_fn;
   if (flag_contracts_conservative_ipa)
-    terminate_wrapper = get_terminate_wrapper ();
+    terminate_wrapper = tu_terminate_wrapper;
 
   /* tu_has_violation */
   start_preparsed_function (tu_has_violation, NULL_TREE,
@@ -2022,8 +2029,11 @@ build_contract_check (tree contract)
 	return NULL_TREE;
     }
 
+  tree terminate_wrapper = terminate_fn;
+  if (flag_contracts_conservative_ipa)
+    terminate_wrapper = declare_terminate_wrapper ();
   if (calls_handler)
-    maybe_declare_violation_handler_wrappers ();
+    declare_violation_handler_wrappers ();
 
   bool check_might_throw = (flag_exceptions
 			    && !expr_noexcept_p (condition, tf_none));
