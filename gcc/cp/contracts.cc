@@ -1518,8 +1518,6 @@ maybe_emit_violation_handler_wrappers ()
   if (!tu_has_violation && !tu_has_violation_exception)
     return;
 
-  tree terminate_wrapper = terminate_fn;
-
   /* tu_has_violation */
   start_preparsed_function (tu_has_violation, NULL_TREE,
 			    SF_DEFAULT | SF_PRE_PARSED);
@@ -1528,28 +1526,23 @@ maybe_emit_violation_handler_wrappers ()
   tree v = DECL_ARGUMENTS (tu_has_violation);
   tree semantic = DECL_CHAIN (v);
 
-  /* We might be done.  */
-  tree cond = build2 (NE_EXPR, uint16_type_node, semantic,
-		      build_int_cst (uint16_type_node, (uint16_t)CES_QUICK));
-  tree if_quick = begin_if_stmt ();
-  finish_if_stmt_cond (cond, if_quick);
-
   /* We are going to call the handler.  */
   build_contract_handler_call (v);
 
   tree if_observe = begin_if_stmt ();
   /* if (observe) return; */
-  cond = build2 (EQ_EXPR, uint16_type_node, semantic,
-		 build_int_cst (uint16_type_node, (uint16_t)CES_OBSERVE));
+  tree cond = build2 (EQ_EXPR, uint16_type_node, semantic,
+		      build_int_cst (uint16_type_node, (uint16_t)CES_OBSERVE));
   finish_if_stmt_cond (cond, if_observe);
   emit_builtin_observable_checkpoint ();
-  finish_return_stmt (NULL_TREE);
   finish_then_clause (if_observe);
-  finish_if_stmt (if_observe);
-
-  finish_if_stmt (if_quick);
+  begin_else_clause (if_observe);
   /* else terminate.  */
-  finish_expr_stmt (build_call_a (terminate_wrapper, 0, nullptr));
+  finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
+  finish_else_clause (if_observe);
+  finish_if_stmt (if_observe);
+  finish_return_stmt (NULL_TREE);
+
   finish_compound_stmt (compound_stmt);
   finish_function_body (body);
   tu_has_violation = finish_function (false);
@@ -1563,6 +1556,7 @@ maybe_emit_violation_handler_wrappers ()
   v = DECL_ARGUMENTS (tu_has_violation_exception);
   semantic = DECL_CHAIN (v);
   location_t loc = DECL_SOURCE_LOCATION (tu_has_violation_exception);
+
   tree a_type = strip_top_quals (non_reference (TREE_TYPE (v)));
   tree v2 = build_decl (loc, VAR_DECL, NULL_TREE, a_type);
   DECL_SOURCE_LOCATION (v2) = loc;
@@ -1582,7 +1576,21 @@ maybe_emit_violation_handler_wrappers ()
     build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
     tf_warning_or_error);
   finish_expr_stmt (r);
-  finish_expr_stmt (build_call_n (tu_has_violation, 2, build_address (v2), semantic));
+  /* We are going to call the handler.  */
+  build_contract_handler_call (v);
+
+  if_observe = begin_if_stmt ();
+  /* if (observe) return; */
+  cond = build2 (EQ_EXPR, uint16_type_node, semantic,
+		 build_int_cst (uint16_type_node, (uint16_t)CES_OBSERVE));
+  finish_if_stmt_cond (cond, if_observe);
+  emit_builtin_observable_checkpoint ();
+  finish_then_clause (if_observe);
+  begin_else_clause (if_observe);
+  /* else terminate.  */
+  finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
+  finish_else_clause (if_observe);
+  finish_if_stmt (if_observe);
   finish_return_stmt (NULL_TREE);
   finish_compound_stmt (compound_stmt);
   finish_function_body (body);
@@ -1943,12 +1951,22 @@ tree
 build_contract_check (tree contract)
 {
   contract_evaluation_semantic semantic = get_evaluation_semantic (contract);
-  if (semantic == CES_INVALID)
-    return NULL_TREE;
-
-  /* Ignored contracts are never checked or assumed.  */
-  if (semantic == CES_IGNORE)
-    return void_node;
+  bool quick = false;
+  bool calls_handler = false;
+  switch (semantic)
+    {
+    case CES_IGNORE:
+      return void_node;
+    case CES_ENFORCE:
+    case CES_OBSERVE:
+      calls_handler = true;
+      break;
+    case CES_QUICK:
+      quick = true;
+      break;
+    default:
+      gcc_unreachable ();
+    }
 
   location_t loc = EXPR_LOCATION (contract);
 
@@ -1965,7 +1983,8 @@ build_contract_check (tree contract)
 	return NULL_TREE;
     }
 
-  maybe_declare_violation_handler_wrappers ();
+  if (calls_handler)
+    maybe_declare_violation_handler_wrappers ();
 
   bool check_might_throw = (flag_exceptions
 			    && !expr_noexcept_p (condition, tf_none));
@@ -1979,19 +1998,28 @@ build_contract_check (tree contract)
     emit_builtin_observable_checkpoint ();
   tree cond = build_x_unary_op (loc, TRUTH_NOT_EXPR, condition, NULL_TREE,
 				tf_warning_or_error);
-  tree ctor = build_contract_violation_ctor (contract);
-  tree violation = NULL_TREE;
+  tree violation;
   bool viol_is_var = false;
-  /* Build a violation object, with the contract settings.  */
-  if (TREE_CONSTANT (ctor))
-    violation = build_contract_violation_constant (ctor, contract);
+  if (quick)
+    violation = build_zero_cst (nullptr_type_node);
   else
     {
-      violation = build_contract_violation_var (ctor, contract);
-      add_decl_expr (violation);
-      BIND_EXPR_VARS (cc_bind) = violation;
-      viol_is_var = true;
+      tree ctor = build_contract_violation_ctor (contract);
+      /* Build a violation object, with the contract settings.  */
+      if (TREE_CONSTANT (ctor))
+	violation = build_contract_violation_constant (ctor, contract);
+      else
+	{
+	  gcc_checking_assert (false);
+	  violation = build_contract_violation_var (ctor, contract);
+	  add_decl_expr (violation);
+	  BIND_EXPR_VARS (cc_bind) = violation;
+	  viol_is_var = true;
+	}
+      violation = build_address (violation);
     }
+
+  tree s_const = build_int_cst (uint16_type_node, semantic);
   /* So now do we need a try-catch?  */
   if (check_might_throw)
     {
@@ -2004,61 +2032,58 @@ build_contract_check (tree contract)
       add_decl_expr (check_failed);
       DECL_CHAIN (check_failed) = BIND_EXPR_VARS (cc_bind);
       BIND_EXPR_VARS (cc_bind) = check_failed;
-      /* This will let us check if we had an exception.  */
-      tree no_excp_ = build_decl (loc, VAR_DECL, NULL, boolean_type_node);
-      DECL_ARTIFICIAL (no_excp_) = true;
-      DECL_IGNORED_P (no_excp_) = true;
-      DECL_CONTEXT (no_excp_) = current_function_decl;
-      DECL_INITIAL (no_excp_) = boolean_true_node;
-      layout_decl (no_excp_, 0);
-      add_decl_expr (no_excp_);
-      DECL_CHAIN (no_excp_) = BIND_EXPR_VARS (cc_bind);
-      BIND_EXPR_VARS (cc_bind) = no_excp_;
-
       tree check_try = begin_try_block ();
       finish_expr_stmt (cp_build_init_expr (check_failed, cond));
       finish_try_block (check_try);
+
       tree handler = begin_handler ();
       finish_handler_parms (NULL_TREE, handler); /* catch (...) */
-      tree e = cp_build_modify_expr (loc, no_excp_, NOP_EXPR, boolean_false_node,
-				     tf_warning_or_error);
-      finish_expr_stmt (e);
-      tree s_const = build_int_cst (uint16_type_node, semantic);
-      if (viol_is_var)
-	{
-	  /* We can update the detection mode here.  */
-	  tree memb
-	    = lookup_member (builtin_contract_violation_type,
-			     get_identifier ("_M_detection_mode"),
-			     1, 0, tf_warning_or_error);
-	  tree r
-	    = build_class_member_access_expr (violation, memb, NULL_TREE, false,
-					      tf_warning_or_error);
-	  r = cp_build_modify_expr
-	    (loc, r, NOP_EXPR,
-	     build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
-	     tf_warning_or_error);
-	  finish_expr_stmt (r);
-	  finish_expr_stmt (build_call_n (tu_has_violation, 2,
-					  build_address (violation),
-					  s_const));
-	}
+      if (quick)
+	finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
       else
-	/* We need to make a copy of the violation object to update.  */
-	finish_expr_stmt (build_call_n (tu_has_violation_exception, 2,
-					build_address (violation),
-					s_const));
+	{
+	  if (viol_is_var)
+	    {
+	      /* We can update the detection mode here.  */
+	      tree memb
+		= lookup_member (builtin_contract_violation_type,
+				 get_identifier ("_M_detection_mode"),
+				 1, 0, tf_warning_or_error);
+	      tree r = cp_build_indirect_ref (loc, violation, RO_UNARY_STAR,
+					      tf_warning_or_error);
+	      r = build_class_member_access_expr (r, memb, NULL_TREE, false,
+						  tf_warning_or_error);
+	      r = cp_build_modify_expr
+		(loc, r, NOP_EXPR,
+		 build_int_cst (uint16_type_node, (uint16_t)CDM_EVAL_EXCEPTION),
+		 tf_warning_or_error);
+	      finish_expr_stmt (r);
+	      finish_expr_stmt (build_call_n (tu_has_violation, 2,
+					      violation, s_const));
+	    }
+	  else
+	    /* We need to make a copy of the violation object to update.  */
+	    finish_expr_stmt (build_call_n (tu_has_violation_exception, 2,
+					    violation, s_const));
+	  /* If we reach here, we have handled the exception thrown and do not
+	     need further action.  */
+	  tree e = cp_build_modify_expr (loc, check_failed, NOP_EXPR,
+					 boolean_false_node,
+					 tf_warning_or_error);
+	  finish_expr_stmt (e);
+	}
       finish_handler (handler);
       finish_handler_sequence (check_try);
-      cond = build2 (TRUTH_ANDIF_EXPR, boolean_type_node, check_failed, no_excp_);
+      cond = check_failed;
       BIND_EXPR_VARS (cc_bind) = nreverse (BIND_EXPR_VARS (cc_bind));
     }
 
   tree do_check = begin_if_stmt ();
   finish_if_stmt_cond (cond, do_check);
-  finish_expr_stmt (build_call_n (tu_has_violation, 2,
-				  build_address (violation),
-				  build_int_cst (uint16_type_node, semantic)));
+  if (quick)
+    finish_expr_stmt (build_call_a (terminate_fn, 0, nullptr));
+  else
+    finish_expr_stmt (build_call_n (tu_has_violation, 2, violation, s_const));
   finish_then_clause (do_check);
   finish_if_stmt (do_check);
 
