@@ -646,17 +646,22 @@ get_orig_for_outlined (tree fndecl)
   return result ? *result : NULL_TREE ;
 }
 
-/* For a given function decl name identifier, return identifier representing
- the name of the contracts check.  Using the same identifier is not possible
- with functions with special meaning names (i.e. main and cdtors).  For
- consistency reasons we use the same naming convention for all contract check
- functions.
- PRE specifies if we need an identifier for a pre or post contract check.
- CDTOR specifies if the checked function is a cdtor.  */
-static tree
-contracts_fixup_name (tree idin, bool pre, bool cdtor)
+/* For a given function OLD_FN set suitable names for NEW_FN (which is an
+   outlined contract check) usually by appending '.pre' or '.post'.
+
+   For functions with special meaning names (i.e. main and cdtors) we need to
+   make special provisions and therefore handle all the contracts function
+   name changes here, rather than requiring a separate update to mangle.cc.
+
+   PRE specifies if we need an identifier for a pre or post contract check.  */
+
+static void
+contracts_fixup_names (tree new_fn, tree old_fn, bool pre)
 {
-  const char *fname = IDENTIFIER_POINTER (idin);
+  bool cdtor = DECL_CXX_CONSTRUCTOR_P (old_fn)
+	       || DECL_CXX_DESTRUCTOR_P (old_fn);
+  const char *fname = IDENTIFIER_POINTER (DECL_NAME (old_fn));
+  const char *pre_or_post = pre ? "pre" : "post";
   size_t len = strlen (fname);
   /* Cdtor names have a space at the end.  We need to remove that space
      when forming the new identifier.  */
@@ -664,10 +669,15 @@ contracts_fixup_name (tree idin, bool pre, bool cdtor)
 			cdtor ? (int)len-1 : int(len),
 			fname,
 			JOIN_STR,
-			pre ? "pre" : "post");
-  tree newid = get_identifier (nn);
+			pre_or_post);
+  DECL_NAME (new_fn) = get_identifier (nn);
   free (nn);
-  return newid;
+
+  /* Now do the mangled version.  */
+  fname = IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (old_fn));
+  nn = xasprintf ("%s%s%s", fname, JOIN_STR, pre_or_post);
+  SET_DECL_ASSEMBLER_NAME (new_fn, get_identifier (nn));
+  free (nn);
 }
 
 /* Build a declaration for the pre- or postcondition of a guarded FNDECL.  */
@@ -684,11 +694,6 @@ build_contract_condition_function (tree fndecl, bool pre)
   /* Don't propagate declaration attributes to the checking function,
      including the original contracts.  */
   DECL_ATTRIBUTES (fn) = NULL_TREE;
-
-  /* DECL_ASSEMBLER_NAME will be copied from FNDECL if it's already set.  Unset
-     it so fn name later gets mangled according to the rules for pre and post
-     functions.  */
-  SET_DECL_ASSEMBLER_NAME (fn, NULL_TREE);
 
   /* If requested, disable optimisation of checking functions; this can, in
      some cases, prevent UB from eliding the checks themselves.  */
@@ -767,18 +772,15 @@ build_contract_condition_function (tree fndecl, bool pre)
   TREE_TYPE (fn) = adjusted_type;
   DECL_RESULT (fn) = NULL_TREE; /* Let the start function code fill it in.  */
 
-  /* The contract check functions are never a cdtor.  */
+  /* The contract check functions are never a cdtor, nor virtual.  */
   DECL_CXX_DESTRUCTOR_P (fn) = DECL_CXX_CONSTRUCTOR_P (fn) = 0;
+  DECL_VIRTUAL_P (fn) = false;
 
-  DECL_NAME (fn) = contracts_fixup_name (DECL_NAME (fndecl),
-					 pre,
-					 DECL_CXX_CONSTRUCTOR_P (fndecl)
-					 || DECL_CXX_DESTRUCTOR_P (fndecl));
+  /* Append .pre / .post to a usable name for the original function.  */
+  contracts_fixup_names (fn, fndecl, pre);
 
   DECL_INITIAL (fn) = NULL_TREE;
   CONTRACT_HELPER (fn) = pre ? ldf_contract_pre : ldf_contract_post;
-
-  DECL_VIRTUAL_P (fn) = false;
 
   /* Make these functions internal if we can, i.e. if the guarded function is
      not vague linkage, or if we can put them in a comdat group with the
