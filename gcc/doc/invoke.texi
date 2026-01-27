@@ -3331,6 +3331,7 @@ At compile-time there is no difference in behaviour between this option and
 the @code{enforce} case, since no handler is invoked at compile time.
 
 @opindex fcontracts-conservative-ipa
+@opindex fno-contracts-conservative-ipa
 @item -fcontracts-conservative-ipa
 This prevents inter-procedural analysis from taking action when the body
 of an inline function is visible in a given TU.  This allows for the case
