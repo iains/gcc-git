@@ -1,6 +1,6 @@
 // Contracts support header for -*- C++ -*-
 
-// Copyright (C) 2025 Free Software Foundation, Inc.
+// Copyright The GNU Toolchain Authors.
 //
 // This file is part of GCC.
 //
@@ -37,7 +37,6 @@
 
 #ifdef __cpp_lib_contracts
 #include <source_location>
-#include <cstdint>
 #include <bits/exception_ptr.h>
 
 namespace std _GLIBCXX_VISIBILITY(default)
@@ -46,20 +45,17 @@ _GLIBCXX_BEGIN_NAMESPACE_VERSION
 
 namespace contracts
 {
-  // From P2900R14 + D3290R3
+  // From P2900R14
 
-  enum class assertion_kind : uint16_t {
+  enum class assertion_kind : __UINT16_TYPE__ {
     pre = 1,
     post = 2,
     assert = 3,
-    // From D3290R3
-    manual = 4,
-    cassert = 5,
 
     /* Implementation−defined values should have a minimum value of 1000. */
   };
 
-  enum class evaluation_semantic : uint16_t {
+  enum class evaluation_semantic : __UINT16_TYPE__ {
     ignore = 1,
     observe = 2,
     enforce = 3,
@@ -68,8 +64,7 @@ namespace contracts
     /* Implementation−defined values should have a minimum value of 1000.  */
   };
 
-  enum class detection_mode : uint16_t {
-    unspecified = 0, // From D3290R3
+  enum class detection_mode : __UINT16_TYPE__ {
     predicate_false = 1,
     evaluation_exception = 2,
 
@@ -79,7 +74,7 @@ namespace contracts
   using __vendor_ext = void;
 
   class contract_violation {
-    uint16_t _M_version;
+    __UINT16_TYPE__ _M_version;
     assertion_kind _M_assertion_kind;
     evaluation_semantic _M_evaluation_semantic;
     detection_mode _M_detection_mode;

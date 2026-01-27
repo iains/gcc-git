@@ -1,6 +1,6 @@
-// -*- C++ -*- std::experimental::contract_violation and friends
+// -*- C++ -*- std::contracts::contract_violation and friends
 
-// Copyright (C) 2025 Free Software Foundation, Inc.
+// Copyright The GNU Toolchain Authors.
 //
 // This file is part of GCC.
 //
