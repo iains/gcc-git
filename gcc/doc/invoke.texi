@@ -3289,6 +3289,7 @@ evaluation might take too long.
 The default is 33554432 (1<<25).
 
 @opindex fcontracts
+@opindex fno-contracts
 @item -fcontracts
 Enable support for the C++ Contracts feature, as specified in the C++26
 working draft (N5003).
