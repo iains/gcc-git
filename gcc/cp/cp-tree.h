@@ -5345,6 +5345,9 @@ get_vec_init_expr (tree t)
 #define DECL_NORMAL_CAPTURE_P(NODE) \
   DECL_LANG_FLAG_7 (FIELD_DECL_CHECK (NODE))
 
+#define DECL_CONTRACT_CAPTURE_P(NODE) \
+  DECL_LANG_FLAG_8 (FIELD_DECL_CHECK (NODE))
+
 /* Nonzero if TYPE is an anonymous union or struct type.  We have to use a
    flag for this because "A union for which objects or pointers are
    declared is not an anonymous union" [class.union].  */
