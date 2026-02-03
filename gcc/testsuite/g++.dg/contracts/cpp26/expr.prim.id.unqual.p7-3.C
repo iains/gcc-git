@@ -7,7 +7,7 @@
 // This tests modifications to the constified things if checks are outlined
 // { dg-do run { target c++26 } }
 // { dg-additional-options "-fcontracts -fcontract-checks-outlined" }
-// { dg-xfail-run-if "PRXXXXXX" { *-*-* } }
+
 
 struct S{
   S(){};

@@ -713,9 +713,9 @@ build_contract_condition_function (tree fndecl, bool pre)
 
   /* A possible later optimization may delete unused args to prevent extra arg
      passing.  */
-  /* Handle the args list.  */
+  /* Handle the arg type list.  */
   tree arg_types = NULL_TREE;
-  tree *last = &arg_types;
+  tree *last_arg_type = &arg_types;
   for (tree arg_type = TYPE_ARG_TYPES (TREE_TYPE (fn));
       arg_type && arg_type != void_list_node;
       arg_type = TREE_CHAIN (arg_type))
@@ -723,22 +723,28 @@ build_contract_condition_function (tree fndecl, bool pre)
       if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
 	  && TYPE_ARG_TYPES (TREE_TYPE (fn)) == arg_type)
       continue;
-      *last = build_tree_list (TREE_PURPOSE (arg_type), TREE_VALUE (arg_type));
-      last = &TREE_CHAIN (*last);
+      *last_arg_type = build_tree_list (TREE_PURPOSE (arg_type),
+			       cp_build_reference_type (TREE_VALUE (arg_type), false));
+      last_arg_type = &TREE_CHAIN (*last_arg_type);
     }
 
   /* Copy the function parameters, if present.  Disable warnings for them.  */
   DECL_ARGUMENTS (fn) = NULL_TREE;
-  if (DECL_ARGUMENTS (fndecl))
+  for (tree p = DECL_ARGUMENTS (fndecl); p; p = TREE_CHAIN (p))
     {
-      tree *last_a = &DECL_ARGUMENTS (fn);
-      for (tree p = DECL_ARGUMENTS (fndecl); p; p = TREE_CHAIN (p))
-	{
-	  *last_a = copy_decl (p);
-	  suppress_warning (*last_a);
-	  DECL_CONTEXT (*last_a) = fn;
-	  last_a = &TREE_CHAIN (*last_a);
-	}
+      tree name = DECL_NAME (p);
+      tree type;
+
+      if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
+	  && DECL_ARGUMENTS (fndecl) == p)
+	type = TREE_TYPE(p);
+      else
+	type = cp_build_reference_type (TREE_TYPE (p), /*rval*/false);
+      tree parm = build_lang_decl (PARM_DECL, name, type);
+      DECL_CONTEXT (parm) = fn;
+      DECL_ARTIFICIAL (parm) = true;
+      suppress_warning (parm);
+      DECL_ARGUMENTS (fn) = chainon (DECL_ARGUMENTS (fn), parm);
     }
 
   tree orig_fn_value_type = TREE_TYPE (TREE_TYPE (fn));
@@ -747,16 +753,17 @@ build_contract_condition_function (tree fndecl, bool pre)
       /* For post contracts that deal with a non-void function, append a
 	 parameter to pass the return value.  */
       tree name = get_identifier ("__r");
-      tree parm = build_lang_decl (PARM_DECL, name, orig_fn_value_type);
+      tree type = cp_build_reference_type (orig_fn_value_type, /*rval*/false);
+      tree parm = build_lang_decl (PARM_DECL, name, type);
       DECL_CONTEXT (parm) = fn;
       DECL_ARTIFICIAL (parm) = true;
       suppress_warning (parm);
       DECL_ARGUMENTS (fn) = chainon (DECL_ARGUMENTS (fn), parm);
-      *last = build_tree_list (NULL_TREE, orig_fn_value_type);
-      last = &TREE_CHAIN (*last);
+      *last_arg_type = build_tree_list (NULL_TREE, type);
+      last_arg_type = &TREE_CHAIN (*last_arg_type);
     }
 
-  *last = void_list_node;
+  *last_arg_type = void_list_node;
 
   tree adjusted_type = NULL_TREE;
 
@@ -1086,6 +1093,32 @@ build_arg_list (tree fndecl)
   return args;
 }
 
+static vec<tree, va_gc> *
+build_arg_list2 (tree fndecl, tree fncheck)
+{
+  vec<tree, va_gc> *args = make_tree_vector ();
+  tsubst_flags_t complain = tf_none;
+  tree tdest = DECL_ARGUMENTS (fncheck);
+  for (tree tsource = DECL_ARGUMENTS (fndecl); tsource;
+      tsource = DECL_CHAIN (tsource), tdest = DECL_CHAIN (tdest))
+    {
+      /* Take the address of the thing to which we will bind the
+         reference.  */
+      tree expr = cp_build_addr_expr (tsource, complain);
+
+      /* Convert it to a pointer to the type referred to by the
+         reference.  This will adjust the pointer if a derived to
+         base conversion is being performed.  */
+      expr = cp_convert (build_pointer_type (TREE_TYPE (tsource)),
+      		   expr, complain);
+
+      gcc_checking_assert (tdest);
+      /* Convert the pointer to the desired type.  */
+      vec_safe_push (args, build_nop (TREE_TYPE(tdest), expr));
+    }
+  return args;
+}
+
 /* Build and return a thunk like call to FUNC from CALLER using the supplied
    arguments.  The call is like a thunk call in the fact that we do not
    want to create additional copies of the arguments.  We can not simply reuse
@@ -1123,9 +1156,9 @@ add_pre_condition_fn_call (tree fndecl)
   gcc_checking_assert (DECL_PRE_FN (fndecl)
 		       && DECL_PRE_FN (fndecl) != error_mark_node);
 
-  releasing_vec args = build_arg_list (fndecl);
-  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl),
-				     args->length (), args->address ());
+  tree fncheck = DECL_PRE_FN (fndecl);
+  releasing_vec args = build_arg_list2 (fndecl, fncheck);
+  tree call = build_call_a (fncheck, args->length (), args->address ());
 
   finish_expr_stmt (call);
 }
@@ -1160,11 +1193,48 @@ add_post_condition_fn_call (tree fndecl)
   gcc_checking_assert (DECL_POST_FN (fndecl)
 		       && DECL_POST_FN (fndecl) != error_mark_node);
 
-  releasing_vec args = build_arg_list (fndecl);
+  tree fncheck = DECL_POST_FN (fndecl);
+
+  vec<tree, va_gc> *args = make_tree_vector ();
+  tsubst_flags_t complain = tf_none;
+  tree tdest = DECL_ARGUMENTS (fncheck);
+
+  for (tree tsource = DECL_ARGUMENTS (fndecl); tsource;
+      tsource = DECL_CHAIN (tsource), tdest = DECL_CHAIN (tdest))
+    {
+      /* Take the address of the thing to which we will bind the
+         reference.  */
+      tree expr = cp_build_addr_expr (tsource, complain);
+
+      /* Convert it to a pointer to the type referred to by the
+         reference.  This will adjust the pointer if a derived to
+         base conversion is being performed.  */
+      expr = cp_convert (build_pointer_type (TREE_TYPE (tsource)),
+      		   expr, complain);
+
+      gcc_checking_assert (tdest);
+      /* Convert the pointer to the desired type.  */
+      vec_safe_push (args, build_nop (TREE_TYPE(tdest), expr));
+    }
+
   if (get_postcondition_result_parameter (fndecl))
-    vec_safe_push (args, DECL_RESULT (fndecl));
-  tree call = build_thunk_like_call (DECL_POST_FN (fndecl),
-				     args->length (), args->address ());
+    {
+      /* Take the address of the thing to which we will bind the
+	 reference.  */
+      tree result = DECL_RESULT (fndecl);
+      tree expr = cp_build_addr_expr (result, tf_none);
+
+      /* Convert it to a pointer to the type referred to by the
+	 reference.  This will adjust the pointer if a derived to
+	 base conversion is being performed.  */
+      expr = cp_convert (build_pointer_type (TREE_TYPE (result)),
+		     expr, complain);
+
+      gcc_checking_assert (tdest);
+      /* Convert the pointer to the desired type.  */
+      vec_safe_push (args, build_nop (TREE_TYPE(tdest), expr));
+    }
+  tree call = build_call_a (fncheck, args->length (), args->address ());
   finish_expr_stmt (call);
 }
 
