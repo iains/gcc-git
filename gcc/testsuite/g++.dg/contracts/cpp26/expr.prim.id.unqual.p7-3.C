@@ -7,7 +7,6 @@
 // This tests modifications to the constified things if checks are outlined
 // { dg-do run { target c++26 } }
 // { dg-additional-options "-fcontracts -fcontract-checks-outlined" }
-// { dg-xfail-run-if "PRXXXXXX" { *-*-* } }
 
 struct S{
   S(){};
@@ -20,15 +19,15 @@ int i = 0;
 
 
 void f1() pre(const_cast<int&>(i)++) {};
-int f2(int n,const S m) pre(const_cast<int&>(n)++)
-			pre((const_cast<S&>(m).x = 5))
-			post(r: const_cast<int&>(r)++)
-			post(r: const_cast<int&>(r)++)
+int& f2(int n,S m) pre(const_cast<int&>(n)++)
+		  pre((const_cast<S&>(m).x = 5))
+		  post(r: const_cast<int&>(r)++)
+		  post(r: const_cast<int&>(r)++)
 {
   contract_assert (n == 3);
   contract_assert (m.x == 5);
-
-  return 1;
+  static int i = 1;
+  return i;
 };
 
 
