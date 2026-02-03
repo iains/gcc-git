@@ -713,50 +713,81 @@ build_contract_condition_function (tree fndecl, bool pre)
 
   /* A possible later optimization may delete unused args to prevent extra arg
      passing.  */
-  /* Handle the args list.  */
+  /* Handle the arg type list.  */
   tree arg_types = NULL_TREE;
-  tree *last = &arg_types;
-  for (tree arg_type = TYPE_ARG_TYPES (TREE_TYPE (fn));
-      arg_type && arg_type != void_list_node;
-      arg_type = TREE_CHAIN (arg_type))
-    {
-      if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
-	  && TYPE_ARG_TYPES (TREE_TYPE (fn)) == arg_type)
-      continue;
-      *last = build_tree_list (TREE_PURPOSE (arg_type), TREE_VALUE (arg_type));
-      last = &TREE_CHAIN (*last);
-    }
+  tree *last_arg_type = &arg_types;
 
   /* Copy the function parameters, if present.  Disable warnings for them.  */
   DECL_ARGUMENTS (fn) = NULL_TREE;
-  if (DECL_ARGUMENTS (fndecl))
+  for (tree p = DECL_ARGUMENTS (fndecl); p; p = TREE_CHAIN (p))
     {
-      tree *last_a = &DECL_ARGUMENTS (fn);
-      for (tree p = DECL_ARGUMENTS (fndecl); p; p = TREE_CHAIN (p))
-	{
-	  *last_a = copy_decl (p);
-	  suppress_warning (*last_a);
-	  DECL_CONTEXT (*last_a) = fn;
-	  last_a = &TREE_CHAIN (*last_a);
-	}
-    }
+      tree name = DECL_NAME (p);
+      tree type;
 
-  tree orig_fn_value_type = TREE_TYPE (TREE_TYPE (fn));
-  if (!pre && !VOID_TYPE_P (orig_fn_value_type))
-    {
-      /* For post contracts that deal with a non-void function, append a
-	 parameter to pass the return value.  */
-      tree name = get_identifier ("__r");
-      tree parm = build_lang_decl (PARM_DECL, name, orig_fn_value_type);
+      bool invisi_ref = false;
+      /* For *this and reference type parameters, use the actual type.  */
+      if ((DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
+	     && DECL_ARGUMENTS (fndecl) == p)
+	    || REFERENCE_REF_P (TREE_TYPE (p)))
+	type = TREE_TYPE (p);
+      else
+	{
+	  /* In all other cases, use a reference to the type of argument.  We
+	     do this for pointer types too, as the contract may modify
+	     the pointer itself.  */
+	  type = cp_build_reference_type (TREE_TYPE (p), /*rval*/false);
+	  if (TREE_ADDRESSABLE (TREE_TYPE (p))) invisi_ref = true;
+	}
+      tree parm = build_lang_decl (PARM_DECL, name, type);
       DECL_CONTEXT (parm) = fn;
       DECL_ARTIFICIAL (parm) = true;
       suppress_warning (parm);
+      /* If we modified a parameter to be a reference, we want to treat it
+	 like an invisible reference parameter to avoid creating
+	 temporaries.  */
+      DECL_BY_REFERENCE(parm) = invisi_ref;
       DECL_ARGUMENTS (fn) = chainon (DECL_ARGUMENTS (fn), parm);
-      *last = build_tree_list (NULL_TREE, orig_fn_value_type);
-      last = &TREE_CHAIN (*last);
+
+      /* Skip *this as it will be added as a part of build_method_type. */
+      if (!(DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)
+	  && DECL_ARGUMENTS (fndecl) == p))
+	{
+	  *last_arg_type = build_tree_list (NULL_TREE, type);
+	  last_arg_type = &TREE_CHAIN (*last_arg_type);
+	}
     }
 
-  *last = void_list_node;
+  tree orig_fn_value_type = TREE_TYPE (TREE_TYPE (fndecl));
+  if (!pre && !VOID_TYPE_P (orig_fn_value_type))
+    {
+      /* For post contracts that deal with a non-void function, append a
+	 parameter to pass the return value.  Note that in some cases, this
+	 will not be sufficient to observe modifications to the return value
+	 identifier inside the contract as gimplification may introduce a
+	 temporary for the return value object.  This is conforming behaviour
+	 according to [expr.call/p9] (N5032).  */
+      tree name = get_identifier ("__r");
+      bool invisi_ref = false;
+      tree type;
+
+      if (REFERENCE_REF_P (orig_fn_value_type))
+	type = orig_fn_value_type;
+      else
+	{
+	  type = cp_build_reference_type (orig_fn_value_type, /*rval*/false);
+	  if (TREE_ADDRESSABLE (orig_fn_value_type)) invisi_ref = true;
+	}
+      tree parm = build_lang_decl (PARM_DECL, name, type);
+      DECL_CONTEXT (parm) = fn;
+      DECL_ARTIFICIAL (parm) = true;
+      DECL_BY_REFERENCE(parm) = invisi_ref;
+      suppress_warning (parm);
+      DECL_ARGUMENTS (fn) = chainon (DECL_ARGUMENTS (fn), parm);
+      *last_arg_type = build_tree_list (NULL_TREE, type);
+      last_arg_type = &TREE_CHAIN (*last_arg_type);
+    }
+
+  *last_arg_type = void_list_node;
 
   tree adjusted_type = NULL_TREE;
 
@@ -1069,20 +1100,88 @@ maybe_update_postconditions (tree fndecl)
     }
 }
 
-/* Build and return an argument list containing all the parameters of the
-   (presumably guarded) function decl FNDECL.  This can be used to forward
-   all of FNDECL arguments to a function taking the same list of arguments
-   -- namely the unchecked form of FNDECL.
+/* Returns the parameter corresponding to the return value of a guarded
+   function FNDECL.  Returns NULL_TREE if FNDECL has no postconditions or
+   is void.  */
 
-   We use CALL_FROM_THUNK_P instead of forward_parm for forwarding
-   semantics.  */
+static tree
+get_postcondition_result_parameter (tree fndecl)
+{
+  if (!fndecl || fndecl == error_mark_node)
+    return NULL_TREE;
+
+  if (VOID_TYPE_P (TREE_TYPE (TREE_TYPE (fndecl))))
+    return NULL_TREE;
+
+  tree post = DECL_POST_FN (fndecl);
+  if (!post || post == error_mark_node)
+    return NULL_TREE;
+
+  /* The last param is the return value.  */
+  return tree_last (DECL_ARGUMENTS (post));
+}
+
+/* Prepare a tree representing an INDEX argument for invocation of
+  DECL.  ARG is the incoming raw argument, and PARAM is the index parameter
+  in decl.  */
+
+tree prepare_outline_arg(tree arg, tree param, tree decl, int index)
+{
+  /* Relevant part of finish_id_expression. */
+  arg = convert_from_reference (arg);
+
+  /* Relevant part of build_new_function_call. We assume implicit_conversion
+   is always what's needed. */
+  tree argtype = lvalue_type (arg);
+  tree parmtype = TREE_VALUE (param);
+  conversion *conv = implicit_conversion (parmtype, argtype, arg,
+					  /*c_cast_p=*/false, /*flags = */
+					  0, tf_none);
+  arg = convert_like_with_context (conv, arg, decl, index, tf_none);
+  arg = convert_for_arg_passing (parmtype, arg, tf_none);
+
+  return arg;
+}
+
+/* Build and return an argument list containing all the parameters of the
+   checked function FNDECL for the purposes of invoking the outline contract
+   check decl OCDECL.  POST determines whether we're invoking a pre or post
+   conditions outline check.  */
 
 static vec<tree, va_gc> *
-build_arg_list (tree fndecl)
+build_outline_arg_list (tree fndecl, tree ocdecl, bool post)
 {
+
   vec<tree, va_gc> *args = make_tree_vector ();
-  for (tree t = DECL_ARGUMENTS (fndecl); t; t = DECL_CHAIN (t))
-    vec_safe_push (args, t);
+  tree param = TYPE_ARG_TYPES (TREE_TYPE (ocdecl));
+  int index = 0;
+  for (tree t = DECL_ARGUMENTS (fndecl); t; t = DECL_CHAIN (t), param =
+      TREE_CHAIN (param), index++)
+  {
+    /* Use *this as is, if it exists. */
+    if (DECL_OBJECT_MEMBER_FUNCTION_P (fndecl) && index == 0)
+      {
+	vec_safe_push (args, t);
+	continue;
+      }
+    /* We should have a corresponding parameter. */
+    gcc_checking_assert(param && TREE_VALUE (param) != void_type_node);
+
+    tree arg = prepare_outline_arg (t, param, ocdecl, index);
+    vec_safe_push (args, arg);
+  }
+
+  /* Check if we need to add a postcondition argument.  */
+  if (post && get_postcondition_result_parameter (fndecl))
+    {
+      /* We should have a corresponding parameter. */
+      gcc_checking_assert (param && TREE_VALUE (param) != void_type_node);
+
+      tree arg = prepare_outline_arg (DECL_RESULT (fndecl),
+				      param, ocdecl, index);
+      vec_safe_push (args, arg);
+    }
+
   return args;
 }
 
@@ -1120,35 +1219,14 @@ add_pre_condition_fn_call (tree fndecl)
 {
   /* If we're starting a guarded function with valid contracts, we need to
      insert a call to the pre function.  */
-  gcc_checking_assert (DECL_PRE_FN (fndecl)
-		       && DECL_PRE_FN (fndecl) != error_mark_node);
+  tree predecl = DECL_PRE_FN (fndecl);
+  gcc_checking_assert (predecl
+		       && predecl != error_mark_node);
 
-  releasing_vec args = build_arg_list (fndecl);
-  tree call = build_thunk_like_call (DECL_PRE_FN (fndecl),
-				     args->length (), args->address ());
+  releasing_vec args = build_outline_arg_list (fndecl, predecl, false);
+  tree call = build_call_a (predecl, args->length (), args->address ());
 
   finish_expr_stmt (call);
-}
-
-/* Returns the parameter corresponding to the return value of a guarded
-   function FNDECL.  Returns NULL_TREE if FNDECL has no postconditions or
-   is void.  */
-
-static tree
-get_postcondition_result_parameter (tree fndecl)
-{
-  if (!fndecl || fndecl == error_mark_node)
-    return NULL_TREE;
-
-  if (VOID_TYPE_P (TREE_TYPE (TREE_TYPE (fndecl))))
-    return NULL_TREE;
-
-  tree post = DECL_POST_FN (fndecl);
-  if (!post || post == error_mark_node)
-    return NULL_TREE;
-
-  /* The last param is the return value.  */
-  return tree_last (DECL_ARGUMENTS (post));
 }
 
 /* Build and add a call to the post-condition checking function, when that
@@ -1157,14 +1235,14 @@ get_postcondition_result_parameter (tree fndecl)
 static void
 add_post_condition_fn_call (tree fndecl)
 {
-  gcc_checking_assert (DECL_POST_FN (fndecl)
-		       && DECL_POST_FN (fndecl) != error_mark_node);
+  tree postdecl = DECL_POST_FN (fndecl);
 
-  releasing_vec args = build_arg_list (fndecl);
-  if (get_postcondition_result_parameter (fndecl))
-    vec_safe_push (args, DECL_RESULT (fndecl));
-  tree call = build_thunk_like_call (DECL_POST_FN (fndecl),
-				     args->length (), args->address ());
+  gcc_checking_assert (postdecl
+		       && postdecl != error_mark_node);
+
+  releasing_vec args = build_outline_arg_list (fndecl, postdecl, true);
+
+  tree call =  build_call_a (postdecl, args->length (), args->address ());
   finish_expr_stmt (call);
 }
 
@@ -1456,7 +1534,15 @@ remap_contract (tree src, tree dst, tree contract, bool duplicate_p)
 	  if (tree result = POSTCONDITION_IDENTIFIER (contract))
 	    {
 	      gcc_assert (DECL_P (result));
-	      insert_decl_map (&id, result, dp);
+	      /* If we're remapping contracts into an outline check, we need to
+		 adjust for the change in the argument type for the
+		 postcondition identifier.  */
+	      if (!TYPE_REF_P (TREE_TYPE (result)) &&
+		  TYPE_REF_P (TREE_TYPE (dp)) &&
+		  !TREE_ADDRESSABLE (TREE_TYPE (result)))
+		insert_decl_map (&id, result, convert_from_reference(dp));
+	      else
+		insert_decl_map (&id, result, dp);
 	      do_remap = true;
 	    }
 	  break;
@@ -1466,7 +1552,13 @@ remap_contract (tree src, tree dst, tree contract, bool duplicate_p)
       if (sp == dp)
 	continue;
 
-      insert_decl_map (&id, sp, dp);
+      /* If we're remapping contracts into an outline check, we need to
+	 adjust for the change in the outline argument type.  */
+      if (!TYPE_REF_P (TREE_TYPE (sp)) && TYPE_REF_P (TREE_TYPE (dp)) &&
+	  !TREE_ADDRESSABLE (TREE_TYPE (sp)))
+	insert_decl_map (&id, sp, convert_from_reference(dp));
+      else
+	insert_decl_map (&id, sp, dp);
       do_remap = true;
 
       /* First artificial arg is *this. We want to remap that.  However, we
@@ -1827,7 +1919,10 @@ define_contract_wrapper_func (const tree& fndecl, const tree& wrapdecl, void*)
   tree body = begin_function_body ();
   tree compound_stmt = begin_compound_stmt (BCS_FN_BODY);
 
-  vec<tree, va_gc> * args = build_arg_list (wrapdecl);
+  /* We use parameters of the wrapdecl as arguments to the call.  */
+  vec<tree, va_gc> * args = make_tree_vector ();
+  for (tree t = DECL_ARGUMENTS (wrapdecl); t; t = DECL_CHAIN (t))
+    vec_safe_push (args, t);
 
   /* We do not support contracts on virtual functions yet.  */
   gcc_checking_assert (!DECL_IOBJ_MEMBER_FUNCTION_P (fndecl)

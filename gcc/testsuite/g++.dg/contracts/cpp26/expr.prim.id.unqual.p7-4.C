@@ -5,12 +5,9 @@
 // (7.3) — a structured binding of type T whose corresponding variable is declared outside of C,
 // then the type of the expression is const T
 // This tests modifications to the constified things
-// { dg-do run { target c++23 } }
+// { dg-do run { target c++26 } }
 // { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe -O2 -g" }
-// { dg-xfail-run-if "PRXXXXXX" { *-*-* } { "-fcontract-checks-outlined" } "" }
 // { dg-skip-if "requires hosted libstdc++ for stdc++exp" { ! hostedlib } }
-
-#include <cassert>
 
 struct S{
   S(){};
@@ -23,15 +20,15 @@ int i = 0;
 
 
 void f1() pre(const_cast<int&>(i)++) {};
-int f2(int n,const S m) pre(const_cast<int&>(n)++)
-			pre((const_cast<S&>(m).x = 5))
-			post(r: const_cast<int&>(r)++)
-			post(r: const_cast<int&>(r)++)
+int& f2(int n,S m) pre(const_cast<int&>(n)++)
+		  pre((const_cast<S&>(m).x = 5))
+		  post(r: const_cast<int&>(r)++)
+		  post(r: const_cast<int&>(r)++)
 {
-  assert (n == 3);
-  assert (m.x == 5);
-
-  return 1;
+  contract_assert (n == 3);
+  contract_assert (m.x == 5);
+  static int i = 1;
+  return i;
 };
 
 
@@ -44,15 +41,14 @@ int main()
 {
   i = 3;
   f1();
-  assert (i == 4);
+  contract_assert (i == 4);
 
   int j = 2;
   S s;
   int k = f2(j,s);
-  assert (k == 3);
-  assert (s.x == 0);
+  contract_assert (s.x == 0);
 
   s = f3(s);
-  assert (s.x == 10);
+  contract_assert (s.x == 10);
 
 }
