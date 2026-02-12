@@ -1125,7 +1125,27 @@ add_pre_condition_fn_call (tree fndecl)
 
   releasing_vec args = build_arg_list (fndecl);
   tree call = NULL_TREE;
-  call = build_new_function_call (predecl, &args, tf_none);
+
+  if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl))
+    {
+      tree *class_ptr = args->begin();
+      gcc_checking_assert (class_ptr);
+
+      tree t;
+      tree binfo = lookup_base (TREE_TYPE (TREE_TYPE (*class_ptr)),
+				DECL_CONTEXT (fndecl),
+				ba_any, NULL, tf_warning_or_error);
+      tree blink = baselink_for_fns(predecl);
+      call = build_new_method_call(DECL_CONTEXT (fndecl), blink, &args, NULL_TREE,
+                                   LOOKUP_NORMAL | LOOKUP_NONVIRTUAL,
+					/*fn_p=*/NULL,
+					tf_none);
+
+      gcc_checking_assert (binfo && binfo != error_mark_node);
+
+    }
+  else
+    call = build_new_function_call (predecl, &args, tf_none);
 
   finish_expr_stmt (call);
 }
