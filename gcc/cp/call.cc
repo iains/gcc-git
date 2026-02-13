@@ -172,8 +172,6 @@ static void maybe_warn_class_memaccess (location_t, tree,
 					const vec<tree, va_gc> *);
 static tree build_over_call (struct z_candidate *, int, tsubst_flags_t);
 static tree convert_like (conversion *, tree, tsubst_flags_t);
-static tree convert_like_with_context (conversion *, tree, tree, int,
-				       tsubst_flags_t);
 static void op_error (const op_location_t &, enum tree_code, enum tree_code,
 		      tree, tree, tree, bool);
 static struct z_candidate *build_user_type_conversion_1 (tree, tree, int,
@@ -197,8 +195,6 @@ static struct z_candidate *add_conv_candidate
 static struct z_candidate *add_function_candidate
 	(struct z_candidate **, tree, tree, tree, const vec<tree, va_gc> *, tree,
 	 tree, int, conversion**, bool, tsubst_flags_t);
-static conversion *implicit_conversion (tree, tree, tree, bool, int,
-					tsubst_flags_t);
 static conversion *reference_binding (tree, tree, tree, bool, int,
 				      tsubst_flags_t);
 static conversion *build_conv (conversion_kind, tree, conversion *);
@@ -2195,7 +2191,7 @@ reference_binding (tree rto, tree rfrom, tree expr, bool c_cast_p, int flags,
    conversion.  FLAGS are the usual overloading flags.  If C_CAST_P is
    true, this conversion is coming from a C-style cast.  */
 
-static conversion *
+conversion *
 implicit_conversion (tree to, tree from, tree expr, bool c_cast_p,
 		     int flags, tsubst_flags_t complain)
 {
@@ -9512,7 +9508,7 @@ convert_like (conversion *convs, tree expr, tsubst_flags_t complain)
 
 /* Convenience wrapper for convert_like.  */
 
-static inline tree
+inline tree
 convert_like_with_context (conversion *convs, tree expr, tree fn, int argnum,
 			   tsubst_flags_t complain)
 {

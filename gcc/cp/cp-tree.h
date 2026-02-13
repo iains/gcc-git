@@ -7227,11 +7227,15 @@ extern bool can_convert_arg			(tree, tree, tree, int,
 extern bool can_convert_arg_bad			(tree, tree, tree, int,
 						 tsubst_flags_t);
 extern int conv_flags				(int, int, tree, tree, int);
+extern tree convert_like_with_context (struct conversion *, tree, tree, int,
+				       tsubst_flags_t);
 extern struct conversion * good_conversion	(tree, tree, tree, int, tsubst_flags_t);
 extern location_t get_fndecl_argument_location  (tree, int);
 extern void complain_about_bad_argument	(location_t arg_loc,
 						 tree from_type, tree to_type,
 						 tree fndecl, int parmnum);
+extern conversion *implicit_conversion (tree, tree, tree, bool, int,
+					tsubst_flags_t);
 extern void maybe_inform_about_fndecl_for_bogus_argument_init (tree, int,
 							       const char * = nullptr);
 extern tree perform_dguide_overload_resolution	(tree, const vec<tree, va_gc> *,

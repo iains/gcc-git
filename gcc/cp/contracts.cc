@@ -1085,6 +1085,50 @@ build_arg_list (tree fndecl)
   return args;
 }
 
+/* Build and return an argument list containing all the parameters of the
+   (presumably guarded) function decl FNDECL.  This can be used to forward
+   all of FNDECL arguments to a function taking the same list of arguments
+   -- namely the unchecked form of FNDECL.
+
+   We use CALL_FROM_THUNK_P instead of forward_parm for forwarding
+   semantics.  */
+
+static vec<tree, va_gc> *
+build_arg_list (tree fromdecl, tree todecl)
+{
+
+  vec<tree, va_gc> *args = make_tree_vector ();
+  tree parm = TYPE_ARG_TYPES (TREE_TYPE (todecl));
+  int param_index = 0;
+  for (tree t = DECL_ARGUMENTS(fromdecl); t; t = DECL_CHAIN(t), parm =
+      TREE_CHAIN (parm), param_index++)
+  {
+    /* Handle *this, if it exists. */
+    if (DECL_OBJECT_MEMBER_FUNCTION_P(fromdecl))
+      {
+	vec_safe_push (args, t);
+	continue;
+      }
+
+    /* We should have a corresponding parameter. */
+    gcc_checking_assert (parm && TREE_VALUE (parm) != void_type_node);
+    /* Relevant part of finish_id_expression. */
+    tree arg = convert_from_reference(t);
+    /* Relevant part of build_new_function_call. We assume implicit_conversion
+      is always what's needed. */
+    tree argtype = lvalue_type (arg);
+    tree parmtype = TREE_VALUE (parm);
+    conversion* conv = implicit_conversion (parmtype, argtype, arg,
+			 /*c_cast_p=*/false, /*flags = */ 0, tf_none);
+    arg = convert_like_with_context (conv, arg, todecl,
+					    param_index, tf_none);
+    arg = convert_for_arg_passing (parmtype, arg, tf_none);
+
+    vec_safe_push (args, arg);
+  }
+  return args;
+}
+
 /* Build and return a thunk like call to FUNC from CALLER using the supplied
    arguments.  The call is like a thunk call in the fact that we do not
    want to create additional copies of the arguments.  We can not simply reuse
@@ -1123,29 +1167,10 @@ add_pre_condition_fn_call (tree fndecl)
   gcc_checking_assert (predecl
 		       && predecl != error_mark_node);
 
-  releasing_vec args = build_arg_list (fndecl);
+  releasing_vec args = build_arg_list (fndecl, predecl);
   tree call = NULL_TREE;
 
-  if (DECL_IOBJ_MEMBER_FUNCTION_P (fndecl))
-    {
-      tree *class_ptr = args->begin();
-      gcc_checking_assert (class_ptr);
-
-      tree t;
-      tree binfo = lookup_base (TREE_TYPE (TREE_TYPE (*class_ptr)),
-				DECL_CONTEXT (fndecl),
-				ba_any, NULL, tf_warning_or_error);
-      tree blink = baselink_for_fns(predecl);
-      call = build_new_method_call(DECL_CONTEXT (fndecl), blink, &args, NULL_TREE,
-                                   LOOKUP_NORMAL | LOOKUP_NONVIRTUAL,
-					/*fn_p=*/NULL,
-					tf_none);
-
-      gcc_checking_assert (binfo && binfo != error_mark_node);
-
-    }
-  else
-    call = build_new_function_call (predecl, &args, tf_none);
+  call = build_call_a (predecl, args->length (), args->address ());
 
   finish_expr_stmt (call);
 }
@@ -1182,7 +1207,7 @@ add_post_condition_fn_call (tree fndecl)
   gcc_checking_assert (postdecl
 		       && postdecl != error_mark_node);
 
-  releasing_vec args = build_arg_list (fndecl);
+  releasing_vec args = build_arg_list (fndecl, postdecl);
   if (get_postcondition_result_parameter (fndecl))
     vec_safe_push (args, DECL_RESULT (fndecl));
 
