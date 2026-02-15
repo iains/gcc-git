@@ -26,9 +26,6 @@ void ft1 (T i, T &j, T *k, const T * l, T * const m)
   post ( check (m)){};
 
 template void ft1<const int>(const int, const int&, const int*, int const*, const int* const);
-// { dg-error "value parameter 'k'" "" { target *-*-* } 21 }
-// { dg-error "value parameter 'l'" "" { target *-*-* } 21 }
-
 
 struct PostCond {
 
@@ -52,14 +49,9 @@ struct PostCond {
 
 template
 PostCond::PostCond<const int> (const int i, const int &j,const int *k, const int * l, const int * const m);
-// { dg-error "value parameter 'k'" "" { target *-*-* } 36 }
-// { dg-error "value parameter 'l'" "" { target *-*-* } 36 }
 
 template
 void PostCond::ft1<const NTClass>(const NTClass, const NTClass&, const NTClass*, NTClass const*, const NTClass* const);
-// { dg-error "value parameter 'k'" "" { target *-*-* } 44 }
-// { dg-error "value parameter 'l'" "" { target *-*-* } 44 }
-
 
 template <typename T>
 struct PostCondT
@@ -68,37 +60,32 @@ struct PostCondT
   PostCondT (T i, T &j, T *k, const T * l, T * const m)
     post ( check (i))
     post ( check (j))
-    post ( check (k))
-    post ( check (l))
+    post ( check (k)) // { dg-error "used in a postcondition must be const" }
+    post ( check (l)) // { dg-error "used in a postcondition must be const" }
     post ( check (m)){};
 
   template <class U>
   void f (U i, U &j, U *k, const U * l, U * const m)
     post ( check (i))
     post ( check (j))
-    post ( check (k))
-    post ( check (l))
+    post ( check (k)) // { dg-error "used in a postcondition must be const" }
+    post ( check (l)) // { dg-error "used in a postcondition must be const" }
     post ( check (m)){};
 };
 
 
 template
 PostCondT<const int>::PostCondT (const int i, const int &j, const int *k, const int * l, const int * const m);
-// { dg-error "value parameter 'k'" "" { target *-*-* } 68 }
-// { dg-error "value parameter 'l'" "" { target *-*-* } 68 }
 
 template
 void PostCondT<const int>::f<const NTClass>(const NTClass, const NTClass&, const NTClass*, NTClass const*, const NTClass* const);
-// { dg-error "value parameter 'k'" "" { target *-*-* } 76 }
-// { dg-error "value parameter 'l'" "" { target *-*-* } 76 }
 
 template <typename T>
 int f2(const T i[10])
-post(r : r == i[0]){ return 1;};
+post(r : r == i[0]){ return 1;}; // { dg-error "used in a postcondition must be const" }
 
 template
 int f2<const int>(const int i[10]);
-// { dg-error "used in a postcondition must be const" "" { target *-*-* } 96  }
 
 // P3520
 template <typename T>

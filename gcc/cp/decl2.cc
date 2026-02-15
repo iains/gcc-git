@@ -1135,6 +1135,11 @@ check_classfn (tree ctype, tree function, tree template_parms)
 	}
       matched = error_mark_node;
     }
+  else if (flag_contracts && matched != function
+	   && DECL_UNIQUE_FRIEND_P (function))
+    /* We need to check for addition of contracts, and to queue deferred
+       parsing of the new set.  */
+    check_redecl_contracts (function, matched);
 
   if (pushed_scope)
     pop_scope (pushed_scope);

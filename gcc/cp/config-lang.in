@@ -32,7 +32,7 @@ target_libs="target-libstdc++-v3"
 # The header files must come first, but otherwise please keep this
 # list sorted.
 gtfiles="\
-\$(srcdir)/cp/name-lookup.h \$(srcdir)/cp/cp-tree.h \
+\$(srcdir)/cp/name-lookup.h \$(srcdir)/cp/cp-tree.h \$(srcdir)/cp/contracts.h \
 \$(srcdir)/c-family/c-common.h \$(srcdir)/c-family/c-objc.h \
 \$(srcdir)/c-family/c-pragma.h \$(srcdir)/cp/decl.h \
 \$(srcdir)/cp/parser.h \

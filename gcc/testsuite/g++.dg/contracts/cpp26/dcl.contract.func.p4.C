@@ -69,7 +69,7 @@ struct F1
   virtual int f(int a);
 };
 
-int F1::f(int a) // { dg-error "declaration adds contracts" }
+int F1::f(int a) // { dg-error "contracts cannot be added to virtual functions" }
   pre (a > 0)
 {
   return -a;
@@ -81,8 +81,8 @@ struct T1
   void vfun(int m, double n);
 };
 
-void T1::vfun(int m, double n)
-   pre ( x < 0 ) // { dg-error "was not declared in this" }
+void T1::vfun(int m, double n) // { dg-error "declaration adds contracts" }
+   pre ( x < 0 ) 
 {
 }
 
@@ -99,9 +99,8 @@ struct Bar : Foo {
     pre ( false );
 };
 
-// we currently don't diagnose an error here if the original contract was erroneous.
-void Bar::f10(int n)
- pre (n >10) {}; // { dg-error "mismatched contract" }
+void Bar::f10(int n) // { dg-error "contracts cannot be added to virtual functions" }
+ pre (n >10) {}; 
 
 
 struct NonTrivial{
