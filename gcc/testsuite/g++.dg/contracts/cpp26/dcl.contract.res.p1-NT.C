@@ -25,7 +25,10 @@ struct S{
  NonTrivial f1(const NonTrivial i) post(r: i.x > 0 ) { return NonTrivial{};}
 
  template <typename T>
- NonTrivial f2(const T i) post(r: i.x > 0 ) { return NonTrivial{};}
+ NonTrivial f2(const T i)
+   post(i.x > 0 )
+    { int t = i.x;
+      return NonTrivial{};}
 
  auto f3(const NonTrivial i) post(r: i.x > 0 ) { return NonTrivial{};}
 
@@ -39,7 +42,6 @@ struct S{
  auto f6(const T i) post(r: check(i) ) { return i;}
 
  auto f7(const NonTrivial i) post(r: check(r) ) { return i;}
-
 };
 
 template <typename U>
@@ -120,8 +122,7 @@ struct S1
 	return s.f5(i);
       }
 
-  };
-
+};
 
 int main()
 {
@@ -135,7 +136,6 @@ int main()
   s.f5(n);
   s.f6(n);
   s.f7(n);
-
 
   S1<NonTrivial> s1;
   s1.f1(n);

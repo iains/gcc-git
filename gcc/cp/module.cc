@@ -11344,7 +11344,7 @@ trees_out::fn_parms_init (tree fn)
     {
       /* We must walk contract specifiers so the dependency graph is
 	 complete.  */
-      tree contract = get_fn_contract_specifiers (fn);
+      tree contract = get_current_fn_contract_specifiers (fn);
       for (; contract; contract = TREE_CHAIN (contract))
 	tree_node (contract);
     }

@@ -12313,7 +12313,7 @@ tsubst_contract (tree decl, tree t, tree args, tsubst_flags_t complain,
 		 tree in_decl)
 {
   tree type = decl ? TREE_TYPE (TREE_TYPE (decl)) : NULL_TREE;
-  bool auto_p  = type_uses_auto (type);
+  bool auto_p = type_uses_auto (type);
 
   tree r = copy_node (t);
 
@@ -12438,8 +12438,8 @@ tsubst_contract_specifiers (tree specfiers, tree decl, tree args,
       TREE_CHAIN (nc) = subst_contract_list;
       subst_contract_list = nc;
     }
-  if (flag_contracts)
-    set_fn_contract_specifiers (decl, nreverse (subst_contract_list));
+  /* Now we apply diagnostics.  */
+  update_fn_contract_specifiers (decl, nreverse (subst_contract_list));
 }
 
 /* Instantiate a single dependent attribute T (a TREE_LIST), and return either
@@ -15514,13 +15514,10 @@ tsubst_function_decl (tree t, tree args, tsubst_flags_t complain,
   if (tree ci = get_constraints (t))
     set_constraints (r, ci);
 
-  /* copy_decl () does not know about contract specifiers.  NOTE these are not
-     substituted at this point.  */
-  if (tree ctrct = get_fn_contract_specifiers (t))
-    set_fn_contract_specifiers (r, ctrct);
-
-  /* The parms have now been substituted, check for incorrect const cases.  */
-  check_postconditions_in_redecl (t, r);
+  /* Copy any function contract specifiers.  Defer diagnostics until these are
+     substituted.  */
+  if (DECL_HAS_CONTRACTS_P (t))
+    set_fn_contract_specifiers (r, copy_contracts (t), /*diagnose*/false);
 
   if (DECL_FRIEND_CONTEXT (t))
     SET_DECL_FRIEND_CONTEXT (r,
@@ -28459,16 +28456,16 @@ regenerate_decl_from_template (tree decl, tree tmpl, tree args)
 	      OLD_PARM_DECL_P (t) = 1;
 	}
 
-      if (tree attr = get_fn_contract_specifiers (decl))
+      if (tree ctrct = get_current_fn_contract_specifiers (decl))
 	{
 	  /* If we're regenerating a specialization, the contracts will have
 	     been copied from the most general template. Replace those with
 	     the ones from the actual specialization.  */
 	  tree tmpl = DECL_TI_TEMPLATE (decl);
 	  if (DECL_TEMPLATE_SPECIALIZATION (tmpl))
-	    attr = get_fn_contract_specifiers (code_pattern);
+	    ctrct = get_current_fn_contract_specifiers (code_pattern);
 
-	  tsubst_contract_specifiers (attr, decl, args,
+	  tsubst_contract_specifiers (ctrct, decl, args,
 				      tf_warning_or_error, code_pattern);
 	}
 

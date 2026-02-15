@@ -6,9 +6,9 @@
 // { dg-additional-options "-fcontracts -fcontract-evaluation-semantic=observe " }
 
 
-auto no_deduced_res_types_on_non_defs (int x) // { dg-error "postconditions with deduced result name types must only appear on function definitions" }
+auto no_deduced_res_types_on_non_defs (int x)
   pre (x > 1)
-  post (r: r > 17); 
+  post (r: r > 17); // { dg-error "postconditions with deduced result name types must only appear on function definitions" }
 
 // =====
 

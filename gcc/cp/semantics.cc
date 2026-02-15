@@ -14732,7 +14732,7 @@ apply_deduced_return_type (tree fco, tree return_type)
 
   TREE_TYPE (fco) = change_return_type (return_type, TREE_TYPE (fco));
 
-  maybe_update_postconditions (fco);
+  //maybe_update_postconditions (fco);
 
   /* Apply the type to the result object.  */
 

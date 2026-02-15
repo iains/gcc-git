@@ -1,9 +1,6 @@
-// This case should be diagnosed, but we do not handl deferred contracts properly at the moment.
-// For now, diagnose that we at least don't accidentally merge the contracts
-// { dg-do run { target c++23 } }
-// { dg-additional-options "-fcontracts -g3" }
-// { dg-skip-if "requires hosted libstdc++ for stdc++exp" { ! hostedlib } }
-#include <cassert>
+// { dg-do compile { target c++23 } }
+// { dg-additional-options "-fcontracts " }
+
 struct contract
 {
   int checked = 0;
@@ -35,16 +32,5 @@ clear_checks ()
 struct S
 {
   friend int f1(S) post (checkB());
-  friend int f1(S) pre (checkA()){ return 1;};
+  friend int f1(S) pre (checkA()){ return 1;}; // { dg-error "mismatched contract" }
 };
-
-
-int main()
-{
-  S s;
-
-  clear_checks ();
-  f1(s);
-  assert (a.checked > 0);
-  assert (b.checked == 0);
-}

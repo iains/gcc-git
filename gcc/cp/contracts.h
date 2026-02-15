@@ -85,7 +85,7 @@ enum detection_mode : uint16_t {
 
 /* True iff the FUNCTION_DECL NODE currently has any contracts.  */
 #define DECL_HAS_CONTRACTS_P(NODE) \
-  (get_fn_contract_specifiers (NODE) != NULL_TREE)
+  (get_current_fn_contract_specifiers (NODE) != NULL_TREE)
 
 /* The wrapper of the original source location of a list of contracts.  */
 #define CONTRACT_SOURCE_LOCATION_WRAPPER(NODE) \
@@ -144,6 +144,23 @@ enum detection_mode : uint16_t {
   (DECL_DECLARES_FUNCTION_P (NODE) && DECL_LANG_SPECIFIC (NODE) && \
    DECL_CONTRACT_WRAPPER (NODE))
 
+/* Used to represent a stack of pending contract parses.  */
+
+struct GTY(()) unparsed_contracts_entry
+{
+  /* We need to inject the correct decl args for the parse.  */
+  tree args;
+
+  /* The unparsed contracts.  */
+  tree contracts;
+
+  /* The next entry in the stack.  */
+  struct unparsed_contracts_entry *next;
+
+  /* This declaration is a function definition.  */
+  bool is_definition;
+};
+
 /* Allow specifying a sub-set of contract kinds to copy.  */
 enum contract_match_kind
 {
@@ -156,38 +173,33 @@ enum contract_match_kind
 
 extern void init_contracts			(void);
 
-extern tree grok_contract			(tree, tree, tree, cp_expr, location_t);
+extern tree grok_contract			(tree, tree, cp_expr, cp_expr, location_t);
 extern tree finish_contract_specifier 		(tree, tree);
 extern tree finish_contract_condition		(cp_expr);
 extern void update_late_contract		(tree, tree, cp_expr);
-extern void check_redecl_contract		(tree, tree);
+extern bool update_parm_postcondition_uses	(tree, tree, bool = true);
+extern void check_parsed_contact_specifiers	(tree, tree, unparsed_contracts_entry *);
+extern void check_redecl_contracts		(tree, tree);
 extern tree invalidate_contract			(tree);
-extern tree copy_and_remap_contracts		(tree, tree, contract_match_kind = cmk_all);
+extern tree copy_contracts			(tree, contract_match_kind = cmk_all);
 extern tree constify_contract_access		(tree);
 extern tree view_as_const			(tree);
 
-extern void set_fn_contract_specifiers		(tree, tree);
+extern void set_fn_contract_specifiers		(tree, tree, bool = true);
 extern void update_fn_contract_specifiers	(tree, tree);
-extern tree get_fn_contract_specifiers		(tree);
+extern tree get_current_fn_contract_specifiers	(tree);
+extern unparsed_contracts_entry *get_pending_fn_contract_specifiers (tree);
+extern bool defer_contract_specifier_parses_p	(tree);
 extern void remove_decl_with_fn_contracts_specifiers (tree);
 extern void remove_fn_contract_specifiers	(tree);
-extern void update_contract_arguments		(tree, tree);
 
-extern tree make_postcondition_variable		(cp_expr);
-extern tree make_postcondition_variable		(cp_expr, tree);
+extern tree make_postcondition_variable		(cp_expr, tree, tree);
 extern void check_param_in_postcondition	(tree, location_t);
-extern void check_postconditions_in_redecl	(tree, tree);
-extern void maybe_update_postconditions		(tree);
-extern void rebuild_postconditions		(tree);
 extern bool check_postcondition_result		(tree, tree, location_t);
-
-extern bool contract_any_deferred_p 		(tree);
 
 extern tree get_precondition_function		(tree);
 extern tree get_postcondition_function		(tree);
-extern tree get_orig_for_outlined		(tree);
 
-extern void start_function_contracts		(tree);
 extern void maybe_apply_function_contracts	(tree);
 extern void finish_function_outlined_contracts	(tree);
 extern void set_contract_functions		(tree, tree, tree);

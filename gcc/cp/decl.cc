@@ -2648,7 +2648,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  = DECL_OVERLOADED_OPERATOR_CODE_RAW (olddecl);
       new_defines_function = DECL_INITIAL (newdecl) != NULL_TREE;
 
-      check_redecl_contract (newdecl, olddecl);
+      check_redecl_contracts (newdecl, olddecl);
 
       /* Optionally warn about more than one declaration for the same
 	 name, but don't warn about a function declaration followed by a
@@ -2731,7 +2731,7 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
       gcc_assert (!DECL_TEMPLATE_SPECIALIZATIONS (newdecl));
 
       /* Make sure the contracts are equivalent.  */
-      check_redecl_contract (newdecl, olddecl);
+      check_redecl_contracts (newdecl, olddecl);
 
       DECL_ATTRIBUTES (old_result)
 	= (*targetm.merge_decl_attributes) (old_result, new_result);
@@ -2801,8 +2801,6 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	  DECL_INITIAL (old_result) = DECL_INITIAL (new_result);
 	  if (DECL_FUNCTION_TEMPLATE_P (newdecl))
 	    {
-	      update_contract_arguments (new_result, old_result);
-
 	      DECL_ARGUMENTS (old_result) = DECL_ARGUMENTS (new_result);
 	      for (tree p = DECL_ARGUMENTS (old_result); p; p = DECL_CHAIN (p))
 		DECL_CONTEXT (p) = old_result;
@@ -3250,9 +3248,6 @@ duplicate_decls (tree newdecl, tree olddecl, bool hiding, bool was_hidden)
 	}
       if (! types_match || new_defines_function)
 	{
-	  /* Update the contracts to reflect the new parameter names. */
-	  update_contract_arguments (newdecl, olddecl);
-
 	  /* Mark the old PARM_DECLs in case std::meta::parameters_of has
 	     been called on the old declaration and reflections of those
 	     arguments are held across this point and used later.
@@ -6599,20 +6594,6 @@ start_decl (const cp_declarator *declarator,
       return error_mark_node;
     }
 
-  if (flag_contracts
-      && TREE_CODE (decl) == FUNCTION_DECL
-      && !processing_template_decl
-      && DECL_RESULT (decl)
-      && is_auto (TREE_TYPE (DECL_RESULT (decl))))
-    for (tree ca = get_fn_contract_specifiers (decl); ca; ca = TREE_CHAIN (ca))
-      if (POSTCONDITION_P (CONTRACT_STATEMENT (ca))
-	  && POSTCONDITION_IDENTIFIER (CONTRACT_STATEMENT (ca)))
-	{
-	  error_at (DECL_SOURCE_LOCATION (decl),
-		    "postconditions with deduced result name types must only"
-		    " appear on function definitions");
-	  return error_mark_node;
-	}
   /* Save the DECL_INITIAL value in case it gets clobbered to assist
      with attribute validation.  */
   initial = DECL_INITIAL (decl);
@@ -12654,7 +12635,6 @@ grokfndecl (tree ctype,
       if (TREE_CODE (decl) == TEMPLATE_DECL)
 	t = DECL_TEMPLATE_RESULT (decl);
       set_fn_contract_specifiers (t, contract_specifiers);
-      rebuild_postconditions (t);
     }
 
   /* Check main's type after attributes have been applied.  */
@@ -20112,8 +20092,6 @@ start_preparsed_function (tree decl1, tree attrs, int flags)
   start_fname_decls ();
 
   store_parm_decls (current_function_parms);
-
-  start_function_contracts (decl1);
 
   if (!processing_template_decl
       && flag_lifetime_dse > 1
