@@ -12163,6 +12163,21 @@ grokfndecl (tree ctype,
       return NULL_TREE;
     }
 
+  if (contract_specifiers)
+    {
+      if (initialized == SD_DELETED){
+	    error_at (location,
+		    "contracts cannot be added to deleted functions");
+	    return NULL_TREE;
+      }
+      if (initialized == SD_DEFAULTED)
+	{
+	  error_at (location,
+		    "contracts cannot be added to defaulted functions");
+	  return NULL_TREE;
+	}
+    }
+
   type = build_cp_fntype_variant (type, rqual, raises, late_return_type_p);
 
   decl = build_lang_decl_loc (location, FUNCTION_DECL, declarator, type);
