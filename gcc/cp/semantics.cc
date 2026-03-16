@@ -4317,6 +4317,15 @@ finish_member_declaration (tree decl)
   if (DECL_LANG_SPECIFIC (decl))
     SET_DECL_LANGUAGE (decl, lang_cplusplus);
 
+  if (DECL_DECLARES_FUNCTION_P (decl) && DECL_HAS_CONTRACTS_P (decl))
+    {
+      if (DECL_DELETED_FN (decl))
+	  error_at (DECL_SOURCE_LOCATION (decl), "contracts cannot be added to"
+		    " deleted functions");
+      else if (DECL_DEFAULTED_FN (decl))
+	  error_at (DECL_SOURCE_LOCATION (decl), "contracts cannot be added to"
+			    " defaulted functions");
+    }
   bool add = false;
 
   /* Functions and non-functions are added differently.  */
