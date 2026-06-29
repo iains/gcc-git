@@ -61,6 +61,7 @@
 #include "dwarf2.h"
 #include "dwarf2out.h"
 #include "gimple-iterator.h"
+#include "gimple-fold.h"
 #include "tree-vectorizer.h"
 #include "aarch64-cost-tables.h"
 #include "dumpfile.h"
@@ -2229,6 +2230,87 @@ aarch64_preferred_else_value (unsigned, tree, unsigned int nops, tree *ops)
   return nops == 3 ? ops[2] : ops[0];
 }
 
+/* Try to widen a signed, overflow-undefined multiply by a power of two before
+   converting it to a wider integral type.
+
+   This helps AArch64 instruction selection expose a form that can be emitted
+   as SBFIZ, avoiding an otherwise separate sign-extension around the
+   shift/bitfield operation.
+
+   For example, rewrite:
+
+     _2 = _1 * 2;
+     _3 = (long int) _2;
+
+   into:
+
+     _6 = (long int) _1;
+     _3 = _6 * 2;
+
+   This is valid because overflow in the original narrow signed multiply is
+   undefined.  For all defined executions, widening the multiplicand before the
+   multiply produces the same value as multiplying in the narrow type and then
+   converting the result.
+
+   The original narrow multiply is removed immediately.  There is no DCE pass
+   after AArch64 instruction selection, so leaving it behind would keep dead
+   multiplications in the final optimized GIMPLE dump.  */
+static bool
+aarch64_try_widen_mult_by_pow2 (const gassign *convert,
+				gimple_stmt_iterator *gsi)
+{
+  tree type = TREE_TYPE (gimple_assign_lhs (convert));
+  tree inner = gimple_assign_rhs1 (convert);
+  tree inner_type = TREE_TYPE (inner);
+
+  if (!INTEGRAL_TYPE_P (type)
+      || !INTEGRAL_TYPE_P (inner_type)
+      || !TYPE_OVERFLOW_UNDEFINED (inner_type)
+      || TYPE_PRECISION (type) <= TYPE_PRECISION (inner_type)
+      || TYPE_PRECISION (type) > BITS_PER_WORD
+      || TREE_CODE (inner) != SSA_NAME
+      || !has_single_use (inner))
+    return false;
+
+  gimple *stmt = SSA_NAME_DEF_STMT (inner);
+  if (!is_gimple_assign (stmt)
+      || gimple_assign_rhs_code (stmt) != MULT_EXPR)
+    return false;
+
+  tree multiplicand = gimple_assign_rhs1 (stmt);
+  tree pow2const = gimple_assign_rhs2 (stmt);
+  if (!integer_pow2p (pow2const)
+      || tree_int_cst_sgn (pow2const) <= 0)
+    return false;
+
+  gimple_stmt_iterator stmt_gsi = gsi_for_stmt (stmt);
+
+  gimple_seq stmts = NULL;
+  tree widened_multiplicand = gimple_convert (&stmts,
+					      gimple_location (convert),
+					      type, multiplicand);
+
+  gsi_insert_seq_before (gsi, stmts, GSI_SAME_STMT);
+
+  tree widened_pow2const = fold_convert (type, pow2const);
+
+  tree mul_lhs = gimple_assign_lhs (convert);
+  gassign *mul_stmt
+    = gimple_build_assign (mul_lhs, MULT_EXPR,
+			   widened_multiplicand,
+			   widened_pow2const);
+
+  gsi_replace (gsi, mul_stmt, true);
+
+  /* INNER was used only by CONVERT, which we just replaced.  The defining
+     multiply is therefore dead, so remove it.  */
+  gcc_checking_assert (has_zero_uses (inner));
+  gsi_remove (&stmt_gsi, true);
+  release_defs (stmt);
+
+  return true;
+}
+
 /* Implement TARGET_INSTRUCTION_SELECTION.  The target hook is used to
    change generic sequences to a form AArch64 has an easier time expanding
    instructions for.  It's not supposed to be used for generic rewriting that
@@ -2242,6 +2324,10 @@ aarch64_instruction_selection (function * /* fun */, gimple_stmt_iterator *gsi)
 
   if (!assign)
     return false;
+
+  if (CONVERT_EXPR_CODE_P (gimple_assign_rhs_code (assign))
+      && aarch64_try_widen_mult_by_pow2 (assign, gsi))
+    return true;
 
   /* Convert
 	p == q ? s1 : s2;
