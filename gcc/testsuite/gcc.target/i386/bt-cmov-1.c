@@ -27,7 +27,7 @@ unsigned f3 (unsigned a, unsigned b, unsigned c)
   return ((a >> b) & 1) ? 2 : c;
 }
 
-/* { dg-final { scan-assembler-times "bt\[l\]?\[ \\t\]+" 4 } } */
-/* { dg-final { scan-assembler-times "cmov\[n\]*c" 4 } } */
+/* { dg-final { scan-assembler-times {btl[ \t]+} 4 } } */
+/* { dg-final { scan-assembler-times {cmov(l\.)?n?c} 4 } } */
 /* { dg-final { scan-assembler-not "sal" } } */
 /* { dg-final { scan-assembler-not "shr" } } */
