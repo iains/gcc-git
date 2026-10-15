@@ -5744,6 +5744,172 @@ subscript_dependence_tester_1 (struct data_dependence_relation *ddr,
   return false;
 }
 
+/* Return true if every distance vector of DDR has, in the loops marked in
+   VARIES, the distances of the first vector or all of them negated.  */
+
+static bool
+dist_vectors_agree_p (const struct data_dependence_relation *ddr,
+		      const vec<bool> &varies)
+{
+  if (DDR_NUM_DIST_VECTS (ddr) == 0)
+    return true;
+  lambda_vector first = DDR_DIST_VECT (ddr, 0);
+  for (lambda_vector v : DDR_DIST_VECTS (ddr))
+    {
+      bool same = true, opposite = true;
+      for (unsigned i = 0; i < DDR_NB_LOOPS (ddr); i++)
+	if (varies[i])
+	  {
+	    same &= v[i] == first[i];
+	    opposite &= v[i] == -first[i];
+	  }
+      if (!same && !opposite)
+	return false;
+    }
+  return true;
+}
+
+/* Set VARIES[I] for each loop I of the nest of DDR in which CHREC has an
+   evolution part, as evolution_part_in_loop_num finds it, walking CHREC
+   once.  The nest is a chain of loops at consecutive depths, as
+   find_loop_nest builds it, so loop I is at the depth of loop 0 plus I.  */
+
+static void
+mark_evolving_loops (const struct data_dependence_relation *ddr, tree chrec,
+		     vec<bool> *varies)
+{
+  unsigned n = DDR_NB_LOOPS (ddr);
+  if (automatically_generated_chrec_p (chrec))
+    for (unsigned i = 0; i < n; i++)
+      (*varies)[i] = true;
+  unsigned depth0 = loop_depth (DDR_LOOP_NEST (ddr)[0]);
+  for (; TREE_CODE (chrec) == POLYNOMIAL_CHREC; chrec = CHREC_LEFT (chrec))
+    {
+      class loop *loop = get_chrec_loop (chrec);
+      unsigned i = loop_depth (loop) - depth0;
+      if (i < n && DDR_LOOP_NEST (ddr)[i] == loop)
+	(*varies)[i] = true;
+    }
+}
+
+/* What the distance vectors of a dependence miss in its free loops.  */
+
+enum free_loop_distances
+{
+  /* They miss nothing.  */
+  FREE_LOOP_DISTANCES_KEPT,
+  /* They miss distances, and agree in the loops the subscripts constrain,
+     so they can be completed.  */
+  FREE_LOOP_DISTANCES_LOST,
+  /* They miss distances and do not agree there.  */
+  FREE_LOOP_DISTANCES_DISAGREE
+};
+
+/* Return whether the distance vectors of DDR miss distances because of a
+   free loop, a loop of the nest that contains both references and in
+   which no compared access function evolves, so that the dependence can
+   have any distance in it.  The vectors give a free loop a distance of
+   its own only when it is the only free loop and lies outside every loop
+   the subscripts constrain, and the vectors agree in the loops the
+   subscripts constrain.  Otherwise its distance is taken as zero, which
+   misses the distances of opposite signs in it and in another free loop
+   or in a loop with a nonzero distance.  Set FREE_LOOPS[I] when loop I of
+   the nest is free and VARIES[I] when a compared access function evolves
+   in it; both have room for DDR_NB_LOOPS (DDR) elements.  */
+
+static enum free_loop_distances
+check_free_loop_distances (const struct data_dependence_relation *ddr,
+			   vec<bool> *free_loops, vec<bool> *varies)
+{
+  unsigned n = DDR_NB_LOOPS (ddr);
+  if (n < 2)
+    return FREE_LOOP_DISTANCES_KEPT;
+  free_loops->quick_grow_cleared (n);
+
+  varies->quick_grow_cleared (n);
+  for (subscript *sub : DDR_SUBSCRIPTS (ddr))
+    for (unsigned k = 0; k < 2; k++)
+      mark_evolving_loops (ddr, SUB_ACCESS_FN (sub, k), varies);
+
+  basic_block bb_a = gimple_bb (DR_STMT (DDR_A (ddr)));
+  basic_block bb_b = gimple_bb (DR_STMT (DDR_B (ddr)));
+  unsigned first_varying = n, nfree = 0, free_idx = 0;
+  for (unsigned i = 0; i < n; i++)
+    if ((*varies)[i])
+      first_varying = MIN (first_varying, i);
+    else if (flow_bb_inside_loop_p (DDR_LOOP_NEST (ddr)[i], bb_a)
+	     && flow_bb_inside_loop_p (DDR_LOOP_NEST (ddr)[i], bb_b))
+      {
+	nfree++;
+	free_idx = i;
+	(*free_loops)[i] = true;
+      }
+  if (nfree == 0)
+    return FREE_LOOP_DISTANCES_KEPT;
+  if (!dist_vectors_agree_p (ddr, *varies))
+    return FREE_LOOP_DISTANCES_DISAGREE;
+  if (nfree == 1 && free_idx < first_varying)
+    return FREE_LOOP_DISTANCES_KEPT;
+  if (nfree > 1)
+    return FREE_LOOP_DISTANCES_LOST;
+
+  unsigned j;
+  lambda_vector v;
+  FOR_EACH_VEC_ELT (DDR_DIST_VECTS (ddr), j, v)
+    for (unsigned i = 0; i < n; i++)
+      if ((*varies)[i] && v[i] != 0)
+	return FREE_LOOP_DISTANCES_LOST;
+  return FREE_LOOP_DISTANCES_KEPT;
+}
+
+/* Add the distance vectors of DDR that its free loops FREE_LOOPS miss,
+   when its vectors agree in the loops the subscripts constrain: every
+   lexicographically positive vector with the distances of the first
+   vector, or their opposite, in the other loops and -1, 0 or 1 in each
+   free loop.  That is not possible when the bases differ and the objects
+   vary in the nest; return false then, when there is no vector to start
+   from, or as soon as more than 32 vectors would be needed.  */
+
+static bool
+add_free_loop_distances (struct data_dependence_relation *ddr,
+			 const vec<bool> &free_loops)
+{
+  if ((DDR_COULD_BE_INDEPENDENT_P (ddr) && !DDR_OBJECT_A (ddr))
+      || DDR_NUM_DIST_VECTS (ddr) == 0)
+    return false;
+  unsigned n = DDR_NB_LOOPS (ddr), nfree = 0, ncomb = 1;
+  for (bool f : free_loops)
+    if (f)
+      {
+	nfree++;
+	ncomb *= 3;
+      }
+  if (nfree > 3)
+    return false;
+
+  lambda_vector first = DDR_DIST_VECT (ddr, 0);
+  for (int sign = 1; sign >= -1; sign -= 2)
+    for (unsigned c = 0; c < ncomb; c++)
+      {
+	lambda_vector v = lambda_vector_new (n);
+	for (unsigned i = 0, rest = c; i < n; i++)
+	  if (free_loops[i])
+	    {
+	      v[i] = (int) (rest % 3) - 1;
+	      rest /= 3;
+	    }
+	  else
+	    v[i] = sign * first[i];
+	if (lambda_vector_lexico_pos (v, n))
+	  {
+	    save_dist_v (ddr, v);
+	    if (DDR_NUM_DIST_VECTS (ddr) > 32)
+	      return false;
+	  }
+      }
+  return true;
+}
+
 /* Computes the conflicting iterations in LOOP_NEST, and initialize DDR.  */
 
 static void
@@ -5756,6 +5922,21 @@ subscript_dependence_tester (struct data_dependence_relation *ddr,
   compute_subscript_distance (ddr);
   if (build_classic_dist_vector (ddr, loop_nest))
     {
+      unsigned n = DDR_NB_LOOPS (ddr);
+      auto_vec<bool, 8> free_loops (n), varies (n);
+      enum free_loop_distances lost
+	= check_free_loop_distances (ddr, &free_loops, &varies);
+      if (lost == FREE_LOOP_DISTANCES_DISAGREE
+	  || (lost == FREE_LOOP_DISTANCES_LOST
+	      && !add_free_loop_distances (ddr, free_loops)))
+	{
+	  if (dump_file && (dump_flags & TDF_DETAILS))
+	    fprintf (dump_file, "(distance vectors miss a free loop)\n");
+	  DDR_ARE_DEPENDENT (ddr) = chrec_dont_know;
+	  DDR_DIST_VECTS (ddr).release ();
+	  return;
+	}
+
       if (dump_file && (dump_flags & TDF_DETAILS))
 	{
 	  unsigned i;
