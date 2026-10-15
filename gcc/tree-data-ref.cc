@@ -5356,6 +5356,8 @@ add_multivariate_self_dist (struct data_dependence_relation *ddr, tree c_2)
       || TREE_CODE (CHREC_RIGHT (c_2)) != INTEGER_CST)
     {
       DDR_AFFINE_P (ddr) = false;
+      DDR_ARE_DEPENDENT (ddr) = chrec_dont_know;
+      DDR_DIST_VECTS (ddr).release ();
       return;
     }
 
@@ -5406,6 +5408,7 @@ add_other_self_distances (struct data_dependence_relation *ddr)
 	      if (DDR_NUM_SUBSCRIPTS (ddr) != 1)
 		{
 		  DDR_ARE_DEPENDENT (ddr) = chrec_dont_know;
+		  DDR_DIST_VECTS (ddr).release ();
 		  return;
 		}
 
@@ -5414,11 +5417,15 @@ add_other_self_distances (struct data_dependence_relation *ddr)
 	      if (TREE_CODE (CHREC_LEFT (access_fun)) == POLYNOMIAL_CHREC)
 		add_multivariate_self_dist (ddr, access_fun);
 	      else
-		/* The evolution step is not constant: it varies in
-		   the outer loop, so this cannot be represented by a
-		   distance vector.  For example in pr34635.c the
-		   evolution is {0, +, {0, +, 4}_1}_2.  */
-		DDR_AFFINE_P (ddr) = false;
+		{
+		  /* The evolution step is not constant: it varies in
+		     the outer loop, so this cannot be represented by a
+		     distance vector.  For example in pr34635.c the
+		     evolution is {0, +, {0, +, 4}_1}_2.  */
+		  DDR_AFFINE_P (ddr) = false;
+		  DDR_ARE_DEPENDENT (ddr) = chrec_dont_know;
+		  DDR_DIST_VECTS (ddr).release ();
+		}
 
 	      return;
 	    }
