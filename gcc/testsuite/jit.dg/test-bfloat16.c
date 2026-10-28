@@ -33,5 +33,6 @@ create_code (gcc_jit_context *ctxt, void *user_data)
 }
 
 /* { dg-final { jit-verify-output-file-was-created "" } } */
-/* { dg-final { jit-verify-assembler-output ".value	16457" } } */
-/* { dg-final { jit-verify-assembler-output ".size	foo, 2" } } */
+/* { dg-final { jit-verify-assembler-output ".value	16457" { target { ! *-*-darwin* } } } } */
+/* { dg-final { jit-verify-assembler-output ".size	foo, 2" { target { ! *-*-darwin* } } } } */
+/* { dg-final { jit-verify-assembler-output "\\.word\\s+16457" { target *-*-darwin* } } } */

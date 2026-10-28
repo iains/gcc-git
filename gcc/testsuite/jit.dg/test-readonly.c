@@ -35,4 +35,5 @@ create_code (gcc_jit_context *ctxt, void *user_data)
 }
 
 /* { dg-final { jit-verify-output-file-was-created "" } } */
-/* { dg-final { jit-verify-assembler-output ".section\t.rodata" } } */
+/* { dg-final { jit-verify-assembler-output ".section\t.rodata" { target { ! *-*-darwin* } } } } */
+/* { dg-final { jit-verify-assembler-output "\\.const" { target *-*-darwin* } } } */
