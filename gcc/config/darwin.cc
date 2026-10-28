@@ -147,16 +147,17 @@ int emit_aligned_common = false;
 /* A get_unnamed_section callback used to switch to an ObjC section.
    DIRECTIVE is as for output_section_asm_op.  */
 
+static bool sections_set_up = false;
+
 static void
 output_objc_section_asm_op (const char *directive)
 {
-  static bool been_here = false;
 
   /* The NeXT ObjC Runtime requires these sections to be present and in
      order in the object.  The code below implements this by emitting
      a section header for each ObjC section the first time that an ObjC
      section is requested.  */
-  if (darwin_symbol_stubs && ! been_here)
+  if (darwin_symbol_stubs && ! sections_set_up)
     {
       section *saved_in_section = in_section;
       static const enum darwin_section_enum tomark[] =
@@ -214,7 +215,7 @@ output_objc_section_asm_op (const char *directive)
 	} ;
       size_t i;
 
-      been_here = true;
+      sections_set_up = true;
       if (flag_objc_abi < 2)
 	{
 	  for (i = 0; i < ARRAY_SIZE (tomark); i++)
@@ -1259,6 +1260,9 @@ machopic_finish (FILE *out_file)
 
   machopic_indirections->traverse_noresize
     <FILE *, machopic_output_indirection> (out_file);
+
+  machopic_indirections->empty ();
+  machopic_indirections = NULL;
 }
 
 int
@@ -1972,6 +1976,9 @@ finalize_ctors ()
       assemble_align (POINTER_SIZE);
       assemble_integer (elt->symbol, POINTER_SIZE / BITS_PER_UNIT, POINTER_SIZE, 1);
     }
+  /* Allow for an in-process restart by the JIT.  */
+  ctors->truncate (0);
+  ctors = NULL;
 }
 
 static void
@@ -1997,6 +2004,9 @@ finalize_dtors ()
       assemble_align (POINTER_SIZE);
       assemble_integer (elt->symbol, POINTER_SIZE / BITS_PER_UNIT, POINTER_SIZE, 1);
     }
+  /* Allow for an in-process restart by the JIT.  */
+  dtors->truncate (0);
+  dtors = NULL;
 }
 
 void
@@ -3174,7 +3184,11 @@ darwin_file_start (void)
 /* Called for the TARGET_ASM_FILE_END hook.
    Emit the mach-o pic indirection data, the lto data and, finally a flag
    to tell the linker that it can break the file object into sections and
-   move those around for efficiency.  */
+   move those around for efficiency.
+
+   In order to allow the JIT to perform multiple compiles in a single
+   process, we need to re-initialise state that expects empty/null/zero
+   init.  */
 
 void
 darwin_file_end (void)
@@ -3213,6 +3227,8 @@ darwin_file_end (void)
 
       fprintf (asm_out_file, "\t.long\t0\n\t.long\t%u\n", flags);
     }
+  objc_metadata_seen = 0;
+  classes_seen = 0;
 
   machopic_finish (asm_out_file);
   if (flag_apple_kext)
@@ -3258,6 +3274,7 @@ darwin_file_end (void)
       fclose (lto_asm_out_file);
       unlink_if_ordinary (lto_asm_out_name);
       free (lto_asm_out_name);
+      lto_asm_out_name = NULL;
     }
 
   /* Output the names and indices.  */
@@ -3303,8 +3320,11 @@ darwin_file_end (void)
 	  fprintf (asm_out_file, "%s L$gnu$lto$noff%d\n", op, count);
 	  fprintf (asm_out_file, "%s L$gnu$lto$nsiz%d\n", op, count);
 	}
+      /* Reset for JIT.  */
+      lto_section_names->truncate (0);
+      lto_section_names = NULL;
     }
-
+  lto_section_num = 0;
   /* If we have section anchors, then we must prevent the linker from
      re-arranging data.  */
   if (!DARWIN_SECTION_ANCHORS || !flag_section_anchors)
@@ -3317,6 +3337,8 @@ darwin_file_end (void)
       dwarf_sect_names_table->truncate (0);
       dwarf_sect_names_table = NULL;
     }
+  /* Other TU-locals we depend on init state for.  */
+  sections_set_up = false;
 }
 
 /* TODO: Add a language hook for identifying if a decl is a vtable.  */
