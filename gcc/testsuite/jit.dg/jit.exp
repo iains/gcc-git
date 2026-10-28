@@ -97,7 +97,7 @@ proc verify_exit_status { executable wres } {
 #  @@ -113,8 +113,6 @@ proc host_execute {args} {
 #       set timetol 0
 #       set arguments ""
-#   
+#
 #  -    expect_before buffer_full { perror "Buffer full" }
 #  -
 #       if { [llength $args] == 0} {
@@ -204,7 +204,7 @@ proc fixed_host_execute {args} {
     if { [istarget *-*-darwin*] } {
         set endline "\r(\r)*\n"
     }
-    
+
     # Note that the logic here assumes that we cannot (validly) get single
     # carriage return or line feed characters in the stream.  If those occur,
     # it will stop any further matching.  We arange for the matching to be
@@ -283,7 +283,7 @@ proc fixed_host_execute {args} {
         verbose "wres: $wres" 2
         verify_exit_status $executable $wres
     }
- 
+
     if $run_under_valgrind {
 	upvar 2 name name
 	# Use xfail to report leaks, as libgccjit isn't yet clean of
@@ -394,6 +394,14 @@ proc dg-jit-set-exe-params { args } {
 # For test-debuginfo.c. Starts gdb, does cmds and checks the output against match
 proc jit-check-debug-info { obj_file cmds match } {
     verbose "Checking debug info for $obj_file with match: $match"
+
+    if { [istarget *-*-darwin*] } {
+        # Most Darwin versions have no GDB installed, and the ones that do
+        # have a version that is too old for these tests.
+	set what [string trim [string map [list "\n" ""] [join $cmds "; "]]]
+	unsupported "[testname-for-summary]: debug info ($what): needs GDB:"
+	return
+    }
 
     if { [catch {exec gdb -v} fid] } {
         verbose "No gdb seems to be in path. Can't check debug info. Reporting 'unsupported'."
@@ -683,7 +691,7 @@ proc jit-dg-test { prog do_what extra_tool_flags } {
     if $preserve_executables {
 	set output_file ""
     }
-    
+
     return [list $comp_output $output_file]
 }
 
